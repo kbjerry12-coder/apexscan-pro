@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080d17">
-<title>APEXSCAN PRO · AI Market Terminal</title>
+<title>APEXSCAN PRO · OTC Intelligence Terminal</title>
+<meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% -20%,#1b3a5d 0,transparent 40%),var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
@@ -21,6 +22,25 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:9px}.field{display:flex;flex-direction:column;gap:4px;min-width:0}.field.wide{grid-column:1/-1}.field label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}.field input,.field select{width:100%;min-width:0;padding:9px;background:#091321;border:1px solid var(--line);border-radius:8px;color:var(--text)}.checkgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.check{display:flex;gap:7px;align-items:center;padding:7px;background:#0a1421;border:1px solid #1d2b40;border-radius:8px;font-size:10px}.check input{accent-color:#27d6a0}
 .metricrow{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.metricbox{background:#0a1421;padding:9px;border-radius:8px}.metricbox small{display:block;color:var(--muted);font-size:9px}.metricbox b{font-size:15px}
 .empty{text-align:center;padding:20px;color:var(--muted)}.footer{font-size:10px;color:var(--muted);text-align:center;padding:10px}.btnrow{display:flex;gap:7px;flex-wrap:wrap}.small{padding:5px 8px;font-size:9px}.progress{height:5px;background:#1b2b40;border-radius:8px;overflow:hidden;margin-top:7px}.progress span{display:block;height:100%;background:linear-gradient(90deg,#1dc99a,#5aa6ff);width:0}
+
+.analysis-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}.analysis-breakdown div{display:flex;justify-content:space-between;gap:8px;padding:9px;background:#081629;border:1px solid #1d3855;border-radius:8px;font-size:10px}.analysis-breakdown span{color:var(--muted)}.analysis-breakdown b{color:#b8d5f6;text-align:right}
+/* V6.1 visual refresh: premium dark glass terminal */
+:root{--bg:#050914;--panel:#0d1728;--panel2:#091222;--line:#203653;--text:#f1f6ff;--muted:#8ea4c2;--green:#38efb1;--red:#ff6688;--blue:#66b7ff;--amber:#ffd078;--purple:#b59bff}
+body{background:radial-gradient(ellipse at 8% 0%,#15385a 0,transparent 32%),radial-gradient(ellipse at 95% 18%,#24184a 0,transparent 28%),linear-gradient(145deg,#050914,#081426 58%,#060b16);background-attachment:fixed}
+header{background:rgba(5,12,25,.88);border-bottom-color:#294565;box-shadow:0 8px 30px #0005}
+.logo{box-shadow:0 0 24px #2be0a655;position:relative}.brand{letter-spacing:.15em}.brand small{color:#78a5d6}
+.wrap{max-width:1700px;padding:22px}.top{padding:18px 20px;border:1px solid #294768;border-radius:18px;background:linear-gradient(110deg,#102943dd,#10152cbb 70%,#111a2cdd);box-shadow:0 16px 45px #0004;position:relative;overflow:hidden}.top:after{content:"OTC INTELLIGENCE";position:absolute;right:20px;bottom:-13px;font-size:52px;font-weight:1000;letter-spacing:.12em;color:#ffffff08;pointer-events:none}.top h1{font-size:clamp(23px,3vw,34px);letter-spacing:-.035em}.eyebrow{color:#75c5ff}.actions{position:relative;z-index:1}
+button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;border-color:#2a4565}button:hover{transform:translateY(-1px);border-color:#64a9e8}.primary{background:linear-gradient(115deg,#0fa77d,#167fbd 65%,#5a63d8);box-shadow:0 7px 22px #087c7250}
+.notice{background:linear-gradient(90deg,#211d18,#191c27);border-color:#65502d;box-shadow:inset 3px 0 #ffc66d}
+.kpis{gap:12px}.kpi,.panel{background:linear-gradient(155deg,rgba(17,32,54,.97),rgba(8,17,31,.98));border-color:#223b5b;box-shadow:0 12px 32px #0003,inset 0 1px #ffffff08}.kpi{border-radius:15px;position:relative;overflow:hidden}.kpi:before{content:"";position:absolute;left:0;top:0;width:100%;height:2px;background:linear-gradient(90deg,#2ee3b0,#62aaff,#a58bff);opacity:.8}.kpi strong{font-size:clamp(19px,2vw,26px);letter-spacing:-.04em}.panel{border-radius:16px;padding:16px}.panel-head{padding-bottom:10px;border-bottom:1px solid #20334d}.panel h2{letter-spacing:.14em;color:#c5d8f2}.pill{background:#162b45;border:1px solid #294665;color:#a9c9ed}
+.scanner-strip .mini,.metricbox{background:linear-gradient(145deg,#0b1b30,#0a1424);border:1px solid #1e3856}.scan-table-wrap{border:1px solid #1e3550;border-radius:10px}th{background:#101f34;color:#92b2d8}td{border-bottom-color:#192d46}tbody tr:hover{background:#142a44}
+.chartbox{height:310px;background:radial-gradient(ellipse at 50% 0%,#102744,#07111e 72%);border-color:#294462;box-shadow:inset 0 0 35px #0005}
+.signal-card{box-shadow:inset 0 1px #ffffff0a,0 12px 28px #0003}.signal-dir{font-size:32px}.signal-card.call{box-shadow:0 0 28px #19b98717,inset 0 1px #ffffff0b}.signal-card.put{box-shadow:0 0 28px #ed456817,inset 0 1px #ffffff0b}
+.field input,.field select{background:#071324;border-color:#29405e}.check{background:#0a1a2e;border-color:#203b59}.check:has(input:checked){border-color:#2d9f88;background:#0b292b}
+.progress{height:7px;background:#1b304b}.progress span{background:linear-gradient(90deg,#25d9a5,#5eb8ff,#9e8cff);box-shadow:0 0 14px #3aaeff88}
+.footer{padding:18px;color:#718aa9}
+@media(max-width:600px){.wrap{padding:9px}.top{padding:15px;border-radius:14px}.top:after{font-size:30px}.panel{padding:12px}.chartbox{height:250px}.kpi strong{font-size:18px}}
+
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.main-grid{grid-template-columns:1fr}}
 @media(max-width:600px){header{padding:11px}.wrap{padding:11px}.top h1{font-size:20px}.kpis{grid-template-columns:repeat(2,1fr);gap:7px}.kpi{padding:10px}.kpi strong{font-size:18px}.scanner-strip{grid-template-columns:repeat(2,1fr)}.fields{grid-template-columns:1fr}.field.wide{grid-column:auto}.metricrow{grid-template-columns:repeat(2,1fr)}.headright .headlabel{display:none}.chartbox{height:230px}}
 </style>
@@ -32,10 +52,10 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-
 </header>
 <main class="wrap">
  <div class="top">
-  <div><div class="eyebrow">MARKET INTELLIGENCE / OTC + REGULAR MARKETS</div><h1>AI Trading Scanner</h1><p>Multi-asset monitoring · technical confluence · signal quality controls · paper-trade analytics</p></div>
+  <div><div class="eyebrow">POCKET OPTION OTC / PRIMARY MARKET SCANNER</div><h1>APEXSCAN PRO · OTC TERMINAL</h1><p>Pocket Option OTC priority · technical confluence · signal quality controls · paper-trade analytics</p></div>
   <div class="actions"><button id="scanNow">↻ Scan now</button><button id="startBtn" class="primary">▶ Start auto scanner</button><button id="pauseBtn" class="danger" disabled>Ⅱ Pause</button></div>
  </div>
- <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. Regular-market scans use Twelve Data 1-minute candles. OTC scans use your Netlify OTCharts function; if its candles are hourly cached or older than 90 seconds, the app marks them STALE and blocks a fresh 1-minute signal. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
+ <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. The app marks candles older than 150 seconds STALE and blocks fresh 1-minute signals. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
  <section class="kpis">
   <div class="kpi"><label>Markets scanned</label><strong id="kScanned">0 / 0</strong><small id="kScanTime">Not scanned yet</small></div>
   <div class="kpi"><label>Active opportunities</label><strong id="kSignals">0</strong><small>Fresh CALL / PUT candidates</small></div>
@@ -74,13 +94,13 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-
     <div class="metricrow" style="margin-bottom:10px">
      <div class="metricbox"><small>CALL win rate</small><b id="jCallRate">—</b></div><div class="metricbox"><small>PUT win rate</small><b id="jPutRate">—</b></div><div class="metricbox"><small>Today's P/L</small><b id="jTodayPnl">$0.00</b></div><div class="metricbox"><small>Settled today</small><b id="jTodayCount">0</b></div>
     </div>
-    <div class="scan-table-wrap"><table><thead><tr><th>Time</th><th>Market</th><th>Side</th><th>Entry</th><th>Exit</th><th>Stake</th><th>Outcome</th><th>Action</th></tr></thead><tbody id="tradeBody"><tr><td colspan="8" class="empty">No paper trades logged.</td></tr></tbody></table></div>
+    <div class="scan-table-wrap"><table><thead><tr><th>Time</th><th>Market</th><th>Side</th><th>Entry</th><th>Expiry</th><th>Exit</th><th>Stake</th><th>Outcome</th><th>Action</th></tr></thead><tbody id="tradeBody"><tr><td colspan="9" class="empty">No paper trades logged.</td></tr></tbody></table></div>
    </div>
   </section>
   <aside>
    <div class="panel">
     <div class="panel-head"><h2>TOP AI OPPORTUNITY</h2><span class="pill">FILTERED</span></div>
-    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">WAIT</div><span class="pill" id="topScore">NO SETUP</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><button class="primary" id="paperFromTop" style="width:100%;margin-top:11px" disabled>＋ Log paper trade</button></div>
+    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">WAIT</div><span class="pill" id="topScore">NO SETUP</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><p class="tiny" id="topExpiry" style="margin:10px 0 0">1-minute candle strategy · Practice expiry: 60 seconds · validate with paper trades</p><button class="primary" id="paperFromTop" style="width:100%;margin-top:11px" disabled>＋ Log paper trade</button></div>
     <p class="tiny" style="margin:9px 0 0">A score is a technical confluence rating, not a probability of winning. Wait means filters did not agree.</p>
    </div>
    <div class="panel">
@@ -98,16 +118,17 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-
     <div class="checkgrid" id="watchChecks"></div>
     <div class="fields" style="margin-top:11px">
      <div class="field"><label>Auto scan interval</label><select id="interval"><option value="60000">60 seconds</option><option value="120000">2 minutes</option><option value="300000">5 minutes</option></select></div>
+     <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. This strategy currently analyzes 1-minute candles, so its initial practice expiry is 60 seconds; validate with paper results before considering real trades.</div></div>
      <div class="field"><label>Signal threshold</label><select id="threshold"><option value="70">70 · Active</option><option value="75">75 · Balanced</option><option value="80" selected>80 · Selective</option><option value="85">85 · Strict</option></select></div>
      <div class="field"><label>Paper stake ($)</label><input id="stake" type="number" min="1" max="100000" value="10"></div>
      <div class="field"><label>Payout (%)</label><input id="payout" type="number" min="1" max="100" value="85"></div>
-     <div class="field wide"><label>Minimum candle freshness</label><input value="90 seconds · older data is blocked" disabled></div>
+     <div class="field wide"><label>Minimum candle freshness</label><input value="150 seconds · older data is blocked" disabled></div>
     </div>
     <div class="progress"><span id="scanProgress"></span></div><div class="tiny" id="progressText" style="margin-top:5px">Idle</div>
    </div>
    <div class="panel">
     <div class="panel-head"><h2>SCANNER ENGINE</h2><span class="pill">TECHNICAL CONFLUENCE</span></div>
-    <div class="tiny">The scanner checks EMA trend, RSI momentum, MACD direction, candle strength, and data freshness. It rejects weak, conflicting, or stale setups. It does not learn from outcomes or guarantee returns.</div>
+    <div class="tiny">Multi-factor OTC analysis: trend alignment, momentum, MACD histogram, volatility regime, candle body/wick quality, recent swing structure, and feed freshness. A setup is only eligible when direction, strength, and data checks agree. Scores are confluence ratings—not win probabilities.</div><div id="analysisBreakdown" class="analysis-breakdown"><div><span>Trend structure</span><b>Awaiting scan</b></div><div><span>Momentum</span><b>Awaiting scan</b></div><div><span>Volatility</span><b>Awaiting scan</b></div><div><span>Price action</span><b>Awaiting scan</b></div><div><span>Market structure</span><b>Awaiting scan</b></div><div><span>Feed integrity</span><b>Awaiting scan</b></div></div>
     <div style="margin-top:10px" class="metricrow"><div class="metricbox"><small>Trend</small><b>EMA 9/21</b></div><div class="metricbox"><small>Momentum</small><b>RSI 14</b></div><div class="metricbox"><small>Confirm</small><b>MACD</b></div><div class="metricbox"><small>Quality</small><b>Candle</b></div></div>
    </div>
   </aside>
@@ -115,44 +136,61 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-
  <div class="footer">APEXSCAN PRO · Independent market-data analysis · No broker execution · Trading involves substantial risk.</div>
 </main>
 <script>
-const $=id=>document.getElementById(id), STORE="apexscan_pro_dashboard_v5";
+const $=id=>document.getElementById(id), STORE="apexscan_pro_dashboard_v6", LEGACY_STORE="apexscan_pro_dashboard_v5";
 const ASSETS=[
- {id:"EUR/USD",name:"EUR/USD",kind:"regular",symbol:"EUR/USD",default:true},
- {id:"GBP/USD",name:"GBP/USD",kind:"regular",symbol:"GBP/USD",default:true},
- {id:"USD/JPY",name:"USD/JPY",kind:"regular",symbol:"USD/JPY",default:true},
+ {id:"EUR/USD",name:"EUR/USD",kind:"regular",symbol:"EUR/USD",default:false},
+ {id:"GBP/USD",name:"GBP/USD",kind:"regular",symbol:"GBP/USD",default:false},
+ {id:"USD/JPY",name:"USD/JPY",kind:"regular",symbol:"USD/JPY",default:false},
  {id:"AUD/USD",name:"AUD/USD",kind:"regular",symbol:"AUD/USD",default:false},
  {id:"BTC/USD",name:"BTC/USD",kind:"regular",symbol:"BTC/USD",default:false},
  {id:"ETH/USD",name:"ETH/USD",kind:"regular",symbol:"ETH/USD",default:false},
- {id:"OTC:EUR/USD",name:"EUR/USD OTC",kind:"otc",symbol:"EURUSD_otc",default:false},
- {id:"OTC:GBP/USD",name:"GBP/USD OTC",kind:"otc",symbol:"GBPUSD_otc",default:false},
- {id:"OTC:USD/JPY",name:"USD/JPY OTC",kind:"otc",symbol:"USDJPY_otc",default:false}
+ {id:"OTC:EUR/USD",name:"EUR/USD OTC",kind:"otc",symbol:"EURUSD_otc",default:true},
+ {id:"OTC:GBP/USD",name:"GBP/USD OTC",kind:"otc",symbol:"GBPUSD_otc",default:true},
+ {id:"OTC:USD/JPY",name:"USD/JPY OTC",kind:"otc",symbol:"USDJPY_otc",default:true}
 ];
 let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="EUR/USD",latestTop=null,latestScan=0;
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6}),clock=()=>new Date().toLocaleTimeString();
 function status(t,ok=false){$("statusText").textContent=t;$("statusLed").style.background=ok?"var(--green)":"var(--amber)"}
 function saveState(){try{localStorage.setItem(STORE,JSON.stringify({watch:[...watch],history:history.slice(0,150),trades:trades.slice(0,250),threshold:$("threshold").value,interval:$("interval").value,stake:$("stake").value,payout:$("payout").value,chart:selectedChart}))}catch(e){}}
-function loadState(){apiKey=localStorage.getItem("apex_key")||"";$("apiKey").value=apiKey;try{let s=JSON.parse(localStorage.getItem(STORE)||"{}");if(s.watch)watch=new Set(s.watch);history=s.history||[];trades=s.trades||[];if(s.threshold)$("threshold").value=s.threshold;if(s.interval)$("interval").value=s.interval;if(s.stake)$("stake").value=s.stake;if(s.payout)$("payout").value=s.payout;if(s.chart)selectedChart=s.chart}catch(e){}}
+function loadState(){apiKey=localStorage.getItem("apex_key")||"";$("apiKey").value=apiKey;try{let s=JSON.parse(localStorage.getItem(STORE)||localStorage.getItem(LEGACY_STORE)||"{}");if(s.history)history=s.history;if(s.trades)trades=s.trades;history=s.history||[];trades=s.trades||[];if(s.threshold)$("threshold").value=s.threshold;if(s.interval)$("interval").value=s.interval;if(s.stake)$("stake").value=s.stake;if(s.payout)$("payout").value=s.payout;if(s.chart)selectedChart=s.chart}catch(e){}}
 function renderWatch(){let box=$("watchChecks");box.innerHTML="";ASSETS.forEach(a=>{let lab=document.createElement("label");lab.className="check";let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});let opts=[...watch].map(id=>`<option value="${id}">${id}</option>`).join("");$("chartAsset").innerHTML=opts||'<option value="">No watchlist</option>';if(watch.has(selectedChart))$("chartAsset").value=selectedChart;else selectedChart=[...watch][0]||""}
 function ema(v,p){if(v.length<p)return null;let k=2/(p+1),x=v.slice(0,p).reduce((a,b)=>a+b,0)/p;for(let i=p;i<v.length;i++)x=v[i]*k+x*(1-k);return x}
 function rsi(v,p=14){if(v.length<=p)return null;let g=0,l=0;for(let i=v.length-p;i<v.length;i++){let d=v[i]-v[i-1];if(d>0)g+=d;else l-=d}return l===0?100:100-100/(1+g/l)}
 function analyze(candles,asset){
- if(candles.length<30)return {direction:"WAIT",score:0,reason:"Not enough candles",fresh:false};
- let closes=candles.map(x=>x.close),e9=ema(closes,9),e21=ema(closes,21),rv=rsi(closes),macd=ema(closes,12)-ema(closes,26),prior=ema(closes.slice(0,-1),9),last=candles.at(-1),prev=candles.at(-2);
- let score=50,reasons=[];
- if(e9>e21){score+=15;reasons.push("EMA bullish")}else{score-=15;reasons.push("EMA bearish")}
- if(rv>55){score+=12;reasons.push("RSI bullish")}else if(rv<45){score-=12;reasons.push("RSI bearish")}else reasons.push("RSI neutral");
- if(macd>0){score+=10;reasons.push("MACD positive")}else{score-=10;reasons.push("MACD negative")}
- if(prior!==null&&e9>prior){score+=8;reasons.push("momentum rising")}else{score-=8;reasons.push("momentum falling")}
- let range=last.high-last.low,body=Math.abs(last.close-last.open),quality=range>0?body/range:0;
- if(quality<.18){score=50+(score-50)*.65;reasons.push("weak candle")}
- if(rv>78||rv<22){score=50+(score-50)*.7;reasons.push("RSI extreme")}
- score=Math.round(Math.max(0,Math.min(100,score)));
- let age=last.timeMs?Math.max(0,(Date.now()-last.timeMs)/1000):Infinity;
- let fresh=age<=90;
- let threshold=+$("threshold").value,direction=score>=threshold?"CALL":score<=100-threshold?"PUT":"WAIT";
- if(!fresh){direction="WAIT";reasons.push("stale candle — no entry")}
+ if(candles.length<35)return {direction:"WAIT",score:0,reason:"Need at least 35 candles for stable analysis",fresh:false};
+ const closes=candles.map(x=>x.close), highs=candles.map(x=>x.high), lows=candles.map(x=>x.low);
+ const e9=ema(closes,9),e21=ema(closes,21),e50=ema(closes,50),rv=rsi(closes,14),macdLine=ema(closes,12)-ema(closes,26);
+ const macdSeries=closes.map((_,i)=>ema(closes.slice(0,i+1),12)-ema(closes.slice(0,i+1),26)).filter(Number.isFinite);
+ const macdSignal=ema(macdSeries,9),hist=macdLine-(macdSignal??macdLine),last=candles.at(-1),prev=candles.at(-2);
+ const tr=[];for(let i=1;i<candles.length;i++){let q=candles[i],p=candles[i-1];tr.push(Math.max(q.high-q.low,Math.abs(q.high-p.close),Math.abs(q.low-p.close)))}
+ const atr=tr.slice(-14).reduce((a,b)=>a+b,0)/Math.min(14,tr.length),atrPct=last.close?atr/last.close*100:0;
+ const range=last.high-last.low,body=Math.abs(last.close-last.open),bodyRatio=range?body/range:0,upperWick=range?last.high-Math.max(last.open,last.close):0,lowerWick=range?Math.min(last.open,last.close)-last.low:0;
+ const recent=closes.slice(-6),momentum=recent.at(-1)-recent[0],swingHigh=Math.max(...highs.slice(-20,-1)),swingLow=Math.min(...lows.slice(-20,-1));
+ const trendUp=e9>e21&&e21>e50,trendDown=e9<e21&&e21<e50,macdUp=hist>0&&macdLine>0,macdDown=hist<0&&macdLine<0;
+ let bull=0,bear=0,reasons=[],checks=[];
+ const add=(up,down,weight,label)=>{if(up){bull+=weight;reasons.push(label+" bullish")}else if(down){bear+=weight;reasons.push(label+" bearish")}else reasons.push(label+" mixed")};
+ add(trendUp,trendDown,22,"EMA 9/21/50 trend");
+ add(rv>=53&&rv<=72,rv<=47&&rv>=28,14,"RSI momentum");
+ add(macdUp,macdDown,16,"MACD histogram");
+ add(momentum>0,momentum<0,10,"6-candle momentum");
+ add(last.close>swingHigh,last.close<swingLow,12,"Swing breakout");
+ const candleBull=last.close>last.open&&bodyRatio>=.48&&lowerWick>=upperWick*.8;
+ const candleBear=last.close<last.open&&bodyRatio>=.48&&upperWick>=lowerWick*.8;
+ add(candleBull,candleBear,10,"Candle pressure");
+ // Penalize stretched entries and unusually quiet/noisy conditions rather than treating every RSI extreme as a reversal.
+ const stretched=(rv>78&&trendUp)||(rv<22&&trendDown);if(stretched){bull*=.82;bear*=.82;reasons.push("momentum extended")}
+ const volOK=atrPct>0&&atrPct<1.8; if(!volOK)reasons.push(atrPct>=1.8?"volatility spike":"very low volatility");
+ const age=last.timeMs?Math.max(0,(Date.now()-last.timeMs)/1000):Infinity,fresh=age<=150;
+ const directionBias=bull-bear;let direction="WAIT",score=Math.round(Math.max(bull,bear));
+ const threshold=+$('threshold').value;
+ if(bull>=threshold&&bull-bear>=18&&trendUp&&macdUp)direction="CALL";
+ else if(bear>=threshold&&bear-bull>=18&&trendDown&&macdDown)direction="PUT";
+ if(!fresh){direction="WAIT";reasons.push("stale candle — entry blocked")}
+ if(!volOK){direction="WAIT";reasons.push("volatility filter — entry blocked")}
+ if(bodyRatio<.16){direction="WAIT";reasons.push("indecision candle — entry blocked")}
  if(!prev||last.close===prev.close){direction="WAIT";reasons.push("no price movement")}
- return {direction,score,reason:reasons.join(" · "),rsi:rv,trend:e9>e21?"UP":"DOWN",entry:last.close,age,quality,candleTime:last.time};
+ const breakdown={trend:trendUp?"Bullish aligned":trendDown?"Bearish aligned":"Mixed / transitional",momentum:rv.toFixed(1)+" RSI · "+(momentum>0?"rising":"falling"),volatility:atrPct.toFixed(3)+"% ATR / "+(volOK?"normal":"filtered"),price:Math.round(bodyRatio*100)+"% candle body",structure:last.close>swingHigh?"Upside break":last.close<swingLow?"Downside break":"Inside recent range",feed:fresh?Math.round(age)+"s · fresh":""+Math.round(age)+"s · stale"};
+ return {direction,score,reason:reasons.join(" · "),rsi:rv,trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry:last.close,age,quality:bodyRatio,candleTime:last.time,atr,atrPct,macdHistogram:hist,bullScore:Math.round(bull),bearScore:Math.round(bear),breakdown};
 }
 async function regularData(symbol){
  if(!apiKey)throw Error("Twelve Data API key missing");
@@ -184,6 +222,7 @@ function updateTop(rows){
  let s=r?.analysis,dir=s?.direction||"WAIT";$("topSignal").className="signal-card "+(dir==="CALL"?"call":dir==="PUT"?"put":"wait");$("topDirection").textContent=dir;$("topScore").textContent=s?s.score+" / 100":"NO QUALIFIED SETUP";
  $("topReason").textContent=s?s.reason:"No fresh setup passed all filters. Check feed freshness and wait for confluence.";
  $("topAsset").textContent=r?.name||"—";$("topEntry").textContent=s?fmt(s.entry):"—";$("topRsi").textContent=s?s.rsi.toFixed(1):"—";$("paperFromTop").disabled=!r;
+ if(s?.breakdown){$("analysisBreakdown").innerHTML=Object.entries(s.breakdown).map(([k,v])=>`<div><span>${({trend:"Trend structure",momentum:"Momentum",volatility:"Volatility",price:"Price action",structure:"Market structure",feed:"Feed integrity"})[k]}</span><b>${v||"—"}</b></div>`).join("")}else{$("analysisBreakdown").innerHTML="<div><span>Analysis</span><b>Waiting for fresh candles</b></div>"}
  if(rows[0]){selectedChart=selectedChart||rows[0].id;if(!$("chartAsset").value)$("chartAsset").value=selectedChart}
 }
 function updateChartOptions(){let current=selectedChart;$("chartAsset").innerHTML=[...watch].map(id=>`<option value="${id}">${id}</option>`).join("");if(watch.has(current))$("chartAsset").value=current;else if(watch.size){selectedChart=[...watch][0];$("chartAsset").value=selectedChart}}
@@ -207,7 +246,7 @@ function renderTrades(){
  const today=new Date().toLocaleDateString(),todayTrades=settled.filter(t=>new Date().toLocaleDateString()===today && t.timeDate===today);
  const todayPnl=trades.filter(t=>t.dayKey===new Date().toISOString().slice(0,10)).reduce((n,t)=>n+(Number(t.pnl)||0),0);
  $("jTodayPnl").textContent=money(todayPnl);$("jTodayPnl").className=todayPnl>=0?"green":"red";$("jTodayCount").textContent=trades.filter(t=>t.dayKey===new Date().toISOString().slice(0,10)&&["WIN","LOSS","TIE"].includes(t.result)).length;
- $("tradeBody").innerHTML=trades.length?trades.map(t=>`<tr><td>${t.time}</td><td>${t.asset}</td><td>${t.side}</td><td>${fmt(t.entry)}</td><td>${t.exit==null?"—":fmt(t.exit)}</td><td>${money(t.stake)}</td><td>${t.result}</td><td>${t.result==="PENDING"?`<button class="small" data-win="${t.id}">Win</button> <button class="small" data-loss="${t.id}">Loss</button>`:"—"}</td></tr>`).join(""):'<tr><td colspan="8" class="empty">No paper trades logged.</td></tr>';
+ $("tradeBody").innerHTML=trades.length?trades.map(t=>`<tr><td>${t.time}</td><td>${t.asset}</td><td>${t.side}</td><td>${fmt(t.entry)}</td><td>${t.expirySeconds||60}s</td><td>${t.exit==null?"—":fmt(t.exit)}</td><td>${money(t.stake)}</td><td>${t.result}</td><td>${t.result==="PENDING"?`<button class="small" data-win="${t.id}">Win</button> <button class="small" data-loss="${t.id}">Loss</button>`:"—"}</td></tr>`).join(""):'<tr><td colspan="9" class="empty">No paper trades logged.</td></tr>';
  document.querySelectorAll("[data-win]").forEach(b=>b.onclick=()=>manualSettle(b.dataset.win,"WIN"));document.querySelectorAll("[data-loss]").forEach(b=>b.onclick=()=>manualSettle(b.dataset.loss,"LOSS"));
 }
 function persistAll(){saveState();renderTrades()}
@@ -216,7 +255,7 @@ async function scan(){
  if(busy)return;if(!watch.size){alert("Select at least one market in Watchlist Configuration.");return}
  if([...watch].some(id=>ASSETS.find(a=>a.id===id).kind==="regular")&&!apiKey){status("API KEY REQUIRED");$("connectionStatus").textContent="Add your Twelve Data key to scan regular markets.";return}
  busy=true;status("SCANNING",true);$("scanNow").disabled=true;$("progressText").textContent="Starting scan…";$("scanProgress").style.width="0%";
- let ids=[...watch],done=0,errors=0;
+ let ids=[...watch],done=0,errors=0,errorDetails=[];
  for(const id of ids){
   let a=ASSETS.find(x=>x.id===id);
   try{
@@ -225,7 +264,7 @@ async function scan(){
    results[id]={id,name:a.name,price,change,candles:data,analysis};
    if(analysis.direction!=="WAIT")addSignal(results[id]);
    if(selectedChart===id||!selectedChart)drawChart();
-  }catch(e){errors++;results[id]={id,name:a.name,price:NaN,change:null,candles:[],analysis:{direction:"WAIT",score:0,reason:e.message,fresh:false,age:Infinity}}}
+  }catch(e){errors++;errorDetails.push(a.name+": "+(e.message||"Unknown data error"));results[id]={id,name:a.name,price:NaN,change:null,candles:[],analysis:{direction:"WAIT",score:0,reason:e.message,fresh:false,age:Infinity}}}
   done++;$("scanProgress").style.width=(done/ids.length*100)+"%";$("progressText").textContent=`Scanned ${done} of ${ids.length} · ${errors} errors`;
   renderScanner();
   // Avoid bursting the provider and stay within low-tier rate limits.
@@ -233,12 +272,12 @@ async function scan(){
  }
  latestScan=Date.now();renderScanner();drawChart();$("scanNow").disabled=false;busy=false;
  let fresh=[...watch].filter(id=>results[id]?.analysis.fresh).length;status(fresh?"SCAN COMPLETE · DATA RECEIVED":"SCAN COMPLETE · CHECK DATA",fresh>0);
- $("connectionStatus").innerHTML=`Regular feed: ${apiKey?"key saved; per-symbol requests":"not configured"}<br>OTC feed: endpoint checked when selected<br>Last scan: ${clock()}`;
+ $("connectionStatus").textContent=`Regular feed: ${apiKey?"API key saved; per-symbol requests":"not configured"}\nOTC feed: endpoint checked when selected\nLast scan: ${clock()}\n${errorDetails.length?"DATA ERRORS: "+errorDetails.join(" | "):"No provider errors reported."}`;
  $("progressText").textContent=`Complete · ${fresh} fresh markets · ${errors} errors`;saveState();
 }
 function addPaper(){
  if(!latestTop)return;let r=latestTop,s=r.analysis,stake=Math.max(1,Math.min(100000,+$("stake").value||10));
- let t={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),time:clock(),dayKey:new Date().toISOString().slice(0,10),asset:r.name,assetId:r.id,side:s.direction,entry:s.entry,exit:null,stake,score:s.score,result:"PENDING",pnl:0};
+ let t={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),time:clock(),dayKey:new Date().toISOString().slice(0,10),asset:r.name,assetId:r.id,side:s.direction,entry:s.entry,expirySeconds:60,exit:null,stake,score:s.score,result:"PENDING",pnl:0};
  trades.unshift(t);renderTrades();saveState();
 }
 function manualSettle(id,result){
@@ -246,7 +285,7 @@ function manualSettle(id,result){
  t.result=result;t.exit=null;let payout=Math.max(1,Math.min(100,+$("payout").value||85))/100;t.pnl=result==="WIN"?t.stake*payout:-t.stake;
  renderTrades();saveState();
 }
-function exportCSV(){let rows=[["Time","Asset","Side","Entry","Exit","Stake","Score","Result","PnL"],...trades.map(t=>[t.time,t.asset,t.side,t.entry,t.exit??"",t.stake,t.score,t.result,t.pnl])];let csv=rows.map(r=>r.map(x=>`"${String(x).replaceAll('"','""')}"`).join(",")).join("\n");let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="apexscan-paper-journal.csv";a.click();URL.revokeObjectURL(a.href)}
+function exportCSV(){let rows=[["Time","Asset","Side","Entry","Expiry seconds","Exit","Stake","Score","Result","PnL"],...trades.map(t=>[t.time,t.asset,t.side,t.entry,t.expirySeconds||60,t.exit??"",t.stake,t.score,t.result,t.pnl])];let csv=rows.map(r=>r.map(x=>`"${String(x).replaceAll('"','""')}"`).join(",")).join("\n");let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="apexscan-paper-journal.csv";a.click();URL.revokeObjectURL(a.href)}
 $("scanNow").onclick=scan;
 $("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanMode").textContent="AUTO SCAN";status("AUTO SCANNER ACTIVE",true);scan();cycle=setInterval(scan,+$("interval").value)};
 $("pauseBtn").onclick=()=>{running=false;clearInterval(cycle);$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanMode").textContent="PAUSED";status("SCANNER PAUSED")};
