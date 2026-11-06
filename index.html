@@ -119,6 +119,7 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
     <div class="fields" style="margin-top:11px">
      <div class="field"><label>Auto scan interval</label><select id="interval"><option value="60000">60 seconds</option><option value="120000">2 minutes</option><option value="300000">5 minutes</option></select></div>
      <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. This strategy currently analyzes 1-minute candles, so its initial practice expiry is 60 seconds; validate with paper results before considering real trades.</div></div>
+     <div class="field"><label>Scanner mode</label><select id="scanMode"><option value="aggressive" selected>Aggressive · early setups</option><option value="balanced">Balanced · confirmed only</option></select></div>
      <div class="field"><label>Signal threshold</label><select id="threshold"><option value="70">70 · Active</option><option value="75">75 · Balanced</option><option value="80" selected>80 · Selective</option><option value="85">85 · Strict</option></select></div>
      <div class="field"><label>Paper stake ($)</label><input id="stake" type="number" min="1" max="100000" value="10"></div>
      <div class="field"><label>Payout (%)</label><input id="payout" type="number" min="1" max="100" value="85"></div>
@@ -128,7 +129,7 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
    </div>
    <div class="panel">
     <div class="panel-head"><h2>SCANNER ENGINE</h2><span class="pill">TECHNICAL CONFLUENCE</span></div>
-    <div class="tiny">Multi-factor OTC analysis: trend alignment, momentum, MACD histogram, volatility regime, candle body/wick quality, recent swing structure, and feed freshness. A setup is only eligible when direction, strength, and data checks agree. Scores are confluence ratings—not win probabilities.</div><div id="analysisBreakdown" class="analysis-breakdown"><div><span>Trend structure</span><b>Awaiting scan</b></div><div><span>Momentum</span><b>Awaiting scan</b></div><div><span>Volatility</span><b>Awaiting scan</b></div><div><span>Price action</span><b>Awaiting scan</b></div><div><span>Market structure</span><b>Awaiting scan</b></div><div><span>Feed integrity</span><b>Awaiting scan</b></div></div>
+    <div class="tiny">Multi-factor OTC analysis: trend alignment, momentum, MACD histogram, volatility regime, candle body/wick quality, recent swing structure, and feed freshness. Aggressive mode also surfaces early momentum setups; these are labeled EARLY and are not confirmed entries. Stale data and unsafe volatility still block signals. Scores are confluence ratings—not win probabilities.</div><div id="analysisBreakdown" class="analysis-breakdown"><div><span>Trend structure</span><b>Awaiting scan</b></div><div><span>Momentum</span><b>Awaiting scan</b></div><div><span>Volatility</span><b>Awaiting scan</b></div><div><span>Price action</span><b>Awaiting scan</b></div><div><span>Market structure</span><b>Awaiting scan</b></div><div><span>Feed integrity</span><b>Awaiting scan</b></div></div>
     <div style="margin-top:10px" class="metricrow"><div class="metricbox"><small>Trend</small><b>EMA 9/21</b></div><div class="metricbox"><small>Momentum</small><b>RSI 14</b></div><div class="metricbox"><small>Confirm</small><b>MACD</b></div><div class="metricbox"><small>Quality</small><b>Candle</b></div></div>
    </div>
   </aside>
@@ -151,8 +152,8 @@ const ASSETS=[
 let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="EUR/USD",latestTop=null,latestScan=0;
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6}),clock=()=>new Date().toLocaleTimeString();
 function status(t,ok=false){$("statusText").textContent=t;$("statusLed").style.background=ok?"var(--green)":"var(--amber)"}
-function saveState(){try{localStorage.setItem(STORE,JSON.stringify({watch:[...watch],history:history.slice(0,150),trades:trades.slice(0,250),threshold:$("threshold").value,interval:$("interval").value,stake:$("stake").value,payout:$("payout").value,chart:selectedChart}))}catch(e){}}
-function loadState(){apiKey=localStorage.getItem("apex_key")||"";$("apiKey").value=apiKey;try{let s=JSON.parse(localStorage.getItem(STORE)||localStorage.getItem(LEGACY_STORE)||"{}");if(s.history)history=s.history;if(s.trades)trades=s.trades;history=s.history||[];trades=s.trades||[];if(s.threshold)$("threshold").value=s.threshold;if(s.interval)$("interval").value=s.interval;if(s.stake)$("stake").value=s.stake;if(s.payout)$("payout").value=s.payout;if(s.chart)selectedChart=s.chart}catch(e){}}
+function saveState(){try{localStorage.setItem(STORE,JSON.stringify({watch:[...watch],history:history.slice(0,150),trades:trades.slice(0,250),threshold:$("threshold").value,mode:$("scanMode").value,interval:$("interval").value,stake:$("stake").value,payout:$("payout").value,chart:selectedChart}))}catch(e){}}
+function loadState(){apiKey=localStorage.getItem("apex_key")||"";$("apiKey").value=apiKey;try{let s=JSON.parse(localStorage.getItem(STORE)||localStorage.getItem(LEGACY_STORE)||"{}");if(s.history)history=s.history;if(s.trades)trades=s.trades;history=s.history||[];trades=s.trades||[];if(s.threshold)$("threshold").value=s.threshold;if(s.mode)$("scanMode").value=s.mode;if(s.interval)$("interval").value=s.interval;if(s.stake)$("stake").value=s.stake;if(s.payout)$("payout").value=s.payout;if(s.chart)selectedChart=s.chart}catch(e){}}
 function renderWatch(){let box=$("watchChecks");box.innerHTML="";ASSETS.forEach(a=>{let lab=document.createElement("label");lab.className="check";let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});let opts=[...watch].map(id=>`<option value="${id}">${id}</option>`).join("");$("chartAsset").innerHTML=opts||'<option value="">No watchlist</option>';if(watch.has(selectedChart))$("chartAsset").value=selectedChart;else selectedChart=[...watch][0]||""}
 function ema(v,p){if(v.length<p)return null;let k=2/(p+1),x=v.slice(0,p).reduce((a,b)=>a+b,0)/p;for(let i=p;i<v.length;i++)x=v[i]*k+x*(1-k);return x}
 function rsi(v,p=14){if(v.length<=p)return null;let g=0,l=0;for(let i=v.length-p;i<v.length;i++){let d=v[i]-v[i-1];if(d>0)g+=d;else l-=d}return l===0?100:100-100/(1+g/l)}
@@ -181,16 +182,25 @@ function analyze(candles,asset){
  const stretched=(rv>78&&trendUp)||(rv<22&&trendDown);if(stretched){bull*=.82;bear*=.82;reasons.push("momentum extended")}
  const volOK=atrPct>0&&atrPct<1.8; if(!volOK)reasons.push(atrPct>=1.8?"volatility spike":"very low volatility");
  const age=last.timeMs?Math.max(0,(Date.now()-last.timeMs)/1000):Infinity,fresh=age<=150;
- const directionBias=bull-bear;let direction="WAIT",score=Math.round(Math.max(bull,bear));
- const threshold=+$('threshold').value;
- if(bull>=threshold&&bull-bear>=18&&trendUp&&macdUp)direction="CALL";
- else if(bear>=threshold&&bear-bull>=18&&trendDown&&macdDown)direction="PUT";
- if(!fresh){direction="WAIT";reasons.push("stale candle — entry blocked")}
- if(!volOK){direction="WAIT";reasons.push("volatility filter — entry blocked")}
- if(bodyRatio<.16){direction="WAIT";reasons.push("indecision candle — entry blocked")}
- if(!prev||last.close===prev.close){direction="WAIT";reasons.push("no price movement")}
+ const directionBias=bull-bear;let direction="WAIT",score=Math.round(Math.max(bull,bear)),signalLevel="NONE";
+ const threshold=+$('threshold').value,aggressive=$("scanMode").value==="aggressive";
+ const hardBlocked=!fresh||!volOK||bodyRatio<.16||!prev||last.close===prev.close;
+ // Confirmed setups retain strict multi-indicator agreement.
+ if(bull>=threshold&&bull-bear>=18&&trendUp&&macdUp){direction="CALL";signalLevel="CONFIRMED"}
+ else if(bear>=threshold&&bear-bull>=18&&trendDown&&macdDown){direction="PUT";signalLevel="CONFIRMED"}
+ // Aggressive mode surfaces developing momentum as EARLY setups, not as confirmed entries.
+ if(direction==="WAIT"&&aggressive&&!hardBlocked){
+   const bullVotes=[trendUp,macdUp,momentum>0,candleBull,last.close>swingHigh].filter(Boolean).length;
+   const bearVotes=[trendDown,macdDown,momentum<0,candleBear,last.close<swingLow].filter(Boolean).length;
+   if(bull>=52&&bull-bear>=8&&bullVotes>=2){direction="CALL";signalLevel="EARLY";reasons.push("early bullish momentum · confirmation pending")}
+   else if(bear>=52&&bear-bull>=8&&bearVotes>=2){direction="PUT";signalLevel="EARLY";reasons.push("early bearish momentum · confirmation pending")}
+ }
+ if(!fresh){direction="WAIT";signalLevel="NONE";reasons.push("stale candle — entry blocked")}
+ if(!volOK){direction="WAIT";signalLevel="NONE";reasons.push("volatility filter — entry blocked")}
+ if(bodyRatio<.16){direction="WAIT";signalLevel="NONE";reasons.push("indecision candle — entry blocked")}
+ if(!prev||last.close===prev.close){direction="WAIT";signalLevel="NONE";reasons.push("no price movement")}
  const breakdown={trend:trendUp?"Bullish aligned":trendDown?"Bearish aligned":"Mixed / transitional",momentum:rv.toFixed(1)+" RSI · "+(momentum>0?"rising":"falling"),volatility:atrPct.toFixed(3)+"% ATR / "+(volOK?"normal":"filtered"),price:Math.round(bodyRatio*100)+"% candle body",structure:last.close>swingHigh?"Upside break":last.close<swingLow?"Downside break":"Inside recent range",feed:fresh?Math.round(age)+"s · fresh":""+Math.round(age)+"s · stale"};
- return {direction,score,reason:reasons.join(" · "),rsi:rv,trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry:last.close,age,quality:bodyRatio,candleTime:last.time,atr,atrPct,macdHistogram:hist,bullScore:Math.round(bull),bearScore:Math.round(bear),breakdown};
+ return {direction,signalLevel,score,reason:reasons.join(" · "),rsi:rv,trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry:last.close,age,quality:bodyRatio,candleTime:last.time,atr,atrPct,macdHistogram:hist,bullScore:Math.round(bull),bearScore:Math.round(bear),breakdown};
 }
 async function regularData(symbol){
  if(!apiKey)throw Error("Twelve Data API key missing");
@@ -214,13 +224,13 @@ function renderScanner(){
  $("kHealth").textContent=arr.length?(stale===0?"HEALTHY":fresh?"PARTIAL":"STALE"):"OFFLINE";$("kHealthNote").textContent=fresh+" fresh · "+stale+" stale / errors";
  $("kScanTime").textContent=latestScan?"Last scan "+new Date(latestScan).toLocaleTimeString():"Not scanned yet";$("lastUpdated").textContent=latestScan?"Updated "+clock():"—";
  $("staleCount").textContent=stale;$("kBest").textContent=rows[0]?.analysis.score??"—";$("kBestAsset").textContent=rows[0]?.name||"Awaiting scan";
- $("scanFoot").textContent=`${watch.size} markets selected · ${fresh} fresh candles · ${signals.length} qualified setups`;
+ $("scanFoot").textContent=`${watch.size} markets selected · ${fresh} fresh candles · ${signals.length} setups (confirmed + early)`;
  updateTop(rows);updateChartOptions();
 }
 function updateTop(rows){
  let candidates=rows.filter(r=>r.analysis.direction!=="WAIT"&&r.analysis.fresh).sort((a,b)=>b.analysis.score-a.analysis.score),r=candidates[0];latestTop=r||null;
- let s=r?.analysis,dir=s?.direction||"WAIT";$("topSignal").className="signal-card "+(dir==="CALL"?"call":dir==="PUT"?"put":"wait");$("topDirection").textContent=dir;$("topScore").textContent=s?s.score+" / 100":"NO QUALIFIED SETUP";
- $("topReason").textContent=s?s.reason:"No fresh setup passed all filters. Check feed freshness and wait for confluence.";
+ let s=r?.analysis,dir=s?.direction||"WAIT";$("topSignal").className="signal-card "+(dir==="CALL"?"call":dir==="PUT"?"put":"wait");$("topDirection").textContent=dir;$("topScore").textContent=s?(s.signalLevel==="EARLY"?"EARLY · ":"CONFIRMED · ")+s.score+" / 100":"NO SETUP";
+ $("topReason").textContent=s?(s.signalLevel==="EARLY"?"Early setup · confirmation pending. ":"")+s.reason:"No fresh setup passed the data and safety filters. Check feed freshness.";
  $("topAsset").textContent=r?.name||"—";$("topEntry").textContent=s?fmt(s.entry):"—";$("topRsi").textContent=s?s.rsi.toFixed(1):"—";$("paperFromTop").disabled=!r;
  if(s?.breakdown){$("analysisBreakdown").innerHTML=Object.entries(s.breakdown).map(([k,v])=>`<div><span>${({trend:"Trend structure",momentum:"Momentum",volatility:"Volatility",price:"Price action",structure:"Market structure",feed:"Feed integrity"})[k]}</span><b>${v||"—"}</b></div>`).join("")}else{$("analysisBreakdown").innerHTML="<div><span>Analysis</span><b>Waiting for fresh candles</b></div>"}
  if(rows[0]){selectedChart=selectedChart||rows[0].id;if(!$("chartAsset").value)$("chartAsset").value=selectedChart}
@@ -291,6 +301,7 @@ $("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled
 $("pauseBtn").onclick=()=>{running=false;clearInterval(cycle);$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanMode").textContent="PAUSED";status("SCANNER PAUSED")};
 $("saveKey").onclick=async()=>{apiKey=$("apiKey").value.trim();localStorage.setItem("apex_key",apiKey);$("connectionStatus").textContent="Testing Twelve Data…";try{await regularData("EUR/USD");$("connectionStatus").innerHTML="Regular feed: <span class='green'>connected</span><br>OTC feed: tested when an OTC market is selected";status("REGULAR DATA CONNECTED",true)}catch(e){$("connectionStatus").textContent="Connection test: "+e.message;status("CONNECTION TEST FAILED")}};
 $("paperFromTop").onclick=addPaper;$("exportCsv").onclick=exportCSV;
+$("scanMode").addEventListener("change",()=>{saveState();if(latestScan)renderScanner()});
 $("clearSignals").onclick=()=>{if(confirm("Clear signal history?")){history=[];renderHistory();saveState()}};
 $("clearTrades").onclick=()=>{if(confirm("Delete all paper journal records?")){trades=[];renderTrades();saveState()}};
 $("chartAsset").onchange=()=>{selectedChart=$("chartAsset").value;drawChart();saveState()};
