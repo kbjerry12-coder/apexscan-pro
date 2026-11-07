@@ -107,7 +107,8 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
     <div class="panel-head"><h2>DATA CONNECTIONS</h2><span class="pill">PROVIDER SETUP</span></div>
     <div class="fields">
      <div class="field wide"><label>Twelve Data API key · regular markets</label><input id="apiKey" type="password" placeholder="Paste Twelve Data API key"></div>
-     <div class="field wide"><label>OTC source</label><input value="Netlify Function · /.netlify/functions/otc-candles" disabled></div>
+     <div class="field wide"><label>OTC candle history</label><input value="Netlify Function · /.netlify/functions/otc-candles" disabled></div>
+     <div class="field wide"><label>OTC live stream · all 3 pairs on one connection</label><div class="tiny" id="liveStreamStatus">Stream: connecting when dashboard loads…</div></div>
      <div class="field wide"><button id="saveKey" class="primary">Save API key & test connection</button></div>
      <div class="field wide"><div class="tiny" id="connectionStatus">Regular feed: not tested<br>OTC feed: function will be tested when selected</div></div>
     </div>
@@ -154,7 +155,7 @@ const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleSt
 function status(t,ok=false){$("statusText").textContent=t;$("statusLed").style.background=ok?"var(--green)":"var(--amber)"}
 function saveState(){try{localStorage.setItem(STORE,JSON.stringify({watch:[...watch],history:history.slice(0,150),trades:trades.slice(0,250),threshold:$("threshold").value,mode:$("scanMode").value,interval:$("interval").value,stake:$("stake").value,payout:$("payout").value,chart:selectedChart}))}catch(e){}}
 function loadState(){apiKey=localStorage.getItem("apex_key")||"";$("apiKey").value=apiKey;try{let s=JSON.parse(localStorage.getItem(STORE)||localStorage.getItem(LEGACY_STORE)||"{}");if(s.history)history=s.history;if(s.trades)trades=s.trades;history=s.history||[];trades=s.trades||[];if(s.threshold)$("threshold").value=s.threshold;if(s.mode)$("scanMode").value=s.mode;if(s.interval)$("interval").value=s.interval;if(s.stake)$("stake").value=s.stake;if(s.payout)$("payout").value=s.payout;if(s.chart)selectedChart=s.chart}catch(e){}}
-function renderWatch(){let box=$("watchChecks");box.innerHTML="";ASSETS.forEach(a=>{let lab=document.createElement("label");lab.className="check";let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});let opts=[...watch].map(id=>`<option value="${id}">${id}</option>`).join("");$("chartAsset").innerHTML=opts||'<option value="">No watchlist</option>';if(watch.has(selectedChart))$("chartAsset").value=selectedChart;else selectedChart=[...watch][0]||""}
+function renderWatch(){let box=$("watchChecks");box.innerHTML="";ASSETS.forEach(a=>{let lab=document.createElement("label");lab.className="check";let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState();if([...watch].some(id=>ASSETS.find(x=>x.id===id)?.kind==="otc"))connectLiveStream();else stopLiveStream()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});let opts=[...watch].map(id=>`<option value="${id}">${id}</option>`).join("");$("chartAsset").innerHTML=opts||'<option value="">No watchlist</option>';if(watch.has(selectedChart))$("chartAsset").value=selectedChart;else selectedChart=[...watch][0]||""}
 function ema(v,p){if(v.length<p)return null;let k=2/(p+1),x=v.slice(0,p).reduce((a,b)=>a+b,0)/p;for(let i=p;i<v.length;i++)x=v[i]*k+x*(1-k);return x}
 function rsi(v,p=14){if(v.length<=p)return null;let g=0,l=0;for(let i=v.length-p;i<v.length;i++){let d=v[i]-v[i-1];if(d>0)g+=d;else l-=d}return l===0?100:100-100/(1+g/l)}
 function analyze(candles,asset){
@@ -215,9 +216,55 @@ async function otcData(symbol){
  return j.candles.slice(-80).map(v=>({time:new Date(v.time*1000).toISOString(),timeMs:Number(v.time)*1000,open:+v.open,high:+v.high,low:+v.low,close:+v.close}));
 }
 async function fetchAsset(a){return a.kind==="otc"?otcData(a.symbol):regularData(a.symbol)}
+
+// One browser EventSource owns the single OTCharts stream for all three OTC pairs.
+let liveStream=null,liveStreamState="CONNECTING",liveTicks={};
+const OTC_SYMBOLS={EURUSD_otc:"OTC:EUR/USD",GBPUSD_otc:"OTC:GBP/USD",USDJPY_otc:"OTC:USD/JPY"};
+function setLiveStreamState(message,ok=false){
+ liveStreamState=message;
+ const el=$("liveStreamStatus");
+ if(el){el.textContent="Stream: "+message;el.style.color=ok?"var(--green)":"var(--amber)"}
+}
+function handleLiveTick(raw){
+ let tick;try{tick=JSON.parse(raw.data)}catch(e){return}
+ if(tick?.data && typeof tick.data==="object")tick=tick.data;
+ const symbol=String(tick.symbol||tick.instrument||tick.s||"").trim();
+ const price=Number(tick.price??tick.last??tick.close??tick.p);
+ const id=OTC_SYMBOLS[symbol];
+ if(!id||!Number.isFinite(price)||price<=0)return;
+ const previous=liveTicks[id]?.price ?? results[id]?.price ?? price;
+ liveTicks[id]={price,change:price-previous,time:tick.time||tick.timestamp||Date.now()};
+ if(results[id]){
+  results[id].livePrice=price;
+  results[id].liveChange=price-previous;
+  results[id].liveUpdated=Date.now();
+  renderScanner();
+  if(selectedChart===id){$("chartCaption").textContent=`${results[id].name} · LIVE ${fmt(price)} · candle analysis uses latest 1-minute history`}
+ }
+ setLiveStreamState("LIVE · "+Object.keys(liveTicks).length+" / 3 pairs received",true);
+}
+function connectLiveStream(){
+ if(liveStream||typeof EventSource==="undefined")return;
+ if(![...watch].some(id=>ASSETS.find(a=>a.id===id)?.kind==="otc")){
+  setLiveStreamState("OFF · no OTC markets selected");return;
+ }
+ setLiveStreamState("connecting to one shared connection…");
+ liveStream=new EventSource("/.netlify/functions/otc-stream");
+ liveStream.addEventListener("connected",e=>{
+  let detail="connected";try{const j=JSON.parse(e.data);detail=j.message||j.status||"connected"}catch(err){}
+  setLiveStreamState("CONNECTED · waiting for ticks",true);
+ });
+ liveStream.addEventListener("tick",handleLiveTick);
+ liveStream.addEventListener("dropped",e=>setLiveStreamState("provider dropped a symbol; reconnecting"));
+ liveStream.addEventListener("closed",e=>setLiveStreamState("provider closed stream; reconnecting"));
+ liveStream.onmessage=handleLiveTick;
+ liveStream.onopen=()=>setLiveStreamState("OPEN · awaiting first tick",true);
+ liveStream.onerror=()=>setLiveStreamState("RECONNECTING · browser will retry automatically");
+}
+function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
 function renderScanner(){
  let arr=[...watch].map(id=>results[id]).filter(Boolean),rows=[...arr].sort((a,b)=>b.analysis.score-a.analysis.score);
- $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,cls=s.direction==="CALL"?"call":s.direction==="PUT"?"put":"wait",change=r.change,age=Number.isFinite(s.age)?Math.round(s.age)+"s":"—";return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.price)}</td><td class="${change>=0?"green":"red"}">${change===null?"—":(change>=0?"+":"")+fmt(change)}</td><td class="${s.trend==="UP"?"green":"red"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${s.direction}</span></td><td>${s.fresh?'<span class="green">FRESH</span>':'<span class="amber">STALE</span>'}</td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
+ $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,cls=s.direction==="CALL"?"call":s.direction==="PUT"?"put":"wait",change=r.change,age=Number.isFinite(s.age)?Math.round(s.age)+"s":"—";return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":"red"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${s.direction}</span></td><td>${s.fresh?'<span class="green">FRESH</span>':'<span class="amber">STALE</span>'}</td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
  document.querySelectorAll("#scannerBody tr[data-asset]").forEach(tr=>tr.addEventListener("click",()=>{selectedChart=tr.dataset.asset;$("chartAsset").value=selectedChart;drawChart()}));
  let fresh=arr.filter(r=>r.analysis.fresh).length,stale=arr.length-fresh,signals=arr.filter(r=>r.analysis.direction!=="WAIT");
  $("kScanned").textContent=arr.length+" / "+watch.size;$("kSignals").textContent=signals.length;$("freshCount").textContent=fresh;$("staleCount").textContent=stale;
@@ -272,6 +319,7 @@ async function scan(){
    let data=await fetchAsset(a);let old=results[id],price=data.at(-1).close,analysis=analyze(data,a);
    let prior=old?.price??null,change=prior===null?null:price-prior;
    results[id]={id,name:a.name,price,change,candles:data,analysis};
+   if(liveTicks[id]){results[id].livePrice=liveTicks[id].price;results[id].liveChange=liveTicks[id].change;}
    if(analysis.direction!=="WAIT")addSignal(results[id]);
    if(selectedChart===id||!selectedChart)drawChart();
   }catch(e){errors++;errorDetails.push(a.name+": "+(e.message||"Unknown data error"));results[id]={id,name:a.name,price:NaN,change:null,candles:[],analysis:{direction:"WAIT",score:0,reason:e.message,fresh:false,age:Infinity}}}
@@ -309,6 +357,6 @@ $("threshold").onchange=()=>{$("thresholdText").textContent=$("threshold").value
 $("interval").onchange=()=>{if(running){clearInterval(cycle);cycle=setInterval(scan,+$("interval").value)}$("cycleText").textContent=(+$("interval").value/1000)+" sec";saveState()};
 ["stake","payout"].forEach(id=>$(id).addEventListener("change",saveState));
 window.addEventListener("resize",drawChart);setInterval(()=>$("clock").textContent=clock(),1000);
-loadState();renderWatch();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();drawChart();$("clock").textContent=clock();
+loadState();renderWatch();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();drawChart();$("clock").textContent=clock();connectLiveStream();
 </script>
 </body></html>
