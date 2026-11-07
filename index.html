@@ -43,6 +43,10 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
 
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.main-grid{grid-template-columns:1fr}}
 @media(max-width:600px){header{padding:11px}.wrap{padding:11px}.top h1{font-size:20px}.kpis{grid-template-columns:repeat(2,1fr);gap:7px}.kpi{padding:10px}.kpi strong{font-size:18px}.scanner-strip{grid-template-columns:repeat(2,1fr)}.fields{grid-template-columns:1fr}.field.wide{grid-column:auto}.metricrow{grid-template-columns:repeat(2,1fr)}.headright .headlabel{display:none}.chartbox{height:230px}}
+
+.tf-row{display:flex;align-items:center;gap:8px;margin:12px 0 10px;flex-wrap:wrap}.tf-btn{padding:8px 14px;border-radius:8px;background:#0a1729;border:1px solid #294461;color:#a9c4e3;font-size:11px;font-weight:900;letter-spacing:.08em}.tf-btn.active{background:linear-gradient(120deg,#0e8e79,#176cae);border-color:#4eb8d1;color:#fff;box-shadow:0 0 16px #168cb944}.tf-note{font-size:10px;color:#91a9c8;margin-left:auto}.countdown-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.countdown-grid div{padding:10px;border-radius:9px;background:#071626;border:1px solid #24415e}.countdown-grid small{display:block;font-size:9px;color:#8da9c9;letter-spacing:.1em}.countdown-grid b{display:block;font-size:22px;font-variant-numeric:tabular-nums;color:#f2f7ff;margin-top:3px}.chart-head{gap:10px}.chartbox{height:340px}.signal-card{padding:16px}.signal-dir{font-size:36px}.signal-card.call .signal-dir:before{content:'▲ ';font-size:20px}.signal-card.put .signal-dir:before{content:'▼ ';font-size:20px}.signal-card.call .signal-stats b{color:#57edbd}.signal-card.put .signal-stats b{color:#ff8ba0}.row-countdown{display:block;font-size:9px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums}
+@media(max-width:600px){.chartbox{height:285px}.tf-btn{flex:1;padding:9px 6px}.tf-note{width:100%;margin-left:0}.countdown-grid b{font-size:20px}}
+
 </style>
 </head>
 <body>
@@ -78,9 +82,15 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
     <div class="chartfoot"><span id="scanFoot">Signals are generated from closed candle history.</span><span id="lastUpdated">—</span></div>
    </div>
    <div class="panel">
-    <div class="panel-head"><h2>MARKET CHART · SELECTED ASSET</h2><select id="chartAsset" style="max-width:170px;background:#091321;color:white;border:1px solid var(--line);padding:7px;border-radius:7px"></select></div>
+    <div class="panel-head chart-head"><h2>MARKET CHART · SELECTED ASSET</h2><select id="chartAsset" style="max-width:170px;background:#091321;color:white;border:1px solid var(--line);padding:7px;border-radius:7px"></select></div>
+    <div class="tf-row" role="group" aria-label="Chart timeframe">
+     <button type="button" class="tf-btn active" data-tf="1">1 MIN</button>
+     <button type="button" class="tf-btn" data-tf="5">5 MIN</button>
+     <button type="button" class="tf-btn" data-tf="15">15 MIN</button>
+     <span class="tf-note" id="tfNote">1-minute candles</span>
+    </div>
     <div class="chartbox"><canvas id="chart"></canvas></div>
-    <div class="chartfoot"><span id="chartCaption">Waiting for candles</span><span>EMA 9 · EMA 21 · 1-minute candles</span></div>
+    <div class="chartfoot"><span id="chartCaption">Waiting for candles</span><span id="chartMeta">EMA 9 · EMA 21 · 1-minute candles</span></div>
    </div>
    <div class="panel">
     <div class="panel-head"><h2>SIGNAL HISTORY</h2><button class="small" id="clearSignals">Clear signals</button></div>
@@ -100,7 +110,11 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
   <aside>
    <div class="panel">
     <div class="panel-head"><h2>TOP AI OPPORTUNITY</h2><span class="pill">FILTERED</span></div>
-    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">WAIT</div><span class="pill" id="topScore">NO SETUP</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><p class="tiny" id="topExpiry" style="margin:10px 0 0">1-minute candle strategy · Practice expiry: 60 seconds · validate with paper trades</p><button class="primary" id="paperFromTop" style="width:100%;margin-top:11px" disabled>＋ Log paper trade</button></div>
+    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">WAIT</div><span class="pill" id="topScore">NO SETUP</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><div class="countdown-grid">
+      <div><small>SIGNAL EXPIRES IN</small><b id="signalCountdown">--:--</b></div>
+      <div><small>CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
+     </div>
+     <p class="tiny" id="topExpiry" style="margin:10px 0 0">Signal validity: 60 seconds · Paper expiry: 60 seconds</p><button class="primary" id="paperFromTop" style="width:100%;margin-top:11px" disabled>＋ Log paper trade</button></div>
     <p class="tiny" style="margin:9px 0 0">A score is a technical confluence rating, not a probability of winning. Wait means filters did not agree.</p>
    </div>
    <div class="panel">
@@ -121,7 +135,7 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
      <div class="field"><label>Auto scan interval</label><select id="interval"><option value="60000">60 seconds</option><option value="120000">2 minutes</option><option value="300000">5 minutes</option></select></div>
      <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. This strategy currently analyzes 1-minute candles, so its initial practice expiry is 60 seconds; validate with paper results before considering real trades.</div></div>
      <div class="field"><label>Scanner mode</label><select id="scanMode"><option value="aggressive" selected>Aggressive · early setups</option><option value="balanced">Balanced · confirmed only</option></select></div>
-     <div class="field"><label>Signal threshold</label><select id="threshold"><option value="30" selected>30 · More sensitive</option><option value="70">70 · Active</option><option value="75">75 · Balanced</option><option value="80">80 · Selective</option><option value="85">85 · Strict</option></select></div>
+     <div class="field"><label>Signal threshold</label><select id="threshold"><option value="15" selected>15 · Very sensitive</option><option value="30">30 · More sensitive</option><option value="70">70 · Active</option><option value="75">75 · Balanced</option><option value="80">80 · Selective</option><option value="85">85 · Strict</option></select></div>
      <div class="field"><label>Paper stake ($)</label><input id="stake" type="number" min="1" max="100000" value="10"></div>
      <div class="field"><label>Payout (%)</label><input id="payout" type="number" min="1" max="100" value="85"></div>
      <div class="field wide"><label>Minimum candle freshness</label><input value="150 seconds · older data is blocked" disabled></div>
@@ -150,11 +164,11 @@ const ASSETS=[
  {id:"OTC:GBP/USD",name:"GBP/USD OTC",kind:"otc",symbol:"GBPUSD_otc",default:true},
  {id:"OTC:USD/JPY",name:"USD/JPY OTC",kind:"otc",symbol:"USDJPY_otc",default:true}
 ];
-let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="EUR/USD",latestTop=null,latestScan=0;
+let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={};
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6}),clock=()=>new Date().toLocaleTimeString();
 function status(t,ok=false){$("statusText").textContent=t;$("statusLed").style.background=ok?"var(--green)":"var(--amber)"}
 function saveState(){try{localStorage.setItem(STORE,JSON.stringify({watch:[...watch],history:history.slice(0,150),trades:trades.slice(0,250),threshold:$("threshold").value,mode:$("scanMode").value,interval:$("interval").value,stake:$("stake").value,payout:$("payout").value,chart:selectedChart}))}catch(e){}}
-function loadState(){apiKey=localStorage.getItem("apex_key")||"";$("apiKey").value=apiKey;try{let s=JSON.parse(localStorage.getItem(STORE)||localStorage.getItem(LEGACY_STORE)||"{}");if(s.history)history=s.history;if(s.trades)trades=s.trades;history=s.history||[];trades=s.trades||[];if(s.threshold)$("threshold").value=(String(s.threshold)==="65"?"30":s.threshold);if(s.mode)$("scanMode").value=s.mode;if(s.interval)$("interval").value=s.interval;if(s.stake)$("stake").value=s.stake;if(s.payout)$("payout").value=s.payout;if(s.chart)selectedChart=s.chart}catch(e){}}
+function loadState(){apiKey=localStorage.getItem("apex_key")||"";$("apiKey").value=apiKey;try{let s=JSON.parse(localStorage.getItem(STORE)||localStorage.getItem(LEGACY_STORE)||"{}");if(s.history)history=s.history;if(s.trades)trades=s.trades;history=s.history||[];trades=s.trades||[];if(s.threshold)$("threshold").value=(String(s.threshold)==="65"||String(s.threshold)==="30"?"15":s.threshold);if(s.mode)$("scanMode").value=s.mode;if(s.interval)$("interval").value=s.interval;if(s.stake)$("stake").value=s.stake;if(s.payout)$("payout").value=s.payout;if(s.chart)selectedChart=s.chart}catch(e){}}
 function renderWatch(){let box=$("watchChecks");box.innerHTML="";ASSETS.forEach(a=>{let lab=document.createElement("label");lab.className="check";let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState();if([...watch].some(id=>ASSETS.find(x=>x.id===id)?.kind==="otc"))connectLiveStream();else stopLiveStream()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});let opts=[...watch].map(id=>`<option value="${id}">${id}</option>`).join("");$("chartAsset").innerHTML=opts||'<option value="">No watchlist</option>';if(watch.has(selectedChart))$("chartAsset").value=selectedChart;else selectedChart=[...watch][0]||""}
 function ema(v,p){if(v.length<p)return null;let k=2/(p+1),x=v.slice(0,p).reduce((a,b)=>a+b,0)/p;for(let i=p;i<v.length;i++)x=v[i]*k+x*(1-k);return x}
 function rsi(v,p=14){if(v.length<=p)return null;let g=0,l=0;for(let i=v.length-p;i<v.length;i++){let d=v[i]-v[i-1];if(d>0)g+=d;else l-=d}return l===0?100:100-100/(1+g/l)}
@@ -193,8 +207,8 @@ function analyze(candles,asset){
  if(direction==="WAIT"&&aggressive&&!hardBlocked){
    const bullVotes=[trendUp,macdUp,momentum>0,candleBull,last.close>swingHigh].filter(Boolean).length;
    const bearVotes=[trendDown,macdDown,momentum<0,candleBear,last.close<swingLow].filter(Boolean).length;
-   if(bull>=52&&bull-bear>=8&&bullVotes>=2){direction="CALL";signalLevel="EARLY";reasons.push("early bullish momentum · confirmation pending")}
-   else if(bear>=52&&bear-bull>=8&&bearVotes>=2){direction="PUT";signalLevel="EARLY";reasons.push("early bearish momentum · confirmation pending")}
+   if(bull>=threshold&&bull-bear>=Math.max(8,threshold*.4)&&bullVotes>=3){direction="CALL";signalLevel="EARLY";reasons.push("early bullish momentum · confirmation pending")}
+   else if(bear>=threshold&&bear-bull>=Math.max(8,threshold*.4)&&bearVotes>=3){direction="PUT";signalLevel="EARLY";reasons.push("early bearish momentum · confirmation pending")}
  }
  if(!fresh){direction="WAIT";signalLevel="NONE";reasons.push("stale candle — entry blocked")}
  if(!volOK){direction="WAIT";signalLevel="NONE";reasons.push("volatility filter — entry blocked")}
@@ -264,7 +278,7 @@ function connectLiveStream(){
 function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
 function renderScanner(){
  let arr=[...watch].map(id=>results[id]).filter(Boolean),rows=[...arr].sort((a,b)=>b.analysis.score-a.analysis.score);
- $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,cls=s.direction==="CALL"?"call":s.direction==="PUT"?"put":"wait",change=r.change,age=Number.isFinite(s.age)?Math.round(s.age)+"s":"—";return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":"red"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${s.direction}</span></td><td>${s.fresh?'<span class="green">FRESH</span>':'<span class="amber">STALE</span>'}</td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
+ $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,cls=s.direction==="CALL"?"call":s.direction==="PUT"?"put":"wait",change=r.change,age=Number.isFinite(s.age)?Math.round(s.age)+"s":"—",timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+60000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":"red"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${s.direction}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">01:00</small>`:""}</td><td>${s.fresh?'<span class="green">FRESH</span>':'<span class="amber">STALE</span>'}</td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
  document.querySelectorAll("#scannerBody tr[data-asset]").forEach(tr=>tr.addEventListener("click",()=>{selectedChart=tr.dataset.asset;$("chartAsset").value=selectedChart;drawChart()}));
  let fresh=arr.filter(r=>r.analysis.fresh).length,stale=arr.length-fresh,signals=arr.filter(r=>r.analysis.direction!=="WAIT");
  $("kScanned").textContent=arr.length+" / "+watch.size;$("kSignals").textContent=signals.length;$("freshCount").textContent=fresh;$("staleCount").textContent=stale;
@@ -276,22 +290,53 @@ function renderScanner(){
 }
 function updateTop(rows){
  let candidates=rows.filter(r=>r.analysis.direction!=="WAIT"&&r.analysis.fresh).sort((a,b)=>b.analysis.score-a.analysis.score),r=candidates[0];latestTop=r||null;
- let s=r?.analysis,dir=s?.direction||"WAIT";$("topSignal").className="signal-card "+(dir==="CALL"?"call":dir==="PUT"?"put":"wait");$("topDirection").textContent=dir;$("topScore").textContent=s?(s.signalLevel==="EARLY"?"EARLY · ":"CONFIRMED · ")+s.score+" / 100":"NO SETUP";
+ let s=r?.analysis,dir=s?.direction||"WAIT";let timerKey=r&&s?`${r.id}|${dir}|${s.candleTime}`:"";if(timerKey&&timerKey!==signalTimerKey){signalTimerKey=timerKey;signalExpiries[timerKey]=signalExpiries[timerKey]||Date.now()+60000;signalExpiryAt=signalExpiries[timerKey];}if(!timerKey){signalTimerKey="";signalExpiryAt=0;}$("topSignal").className="signal-card "+(dir==="CALL"?"call":dir==="PUT"?"put":"wait");$("topDirection").textContent=dir;$("topScore").textContent=s?(s.signalLevel==="EARLY"?"EARLY · ":"CONFIRMED · ")+s.score+" / 100":"NO SETUP";
  $("topReason").textContent=s?(s.signalLevel==="EARLY"?"Early setup · confirmation pending. ":"")+s.reason:"No fresh setup passed the data and safety filters. Check feed freshness.";
  $("topAsset").textContent=r?.name||"—";$("topEntry").textContent=s?fmt(s.entry):"—";$("topRsi").textContent=s?s.rsi.toFixed(1):"—";$("paperFromTop").disabled=!r;
  if(s?.breakdown){$("analysisBreakdown").innerHTML=Object.entries(s.breakdown).map(([k,v])=>`<div><span>${({trend:"Trend structure",momentum:"Momentum",volatility:"Volatility",price:"Price action",structure:"Market structure",feed:"Feed integrity"})[k]}</span><b>${v||"—"}</b></div>`).join("")}else{$("analysisBreakdown").innerHTML="<div><span>Analysis</span><b>Waiting for fresh candles</b></div>"}
  if(rows[0]){selectedChart=selectedChart||rows[0].id;if(!$("chartAsset").value)$("chartAsset").value=selectedChart}
 }
 function updateChartOptions(){let current=selectedChart;$("chartAsset").innerHTML=[...watch].map(id=>`<option value="${id}">${id}</option>`).join("");if(watch.has(current))$("chartAsset").value=current;else if(watch.size){selectedChart=[...watch][0];$("chartAsset").value=selectedChart}}
-function drawChart(){
- let r=results[selectedChart],c=$("chart"),ctx=c.getContext("2d"),w=c.clientWidth,h=c.clientHeight,dpr=window.devicePixelRatio||1;c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
- ctx.strokeStyle="#1a2a3d";for(let i=1;i<5;i++){let y=h*i/5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
- if(!r?.candles?.length){ctx.fillStyle="#91a3bb";ctx.font="12px sans-serif";ctx.fillText("No chart data for selected market",15,h/2);$("chartCaption").textContent="Waiting for selected asset";return}
- let a=r.candles.slice(-55),lo=Math.min(...a.map(x=>x.low)),hi=Math.max(...a.map(x=>x.high)),pad=(hi-lo)*.12||.0001;lo-=pad;hi+=pad;let y=v=>h-(v-lo)/(hi-lo)*h,step=w/a.length;
- a.forEach((q,i)=>{let x=i*step+step/2,up=q.close>=q.open;ctx.strokeStyle=up?"#28d9a0":"#ff637d";ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();ctx.moveTo(x,y(q.high));ctx.lineTo(x,y(q.low));ctx.stroke();ctx.fillRect(x-step*.28,Math.min(y(q.open),y(q.close)),step*.56,Math.max(2,Math.abs(y(q.open)-y(q.close))))});
- for(let [p,col] of [[9,"#72adff"],[21,"#ffca70"]]){ctx.beginPath();ctx.strokeStyle=col;ctx.lineWidth=1.4;for(let i=p-1;i<a.length;i++){let val=ema(a.slice(0,i+1).map(x=>x.close),p),x=i*step+step/2;if(i===p-1)ctx.moveTo(x,y(val));else ctx.lineTo(x,y(val))}ctx.stroke()}
- $("chartCaption").textContent=`${r.name} · ${r.candles.at(-1).time} · ${r.analysis.fresh?"fresh":"stale"}`;
+function aggregateCandles(candles,minutes){
+ if(minutes===1)return candles.slice(-90);
+ const bucketMs=minutes*60*1000,map=new Map();
+ candles.forEach(q=>{
+  const t=Number(q.timeMs)||new Date(q.time).getTime();if(!Number.isFinite(t))return;
+  const key=Math.floor(t/bucketMs)*bucketMs;let b=map.get(key);
+  if(!b){b={time:new Date(key).toISOString(),timeMs:key,open:q.open,high:q.high,low:q.low,close:q.close};map.set(key,b)}
+  else{b.high=Math.max(b.high,q.high);b.low=Math.min(b.low,q.low);b.close=q.close}
+ });
+ return [...map.values()].sort((a,b)=>a.timeMs-b.timeMs).slice(-90);
 }
+function setChartTimeframe(minutes){chartTimeframe=minutes;document.querySelectorAll('.tf-btn').forEach(b=>b.classList.toggle('active',Number(b.dataset.tf)===minutes));$('tfNote').textContent=minutes+'-minute candles';drawChart()}
+function drawChart(){
+ let r=results[selectedChart],c=$("chart"),ctx=c.getContext("2d"),w=c.clientWidth,h=c.clientHeight,dpr=window.devicePixelRatio||1;c.width=w*dpr;c.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+ const left=8,right=62,top=14,bottom=22,plotW=w-left-right,plotH=h-top-bottom;
+ ctx.font='10px system-ui';ctx.strokeStyle='#1a2d46';ctx.lineWidth=1;
+ for(let i=0;i<=4;i++){let y=top+plotH*i/4;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(left+plotW,y);ctx.stroke()}
+ if(!r?.candles?.length){ctx.fillStyle="#91a3bb";ctx.font="12px sans-serif";ctx.fillText("No chart data for selected market",15,h/2);$("chartCaption").textContent="Waiting for selected asset";return}
+ let a=aggregateCandles(r.candles,chartTimeframe),lo=Math.min(...a.map(x=>x.low)),hi=Math.max(...a.map(x=>x.high)),pad=(hi-lo)*.12||Math.abs(hi||1)*.0001;lo-=pad;hi+=pad;
+ const y=v=>top+plotH-(v-lo)/(hi-lo)*plotH,step=plotW/Math.max(a.length,1);
+ a.forEach((q,i)=>{let x=left+i*step+step/2,up=q.close>=q.open,col=up?'#24d6a0':'#ff6688';ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x,y(q.high));ctx.lineTo(x,y(q.low));ctx.stroke();let bodyY=Math.min(y(q.open),y(q.close)),bodyH=Math.max(2,Math.abs(y(q.open)-y(q.close)));ctx.fillRect(x-Math.max(1,step*.29),bodyY,Math.max(2,step*.58),bodyH)});
+ for(let [period,col] of [[9,'#72adff'],[21,'#ffc66d']]){if(a.length<period)continue;ctx.beginPath();ctx.strokeStyle=col;ctx.lineWidth=1.5;for(let i=period-1;i<a.length;i++){let val=ema(a.slice(0,i+1).map(x=>x.close),period),x=left+i*step+step/2;if(i===period-1)ctx.moveTo(x,y(val));else ctx.lineTo(x,y(val))}ctx.stroke()}
+ ctx.fillStyle='#9bb0ca';ctx.textAlign='left';ctx.textBaseline='middle';for(let i=0;i<=4;i++){let v=hi-(hi-lo)*i/4;ctx.fillText(fmt(v),left+plotW+7,top+plotH*i/4)}
+ const last=a.at(-1);ctx.fillStyle='#eaf3ff';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(new Date(last.timeMs).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),left,h-17);
+ const enough=a.length>=35;$("chartCaption").textContent=`${r.name} · ${chartTimeframe}m · ${a.length} candles · ${r.analysis.fresh?"fresh":"stale"}`;
+ $("chartMeta").textContent=`EMA 9 · EMA 21 · ${chartTimeframe}-minute candles`;
+ $("tfNote").textContent=enough?`${a.length} candles loaded`:`${a.length} candles · more history needed for full indicators`;
+}
+
+function countdownText(ms){if(!Number.isFinite(ms)||ms<=0)return '00:00';let sec=Math.ceil(ms/1000);return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')}
+function updateCountdowns(){
+ const signalLeft=signalExpiryAt?signalExpiryAt-Date.now():0;
+ $('signalCountdown').textContent=signalExpiryAt?countdownText(signalLeft):'--:--';
+ $('signalCountdown').style.color=signalLeft>0?'var(--green)':'var(--amber)';
+ document.querySelectorAll('.row-countdown[data-expiry]').forEach(el=>{const left=Number(el.dataset.expiry)-Date.now();el.textContent=left>0?countdownText(left):'EXPIRED';el.style.color=left>0?'var(--green)':'var(--amber)'});
+ if(signalExpiryAt&&signalLeft<=0){$('topScore').textContent='EXPIRED';$('paperFromTop').disabled=true;}else if(signalExpiryAt&&latestTop){$('paperFromTop').disabled=false;}
+ const candleMs=chartTimeframe*60000,now=Date.now(),left=candleMs-(now%candleMs);
+ $('candleCountdown').textContent=countdownText(left);
+}
+
 function renderHistory(){$("signalHistory").innerHTML=history.length?history.map(x=>`<tr><td>${x.time}</td><td>${x.asset}</td><td><span class="tag ${x.side.toLowerCase()}">${x.side}</span></td><td>${fmt(x.entry)}</td><td>${x.score}</td><td>${x.age}s</td></tr>`).join(""):'<tr><td colspan="6" class="empty">No qualified signals yet.</td></tr>'}
 function renderTrades(){
  let settled=trades.filter(t=>["WIN","LOSS","TIE"].includes(t.result)),wins=settled.filter(t=>t.result==="WIN").length,losses=settled.filter(t=>t.result==="LOSS").length,pending=trades.filter(t=>t.result==="PENDING").length,rate=settled.length?(wins/settled.length*100).toFixed(1)+"%":"—",net=trades.reduce((s,t)=>s+(Number(t.pnl)||0),0),avg=settled.length?Math.round(settled.reduce((s,t)=>s+t.score,0)/settled.length):null;
@@ -374,10 +419,11 @@ $("scanMode").addEventListener("change",()=>{saveState();if(latestScan)renderSca
 $("clearSignals").onclick=()=>{if(confirm("Clear signal history?")){history=[];renderHistory();saveState()}};
 $("clearTrades").onclick=()=>{if(confirm("Delete all paper journal records?")){trades=[];renderTrades();saveState()}};
 $("chartAsset").onchange=()=>{selectedChart=$("chartAsset").value;drawChart();saveState()};
+document.querySelectorAll(".tf-btn").forEach(b=>b.addEventListener("click",()=>setChartTimeframe(Number(b.dataset.tf))));
 $("threshold").onchange=()=>{$("thresholdText").textContent=$("threshold").value+" / 100";if(latestScan)scan();saveState()};
 $("interval").onchange=()=>{if(running){clearInterval(cycle);cycle=setInterval(scan,+$("interval").value)}$("cycleText").textContent=(+$("interval").value/1000)+" sec";saveState()};
 ["stake","payout"].forEach(id=>$(id).addEventListener("change",saveState));
-window.addEventListener("resize",drawChart);setInterval(()=>$("clock").textContent=clock(),1000);
+window.addEventListener("resize",drawChart);setInterval(()=>{$("clock").textContent=clock();updateCountdowns()},1000);
 loadState();renderWatch();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();drawChart();$("clock").textContent=clock();connectLiveStream();
 </script>
 </body></html>
