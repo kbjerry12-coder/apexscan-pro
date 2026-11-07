@@ -70,7 +70,7 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
     <div class="panel-head"><h2>LIVE SCANNER · WATCHLIST</h2><span class="pill" id="scanMode">MANUAL</span></div>
     <div class="scanner-strip">
      <div class="mini"><label>Scan cycle</label><b id="cycleText">60 sec</b></div>
-     <div class="mini"><label>Signal threshold</label><b id="thresholdText">78 / 100</b></div>
+     <div class="mini"><label>Signal threshold</label><b id="thresholdText">65 / 100</b></div>
      <div class="mini"><label>Fresh markets</label><b id="freshCount">0</b></div>
      <div class="mini"><label>Stale / errors</label><b id="staleCount">0</b></div>
     </div>
@@ -120,7 +120,7 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
      <div class="field"><label>Auto scan interval</label><select id="interval"><option value="60000">60 seconds</option><option value="120000">2 minutes</option><option value="300000">5 minutes</option></select></div>
      <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. This strategy currently analyzes 1-minute candles, so its initial practice expiry is 60 seconds; validate with paper results before considering real trades.</div></div>
      <div class="field"><label>Scanner mode</label><select id="scanMode"><option value="aggressive" selected>Aggressive · early setups</option><option value="balanced">Balanced · confirmed only</option></select></div>
-     <div class="field"><label>Signal threshold</label><select id="threshold"><option value="70">70 · Active</option><option value="75">75 · Balanced</option><option value="80" selected>80 · Selective</option><option value="85">85 · Strict</option></select></div>
+     <div class="field"><label>Signal threshold</label><select id="threshold"><option value="65" selected>65 · Early entries</option><option value="70">70 · Active</option><option value="75">75 · Balanced</option><option value="80">80 · Selective</option><option value="85">85 · Strict</option></select></div>
      <div class="field"><label>Paper stake ($)</label><input id="stake" type="number" min="1" max="100000" value="10"></div>
      <div class="field"><label>Payout (%)</label><input id="payout" type="number" min="1" max="100" value="85"></div>
      <div class="field wide"><label>Minimum candle freshness</label><input value="150 seconds · older data is blocked" disabled></div>
@@ -200,7 +200,7 @@ function analyze(candles,asset){
  if(bodyRatio<.16){direction="WAIT";signalLevel="NONE";reasons.push("indecision candle — entry blocked")}
  if(!prev||last.close===prev.close){direction="WAIT";signalLevel="NONE";reasons.push("no price movement")}
  const breakdown={trend:trendUp?"Bullish aligned":trendDown?"Bearish aligned":"Mixed / transitional",momentum:rv.toFixed(1)+" RSI · "+(momentum>0?"rising":"falling"),volatility:atrPct.toFixed(3)+"% ATR / "+(volOK?"normal":"filtered"),price:Math.round(bodyRatio*100)+"% candle body",structure:last.close>swingHigh?"Upside break":last.close<swingLow?"Downside break":"Inside recent range",feed:fresh?Math.round(age)+"s · fresh":""+Math.round(age)+"s · stale"};
- return {direction,signalLevel,score,reason:reasons.join(" · "),rsi:rv,trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry:last.close,age,fresh,quality:bodyRatio,candleTime:last.time,candleTimeMs:last.timeMs,atr,atrPct,macdHistogram:hist,bullScore:Math.round(bull),bearScore:Math.round(bear),breakdown};
+ return {direction,signalLevel,score,reason:reasons.join(" · "),rsi:rv,trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry:last.close,age,quality:bodyRatio,candleTime:last.time,atr,atrPct,macdHistogram:hist,bullScore:Math.round(bull),bearScore:Math.round(bear),breakdown};
 }
 async function regularData(symbol){
  if(!apiKey)throw Error("Twelve Data API key missing");
@@ -269,14 +269,12 @@ async function scan(){
  for(const id of ids){
   let a=ASSETS.find(x=>x.id===id);
   try{
-   let data=await fetchAsset(a);
-   if(!Array.isArray(data)||data.length<35||!Number.isFinite(data.at(-1)?.close))throw Error("OTC feed returned insufficient or invalid candle data");
-   let old=results[id],price=data.at(-1).close,analysis=analyze(data,a);
+   let data=await fetchAsset(a);let old=results[id],price=data.at(-1).close,analysis=analyze(data,a);
    let prior=old?.price??null,change=prior===null?null:price-prior;
    results[id]={id,name:a.name,price,change,candles:data,analysis};
    if(analysis.direction!=="WAIT")addSignal(results[id]);
+   if(selectedChart===id||!selectedChart)drawChart();
   }catch(e){errors++;errorDetails.push(a.name+": "+(e.message||"Unknown data error"));results[id]={id,name:a.name,price:NaN,change:null,candles:[],analysis:{direction:"WAIT",score:0,reason:e.message,fresh:false,age:Infinity}}}
-  if(selectedChart===id||!selectedChart)drawChart();
   done++;$("scanProgress").style.width=(done/ids.length*100)+"%";$("progressText").textContent=`Scanned ${done} of ${ids.length} · ${errors} errors`;
   renderScanner();
   // Avoid bursting the provider and stay within low-tier rate limits.
