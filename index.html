@@ -1034,11 +1034,21 @@ function renderTrades(){
  renderPaperLiveBoard();}
 function persistAll(){saveState();renderTrades()}
 let calloutsEnabled=false,lastAnnouncedSignal="",autoPaperEnabled=true;
+const announcedCandleKeys=new Set();
+function signalCandleKey(r){
+ const candle=r?.candles?.at(-1);
+ const rawTime=Number(candle?.timeMs||0);
+ // Normalize every forming 1-minute candle to one stable key, even if
+ // the provider refreshes its timestamp or sends many ticks per second.
+ const minute=rawTime>0?Math.floor(rawTime/60000):Math.floor(Date.now()/60000);
+ return `${r.id}|${minute}`;
+}
 function announceSignal(r){
  const side=r.analysis.direction==="CALL"?"BUY":"SELL";
- const key=r.id+"|"+r.analysis.direction+"|"+r.analysis.candleTime;
- if(key===lastAnnouncedSignal)return;
- lastAnnouncedSignal=key;
+ const key=signalCandleKey(r);
+ if(announcedCandleKeys.has(key))return;
+ announcedCandleKeys.add(key);
+ if(announcedCandleKeys.size>500)announcedCandleKeys.clear();
  if(calloutsEnabled){
   try{
    if("speechSynthesis" in window){speechSynthesis.cancel();const freshness=r.analysis.fresh?"Live quote available.":"Based on latest candle; live quote may be delayed.";const level=r.analysis.signalLevel==="CONFIRMED"?"confirmed setup":"early directional bias";const utterance=new SpeechSynthesisUtterance(`${side}. ${level}. ${r.name}. Entry ${fmt(r.livePrice??r.price)}. ${freshness}`);utterance.rate=1.02;utterance.pitch=1.05;speechSynthesis.speak(utterance);}
@@ -1055,10 +1065,12 @@ $("alertToggle").addEventListener("click",()=>{
 });
 function addSignal(r){
  if(!r?.candles?.length||!["CALL","PUT"].includes(r.analysis.direction))return;
- const key=r.id+"|"+r.analysis.direction+"|"+r.analysis.candleTime;
- // Try paper execution before history de-duplication. openPaperTrade itself prevents duplicates.
- if(autoPaperEnabled&&r.analysis.signalLevel==="CONFIRMED"&&r.analysis.fresh&&hasCurrentFeed(r.id,r.candles?.at(-1)))openPaperTrade(r,r.analysis.direction,true,key);
+ // One signal per pair per 1-minute candle. Live ticks may arrive many
+ // times per second; they update the chart, not create repeated alerts/trades.
+ const key=signalCandleKey(r);
  if(history.some(x=>x.key===key))return;
+ // Paper execution, voice and history all share the same one-per-candle gate.
+ if(autoPaperEnabled&&r.analysis.signalLevel==="CONFIRMED"&&r.analysis.fresh&&hasCurrentFeed(r.id,r.candles?.at(-1)))openPaperTrade(r,r.analysis.direction,true,key);
  announceSignal(r);
  history.unshift({key,time:clock(),asset:r.name,side:r.analysis.direction==="CALL"?"BUY":"SELL",entry:r.livePrice??r.price,score:r.analysis.score,age:Math.round(r.analysis.age)});
  history=history.slice(0,150);renderHistory();saveState();
