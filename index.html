@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="8.8-otc-directional-buy-sell-voice">
-<title>APEXSCAN PRO · V8.8 OTC BUY / SELL</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="9.0-dual-horizon-ai-fast-hold">
+<title>APEXSCAN PRO · V9 DUAL-HORIZON AI</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -378,7 +378,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 </header>
 <main class="wrap">
  <div class="top">
-  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · OTC SIGNAL SCANNER</h1><p>OTCharts live OTC feed · BUY / SELL signals · scan manually or automatically</p></div>
+  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V9 DUAL-HORIZON AI SCANNER</h1><p>OTCharts live OTC feed · BUY / SELL signals · scan manually or automatically</p></div>
   <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
  <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Recent live ticks keep analysis current even while the current 30-second candle is still forming. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
@@ -468,7 +468,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
       <div><small>30-SEC CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
      </div>
      <div class="trade-duration" style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;padding:10px;border:1px solid #31527a;border-radius:10px;background:#07182a">
-      <div style="display:flex;flex-direction:column;gap:5px"><small style="font-size:9px;color:#9ed5ff;font-weight:900;letter-spacing:.08em">AI-SELECTED TRADE HOLD · NO MANUAL DURATION</small><b id="durationAdvice" style="font-size:16px;color:#fff">AI evaluating market structure…</b><small style="font-size:10px;color:#9db1cc">AI chooses from 5s · 10s · 15s · 30s · 1m · 3m · 5m · 15m · 30m · 1h · 4h, based on available trend history and live conditions.</small></div>
+      <div style="display:flex;flex-direction:column;gap:5px"><small style="font-size:9px;color:#9ed5ff;font-weight:900;letter-spacing:.08em">DUAL-HORIZON AI · FAST + LONGER HOLD</small><b id="durationAdvice" style="font-size:16px;color:#fff">AI evaluating market structure…</b><small style="font-size:10px;color:#9db1cc">FAST AI targets short moves; HOLD AI selects 5m · 15m · 30m · 1h · 2h · 4h only when enough historical candles support that horizon. Short history limits the maximum recommendation.</small></div>
      </div>
      <div class="po-compare" id="poCompare" hidden>
       <div class="po-compare-head"><b>POCKET OPTION PRICE CHECK</b><span id="poComparePair">SELECTED PAIR</span></div>
@@ -719,7 +719,7 @@ async function otcData(symbol){
  if(!r.ok)throw Error(j.error||j.message||`OTC function returned HTTP ${r.status}: ${rawBody.slice(0,180)||"empty response"}`);
  const list=Array.isArray(j)?j:(j.candles??j.data?.candles??j.data??j.results??[]);
  if(!Array.isArray(list)||!list.length)throw Error("OTCharts returned no candle array. Response keys: "+Object.keys(j||{}).join(", "));
- const parsed=list.slice(-240).map((v,index)=>{
+ const parsed=list.slice(-600).map((v,index)=>{
   const raw=v.time??v.timestamp??v.datetime??v.t;
   let ms;
   if(typeof raw==="number")ms=raw;
@@ -990,39 +990,49 @@ function lockedCandleDirection(r){
  }
  return state.direction||"WAIT";
 }
-const AI_HOLD_OPTIONS=[5,10,15,30,60,180,300,900,1800,3600,14400];
+const AI_HOLD_OPTIONS=[5,15,30,60,180,300,900,1800,3600,7200,14400];
 function formatHold(seconds){const n=Number(seconds)||30;if(n<60)return `${n}s`;if(n<3600)return `${n/60}m`;return `${n/3600}h`;}
+function fastDurationSeconds(r){
+ const a=r?.analysis,c=r?.candles||[];
+ if(!a||!["CALL","PUT"].includes(a.direction)||c.length<12||!a.fresh)return 60;
+ const side=a.direction==="CALL"?1:-1,close=c.map(x=>Number(x.close));
+ const aligned=(n)=>{const w=close.slice(-n-1),d=w.slice(1).map((v,i)=>Math.sign(v-w[i])).filter(Boolean);return d.length?d.filter(x=>x===side).length/d.length:0};
+ const c6=aligned(6),c12=aligned(12);
+ if(c12>=.75&&a.signalLevel==="CONFIRMED")return 300;
+ if(c12>=.62)return 180;
+ if(c6>=.60)return 60;
+ return 30;
+}
 function candleDurationSeconds(r){
  const a=r?.analysis,c=r?.candles||[];
- if(!a||!["CALL","PUT"].includes(a.direction)||c.length<12)return 30;
- if(!a.fresh)return 30;
+ if(!a||!["CALL","PUT"].includes(a.direction)||c.length<12||!a.fresh)return 60;
  const side=a.direction==="CALL"?1:-1,close=c.map(x=>Number(x.close));
- const aligned=(n)=>{const d=close.slice(-n-1).slice(1).map((v,i)=>Math.sign(v-close.slice(-n-1)[i])).filter(Boolean);return d.length?d.filter(x=>x===side).length/d.length:0};
+ const aligned=(n)=>{const w=close.slice(-n-1),d=w.slice(1).map((v,i)=>Math.sign(v-w[i])).filter(Boolean);return d.length?d.filter(x=>x===side).length/d.length:0};
  const c6=aligned(6),c12=aligned(12),c24=aligned(24),c48=aligned(48);
  const trend=(side===1&&a.trend==="UP")||(side===-1&&a.trend==="DOWN");
- const confluence=(Number(a.score)||0)>=75;
- const strong=trend&&confluence&&a.signalLevel==="CONFIRMED"&&c12>=.68&&c24>=.62;
- // Match the holding period to persistence and volatility. Long horizons are selected
- // only when a long sample actually exists; with an 80-bar feed, cap at 30 minutes.
- const bars=c.length,options=[
+ const strong=trend&&Number(a.score)>=72&&a.signalLevel==="CONFIRMED"&&c12>=.68&&c24>=.62;
+ // These source candles are 30-second bars. Require enough actual history for each horizon.
+ // Never advertise a multi-hour hold from a short sample.
+ const bars=c.length;
+ const options=[
   [14400,bars>=480&&strong&&c48>=.78],
-  [3600,bars>=120&&strong&&c48>=.75],
-  [1800,bars>=60&&strong&&c24>=.75],
-  [900,bars>=30&&strong&&c24>=.72],
-  [300,bars>=20&&trend&&confluence&&c24>=.68],
-  [180,bars>=12&&trend&&confluence&&c12>=.70],
-  [60,trend&&confluence&&c12>=.65],
-  [30,c12>=.58],
-  [15,c6>=.58],
-  [10,c6>=.50],
+  [7200,bars>=240&&strong&&c48>=.76],
+  [3600,bars>=120&&strong&&c48>=.74],
+  [1800,bars>=60&&strong&&c24>=.72],
+  [900,bars>=30&&strong&&c24>=.68],
+  [300,bars>=20&&trend&&Number(a.score)>=65&&c24>=.64],
+  [180,bars>=12&&trend&&Number(a.score)>=60&&c12>=.64],
+  [60,c12>=.58],
+  [30,c6>=.55],
+  [15,c6>=.50],
   [5,true]
  ];
  return options.find(x=>x[1])[0];
 }
 function candleDurationSuggestion(r){
- const seconds=candleDurationSeconds(r);
- return `${formatHold(seconds)} AI hold`;
+ return `HOLD AI · ${formatHold(candleDurationSeconds(r))}`;
 }
+
 function updateTop(rows){
  const selectedId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
  const r=rows.find(item=>item.id===selectedId)||results[selectedId]||null;
@@ -1046,8 +1056,8 @@ function updateTop(rows){
   if(candidate){
    const side=dir==="CALL"?"BUY":"SELL";
    banner.className="signal-callout "+(side==="BUY"?"buy":"sell");
-   const duration=candleDurationSeconds(r);
-   banner.innerHTML=`<strong style="display:block;font-size:1.18em">${side} SIGNAL · ${r.name}</strong><span style="display:block;margin-top:7px;font-size:1.12em">AI HOLD: ${formatHold(duration)}</span><small style="display:block;margin-top:5px">ENTRY ${fmt(r.livePrice??r.price)} · SCORE ${s.score}/100</small>`;
+   const fast=fastDurationSeconds(r),duration=candleDurationSeconds(r);
+   banner.innerHTML=`<strong style="display:block;font-size:1.18em">${side} SIGNAL · ${r.name}</strong><span style="display:block;margin-top:7px;font-size:1.02em">FAST AI · ${formatHold(fast)} &nbsp; | &nbsp; HOLD AI · ${formatHold(duration)}</span><small style="display:block;margin-top:5px">ENTRY ${fmt(r.livePrice??r.price)} · SCORE ${s.score}/100 · direction confirmation required</small>`;
   }else{
    banner.className="signal-callout neutral";
    banner.textContent=!r?"SELECT AN OTC PAIR TO START":
@@ -1080,7 +1090,7 @@ function updateTop(rows){
  if($("heroLiveLabel"))$("heroLiveLabel").textContent=fresh?(liveTicks[r.id]?"Live tick updates · active":"Candle data · recent"):r?.candles?.length?"Latest candle analysis":"Waiting for scan";
  $("topExpiry").textContent=candidate?"Live direction · callouts update when candle momentum changes":
   "Waiting for a live directional candle.";
- if($("durationAdvice"))$("durationAdvice").textContent=candidate?`${candleDurationSuggestion(r)} · ${formatHold(candleDurationSeconds(r))}`:"AI evaluating market structure…";
+ if($("durationAdvice"))$("durationAdvice").textContent=candidate?`${candleDurationSuggestion(r)} · FAST ${formatHold(fastDurationSeconds(r))}`:"AI evaluating market structure…";
 }
 
 function renderHistory(){$("signalHistory").innerHTML=history.length?history.map(x=>`<tr><td>${x.time}</td><td>${x.asset}</td><td><span class="tag ${x.side.toLowerCase()}">${x.side}</span></td><td>${fmt(x.entry)}</td><td>${x.score}</td><td>${x.age}s</td></tr>`).join(""):'<tr><td colspan="6" class="empty">No directional setups recorded yet.</td></tr>'}
