@@ -381,7 +381,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
   <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · OTC SIGNAL SCANNER</h1><p>OTCharts live OTC feed · BUY / SELL signals · scan manually or automatically</p></div>
   <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
- <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Recent live ticks keep analysis current even while the current 1-minute candle is still forming. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
+ <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Recent live ticks keep analysis current even while the current 30-second candle is still forming. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
  <section class="mobile-command" id="marketControls" aria-label="Market controls">
   <div class="market-tabs" role="group" aria-label="Market category">
    <button type="button" class="market-tab active" data-market-category="currencies">Currencies</button>
@@ -393,7 +393,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <option value="5000">5 sec</option><option value="10000">10 sec</option><option value="15000" selected>15 sec</option><option value="30000">30 sec</option>
    </select></label>
   </div>
-  <div class="mobile-market-meta"><span id="heroSelectedMarket">OTC market selected</span><span id="heroLiveLabel">1-minute candle analysis</span></div>
+  <div class="mobile-market-meta"><span id="heroSelectedMarket">OTC market selected</span><span id="heroLiveLabel">30-second candle analysis</span></div>
   <div class="category-note" id="categoryNote" aria-live="polite">OTC currency markets are selected by default.</div>
  </section>
  <section class="kpis">
@@ -420,10 +420,11 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
    <div class="panel" id="chartPanel">
     <div class="panel-head chart-head"><h2>LIVE OTC CANDLE CHART</h2><select id="chartAsset" style="max-width:170px;background:#091321;color:white;border:1px solid var(--line);padding:7px;border-radius:7px"></select></div>
     <div class="tf-row" role="group" aria-label="Chart timeframe">
-     <button type="button" class="tf-btn active" data-tf="1">1 MIN</button>
+     <button type="button" class="tf-btn active" data-tf="0.5">30 SEC</button>
+     <button type="button" class="tf-btn" data-tf="1">1 MIN</button>
      <button type="button" class="tf-btn" data-tf="5">5 MIN</button>
      <button type="button" class="tf-btn" data-tf="15">15 MIN</button>
-     <span class="tf-note" id="tfNote">1-minute candles</span>
+     <span class="tf-note" id="tfNote">30-second candles</span>
     </div>
     <div class="chart-stage">
      <div class="chartbox"><canvas id="chart"></canvas></div>
@@ -439,7 +440,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
       <div class="float-sub" id="floatRecord">0 settled · 0 pending</div>
      </div>
     </div>
-    <div class="chartfoot"><span id="chartCaption">Waiting for candles</span><span id="chartMeta">EMA 9 · EMA 21 · 1-minute candles</span></div>
+    <div class="chartfoot"><span id="chartCaption">Waiting for candles</span><span id="chartMeta">EMA 9 · EMA 21 · 30-second candles</span></div>
    </div>
    <div class="panel" id="signalHistoryPanel">
     <div class="panel-head"><h2>SIGNAL HISTORY</h2><button class="small" id="clearSignals">Clear signals</button></div>
@@ -464,15 +465,10 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
      <div id="paperLiveBoard" class="paper-live-board" aria-live="polite"><b>LIVE PAPER POSITIONS</b><span>No open paper trades yet · waiting for a qualified signal.</span></div>
      <div class="countdown-grid">
       <div><small>BUY / SELL VALID FOR</small><b id="signalCountdown">--:--</b></div>
-      <div><small>1-MIN CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
+      <div><small>30-SEC CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
      </div>
-     <div class="trade-duration" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;padding:10px;border:1px solid #31527a;border-radius:10px;background:#07182a">
-      <label style="display:flex;flex-direction:column;gap:5px;font-size:9px;color:#9ed5ff;font-weight:900;letter-spacing:.08em">TRADE DURATION
-       <select id="tradeDuration" style="padding:10px;background:#0a1730;color:#fff;border:1px solid #31527a;border-radius:8px;font-weight:900">
-        <option value="5">5 SECONDS</option><option value="10" selected>10 SECONDS</option><option value="15">15 SECONDS</option><option value="20">20 SECONDS</option>
-       </select>
-      </label>
-      <div style="display:flex;flex-direction:column;justify-content:center;gap:5px"><small style="font-size:9px;color:#9ed5ff;font-weight:900;letter-spacing:.08em">CANDLE-BASED SUGGESTION</small><b id="durationAdvice" style="font-size:13px;color:#fff">Waiting for candle</b></div>
+     <div class="trade-duration" style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;padding:10px;border:1px solid #31527a;border-radius:10px;background:#07182a">
+      <div style="display:flex;flex-direction:column;gap:5px"><small style="font-size:9px;color:#9ed5ff;font-weight:900;letter-spacing:.08em">AI-SELECTED TRADE HOLD · NO MANUAL DURATION</small><b id="durationAdvice" style="font-size:16px;color:#fff">AI evaluating market structure…</b><small style="font-size:10px;color:#9db1cc">AI chooses from 5s · 10s · 15s · 30s · 1m · 3m · 5m · 15m · 30m · 1h · 4h, based on available trend history and live conditions.</small></div>
      </div>
      <div class="po-compare" id="poCompare" hidden>
       <div class="po-compare-head"><b>POCKET OPTION PRICE CHECK</b><span id="poComparePair">SELECTED PAIR</span></div>
@@ -506,7 +502,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <div class="checkgrid" id="watchChecks"></div>
     <div class="fields" style="margin-top:11px">
      <div class="field"><label>Auto scan interval</label><select id="interval"><option value="5000">5 seconds</option><option value="10000">10 seconds</option><option value="15000" selected>15 seconds</option><option value="30000">30 seconds</option></select></div>
-     <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. This strategy currently analyzes 1-minute candles, so its initial practice expiry is 60 seconds; validate with paper results before considering real trades.</div></div>
+     <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. OTC analysis uses 30-second candles. AI selects a paper-trade hold from 5 seconds to 4 hours based on trend persistence, signal confluence and available history; longer holds require substantially more history.</div></div>
      <div class="field"><label>Scanner mode</label><select id="scanMode"><option value="aggressive" selected>Aggressive · early setups</option><option value="balanced">Balanced · confirmed only</option></select></div>
      <div class="field"><label>Signal threshold</label><select id="threshold"><option value="15" selected>15 · Very sensitive</option><option value="30">30 · More sensitive</option><option value="70">70 · Active</option><option value="75">75 · Balanced</option><option value="80">80 · Selective</option><option value="85">85 · Strict</option></select></div>
      <div class="field"><label>Paper stake ($)</label><input id="stake" type="number" min="1" max="100000" value="10"></div>
@@ -517,7 +513,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
    </div>
    <div class="panel" id="enginePanel">
     <div class="panel-head"><h2>TECHNICAL MARKET ANALYSIS</h2><span class="pill">MULTI-FACTOR ENGINE</span></div>
-    <div class="tiny">Explainable market analysis: EMA trend structure, RSI momentum, MACD direction, recent price movement, swing breaks, candle body/wick pressure, volatility and data freshness. The engine compares bullish and bearish evidence, explains which factors agree or conflict, and estimates a next-candle bias. It is a technical rules engine—not a human trader or a guaranteed predictor. Confidence scores are confluence ratings, not win probabilities.</div><div id="analysisBreakdown" class="analysis-breakdown"><div><span>Trend structure</span><b>Awaiting scan</b></div><div><span>Momentum</span><b>Awaiting scan</b></div><div><span>Volatility</span><b>Awaiting scan</b></div><div><span>Price action</span><b>Awaiting scan</b></div><div><span>Market structure</span><b>Awaiting scan</b></div><div><span>Feed integrity</span><b>Awaiting scan</b></div></div>
+    <div class="tiny">Multi-indicator analysis based on the visible Pocket Option indicator set: trend, momentum, volatility, oscillators, channels and market structure. Volume-based confirmation is unavailable when the feed supplies no volume. Some complex indicators are explicitly marked as proxies rather than exact platform replicas. The engine compares bullish and bearish evidence, explains which factors agree or conflict, and estimates a next-candle bias. It is a technical rules engine—not a human trader or a guaranteed predictor. Confidence scores are confluence ratings, not win probabilities.</div><div id="analysisBreakdown" class="analysis-breakdown"><div><span>Trend structure</span><b>Awaiting scan</b></div><div><span>Momentum</span><b>Awaiting scan</b></div><div><span>Volatility</span><b>Awaiting scan</b></div><div><span>Price action</span><b>Awaiting scan</b></div><div><span>Market structure</span><b>Awaiting scan</b></div><div><span>Feed integrity</span><b>Awaiting scan</b></div></div><div class="tiny" style="margin-top:8px">Indicator values are calculated from available OHLC candles; SAR, Alligator, Ichimoku, STC, ZigZag and Fractal Chaos entries are simplified approximations. Volume is not scored when OTCharts does not provide volume.</div>
     <div style="margin-top:10px" class="metricrow"><div class="metricbox"><small>Trend</small><b>EMA 9/21</b></div><div class="metricbox"><small>Momentum</small><b>RSI 14</b></div><div class="metricbox"><small>Confirm</small><b>MACD</b></div><div class="metricbox"><small>Quality</small><b>Candle</b></div></div>
    </div>
   </aside>
@@ -537,7 +533,7 @@ const ASSETS=[
  {id:"OTC:GBP/USD",name:"GBP/USD OTC",kind:"otc",symbol:"GBPUSD_otc",default:true},
  {id:"OTC:USD/JPY",name:"USD/JPY OTC",kind:"otc",symbol:"USDJPY_otc",default:true}
 ];
-let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
+let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=0.5,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6}),clock=()=>new Date().toLocaleTimeString();
 function status(t,ok=false){$("statusText").textContent=t;$("statusLed").style.background=ok?"var(--green)":"var(--amber)"}
 function saveState(){try{localStorage.setItem(STORE,JSON.stringify({watch:[...watch],history:history.slice(0,150),trades:trades.slice(0,250),threshold:$("threshold").value,mode:$("scanMode").value,interval:$("interval").value,stake:$("stake").value,payout:$("payout").value,chart:selectedChart,autoPaper:autoPaperEnabled}))}catch(e){}}
@@ -594,9 +590,79 @@ function renderWatch(){
 }
 function ema(v,p){if(v.length<p)return null;let k=2/(p+1),x=v.slice(0,p).reduce((a,b)=>a+b,0)/p;for(let i=p;i<v.length;i++)x=v[i]*k+x*(1-k);return x}
 function rsi(v,p=14){if(v.length<=p)return null;let g=0,l=0;for(let i=v.length-p;i<v.length;i++){let d=v[i]-v[i-1];if(d>0)g+=d;else l-=d}return l===0?100:100-100/(1+g/l)}
+
+function calculateFullIndicatorSet(candles){
+ const n=candles.length,last=candles.at(-1),prev=candles.at(-2);
+ const close=candles.map(c=>+c.close),high=candles.map(c=>+c.high),low=candles.map(c=>+c.low),open=candles.map(c=>+c.open);
+ const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+ const sma=(a,p)=>avg(a.slice(-p));
+ const emaLast=(a,p)=>ema(a,p);
+ const tr=candles.map((c,i)=>i?Math.max(c.high-c.low,Math.abs(c.high-candles[i-1].close),Math.abs(c.low-candles[i-1].close)):c.high-c.low);
+ const atr=avg(tr.slice(-14)),mid=sma(close,20),sd=Math.sqrt(avg(close.slice(-20).map(x=>(x-mid)**2)));
+ const upper=mid+2*sd,lower=mid-2*sd;
+ const typical=candles.map(c=>(c.high+c.low+c.close)/3),tp=typical.at(-1),tpMean=avg(typical.slice(-20)),mad=avg(typical.slice(-20).map(x=>Math.abs(x-tpMean)));
+ const cci=mad? (tp-tpMean)/(.015*mad):0;
+ const hh=Math.max(...high.slice(-14)),ll=Math.min(...low.slice(-14));
+ const williams=hh===ll?-50:-100*(hh-last.close)/(hh-ll);
+ const stoch=hh===ll?50:100*(last.close-ll)/(hh-ll);
+ const ao=sma(high.map((h,i)=>(h+low[i])/2),5)-sma(high.map((h,i)=>(h+low[i])/2),34);
+ const roc=close.length>10&&close.at(-11)!==0?(last.close/close.at(-11)-1)*100:0;
+ const donHi=Math.max(...high.slice(-20)),donLo=Math.min(...low.slice(-20));
+ const aroonUp=100*(13-(13-high.slice(-14).lastIndexOf(hh)))/13;
+ const aroonDown=100*(13-(13-low.slice(-14).lastIndexOf(ll)))/13;
+ const demUp=[],demDown=[];
+ for(let i=Math.max(1,n-14);i<n;i++){demUp.push(Math.max(high[i]-high[i-1],0));demDown.push(Math.max(low[i-1]-low[i],0))}
+ const demSum=avg(demUp)+avg(demDown),demarker=demSum?avg(demUp)/demSum*100:50;
+ const bullPower=last.high-emaLast(close,13),bearPower=last.low-emaLast(close,13);
+ const envMid=emaLast(close,20),envPct=atr/Math.max(Math.abs(envMid),1e-9)*100;
+ const keltnerMid=emaLast(close,20),keltnerUpper=keltnerMid+2*atr,keltnerLower=keltnerMid-2*atr;
+ const prevClose=prev?.close||last.close;
+ const posDM=[],negDM=[],tr14=[];
+ for(let i=Math.max(1,n-14);i<n;i++){const up=high[i]-high[i-1],dn=low[i-1]-low[i];posDM.push(up>dn&&up>0?up:0);negDM.push(dn>up&&dn>0?dn:0);tr14.push(tr[i])}
+ const sumTR=tr14.reduce((a,b)=>a+b,0)||1,plusDI=100*posDM.reduce((a,b)=>a+b,0)/sumTR,minusDI=100*negDM.reduce((a,b)=>a+b,0)/sumTR;
+ const dx=100*Math.abs(plusDI-minusDI)/Math.max(plusDI+minusDI,1),adx=dx;
+ const vortexPlus=posDM.reduce((a,b)=>a+b,0)/sumTR,vortexMinus=negDM.reduce((a,b)=>a+b,0)/sumTR;
+ const bull=last.close>last.open,bear=last.close<last.open;
+ const indicators=[
+  ["ADX",adx>=25?(plusDI>minusDI?"Bull trend":"Bear trend"):"Weak / ranging"],
+  ["ATR",atr.toPrecision(5)+" · volatility"],
+  ["Bollinger Bands",last.close>upper?"Above upper":last.close<lower?"Below lower":"Inside bands"],
+  ["CCI",cci.toFixed(1)],
+  ["Alligator","EMA 5/8/13 "+(emaLast(close,5)>emaLast(close,8)&&emaLast(close,8)>emaLast(close,13)?"bullish":emaLast(close,5)<emaLast(close,8)&&emaLast(close,8)<emaLast(close,13)?"bearish":"mixed")],
+  ["Awesome Oscillator",ao.toPrecision(4)],
+  ["Accelerator Oscillator",(ao-(emaLast(close,5)-emaLast(close,34))).toPrecision(4)],
+  ["Bollinger Width",mid?(4*sd/Math.abs(mid)*100).toFixed(3)+"%":"—"],
+  ["Donchian",last.close>=donHi?"Upper breakout":last.close<=donLo?"Lower breakout":"In channel"],
+  ["Fractal",n>=5?(high.at(-3)>high.at(-4)&&high.at(-3)>high.at(-2)?"High fractal":low.at(-3)<low.at(-4)&&low.at(-3)<low.at(-2)?"Low fractal":"No confirmed pivot"):"Insufficient bars"],
+  ["Keltner Channel",last.close>keltnerUpper?"Above channel":last.close<keltnerLower?"Below channel":"Inside channel"],
+  ["Ichimoku","Tenkan/Kijun "+(avg(high.slice(-9))+avg(low.slice(-9))>avg(high.slice(-26))+avg(low.slice(-26))?"bullish":"bearish")],
+  ["Momentum", (last.close-close[Math.max(0,n-11)]).toPrecision(5)],
+  ["Moving Average",last.close>emaLast(close,20)?"Above EMA20":"Below EMA20"],
+  ["Parabolic SAR",last.close> (Math.min(...low.slice(-5)))?"Bullish proxy":"Bearish proxy"],
+  ["RSI",rsi(close,14).toFixed(1)],
+  ["Rate of Change",roc.toFixed(3)+"%"],
+  ["Schaff Trend Cycle","MACD-cycle proxy "+(emaLast(close,12)>emaLast(close,26)?"up":"down")],
+  ["Stochastic",stoch.toFixed(1)],
+  ["SuperTrend",last.close>emaLast(close,10)+2*atr?"Bullish":last.close<emaLast(close,10)-2*atr?"Bearish":"Neutral"],
+  ["Vortex",vortexPlus>vortexMinus?"VI+ leading":"VI− leading"],
+  ["Williams %R",williams.toFixed(1)],
+  ["Aroon",aroonUp>aroonDown?"Aroon Up leading":"Aroon Down leading"],
+  ["Bears Power",bearPower.toPrecision(4)],
+  ["Bulls Power",bullPower.toPrecision(4)],
+  ["DeMarker",demarker.toFixed(1)],
+  ["Envelopes","EMA20 ± "+(envPct*1.5).toFixed(3)+"%"],
+  ["Fractal Chaos Bands","20-bar high/low "+donHi.toPrecision(5)+" / "+donLo.toPrecision(5)],
+  ["OsMA",(emaLast(close,12)-emaLast(close,26)).toPrecision(4)],
+  ["Parabolic SAR",last.close>low.slice(-5).reduce((a,b)=>Math.min(a,b),Infinity)?"Price above recent SAR proxy":"Price below recent SAR proxy"],
+  ["ZigZag",Math.abs(last.close-prevClose)>atr?"Swing extension":"No confirmed swing extension"],
+  ["Volume","Unavailable · provider supplies OHLC only"]
+ ];
+ return {indicators,plusDI,minusDI,adx,atr,upper,lower,cci,williams,stoch,ao,roc};
+}
+
 function analyze(candles,asset){
  if(candles.length<35)return {direction:"WAIT",score:0,reason:"Building candle history · 35 candles are used before directional analysis",fresh:false};
- const closes=candles.map(x=>x.close), highs=candles.map(x=>x.high), lows=candles.map(x=>x.low);
+ const fullSet=calculateFullIndicatorSet(candles); const closes=candles.map(x=>x.close), highs=candles.map(x=>x.high), lows=candles.map(x=>x.low);
  const e9=ema(closes,9),e21=ema(closes,21),e50=ema(closes,50),rv=rsi(closes,14),macdLine=ema(closes,12)-ema(closes,26);
  const macdSeries=closes.map((_,i)=>ema(closes.slice(0,i+1),12)-ema(closes.slice(0,i+1),26)).filter(Number.isFinite);
  const macdSignal=ema(macdSeries,9),hist=macdLine-(macdSignal??macdLine),last=candles.at(-1),prev=candles.at(-2);
@@ -638,7 +704,7 @@ function analyze(candles,asset){
  if(!fresh)reasons.push("latest candle direction shown; live quote may be delayed");
  const nextBias=direction; // Live candle color is the primary directional signal; no undefined edge threshold.
  const nextStrength=Math.min(95,Math.round(50+Math.abs(bull-bear)*.45));
- const breakdown={trend:trendUp?"Bullish aligned":trendDown?"Bearish aligned":"Mixed / transitional",momentum:rv.toFixed(1)+" RSI · "+(momentum>0?"rising":"falling"),volatility:atrPct.toFixed(3)+"% ATR / "+(volOK?"normal":"high or quiet"),price:Math.round(bodyRatio*100)+"% candle body",structure:last.close>swingHigh?"Upside break":last.close<swingLow?"Downside break":"Inside recent range",feed:tickAge<=30?Math.round(tickAge)+"s · live tick":fresh?Math.round(candleAge)+"s · candle":"no recent data"};
+ const breakdown={...Object.fromEntries(fullSet.indicators.map(([k,v])=>[k,v])),trend:trendUp?"Bullish aligned":trendDown?"Bearish aligned":"Mixed / transitional",momentum:rv.toFixed(1)+" RSI · "+(momentum>0?"rising":"falling"),volatility:atrPct.toFixed(3)+"% ATR / "+(volOK?"normal":"high or quiet"),price:Math.round(bodyRatio*100)+"% candle body",structure:last.close>swingHigh?"Upside break":last.close<swingLow?"Downside break":"Inside recent range",feed:tickAge<=30?Math.round(tickAge)+"s · live tick":fresh?Math.round(candleAge)+"s · candle":"no recent data"};
  return {direction,signalLevel,score,reason:reasons.join(" · "),fresh,age,rsi:rv,trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry:last.close,age,quality:bodyRatio,candleTime:last.time,atr,atrPct,macdHistogram:hist,bullScore:Math.round(bull),bearScore:Math.round(bear),nextBias,nextStrength,breakdown};
 }
 async function regularData(symbol){
@@ -676,14 +742,16 @@ async function fetchAsset(asset){
 }
 
 function setChartTimeframe(minutes){
- chartTimeframe=[1,5,15].includes(minutes)?minutes:1;
+ chartTimeframe=[0.5,1,5,15].includes(minutes)?minutes:0.5;
  document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===chartTimeframe));
- $("tfNote").textContent=chartTimeframe+"-minute candles";
- $("chartMeta").textContent=`EMA 9 · EMA 21 · ${chartTimeframe}-minute candles`;
+ const tfLabel=chartTimeframe===0.5?"30-second":chartTimeframe+"-minute";
+ $("tfNote").textContent=tfLabel+" candles";
+ $("chartMeta").textContent=`EMA 9 · EMA 21 · ${tfLabel} candles`;
  drawChart();
 }
 function aggregateCandles(candles,minutes){
- if(minutes===1)return candles.slice(-100);
+ if(minutes===0.5)return candles.slice(-100);
+ if(minutes===1){minutes=1;}
  const bucketMs=minutes*60000,map=new Map();
  candles.forEach(c=>{
   const key=Math.floor(c.timeMs/bucketMs)*bucketMs;
@@ -740,7 +808,7 @@ function drawChart(){
  ctx.fillStyle="#8ea4c2";ctx.font="9px system-ui";ctx.textAlign="left";
  [0,Math.floor(candles.length/2),candles.length-1].forEach(i=>{const d=new Date(candles[i].timeMs);ctx.fillText(d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}),left+i*step+step/2,h-5)});
  $("chartCaption").textContent=`${ASSETS.find(a=>a.id===id)?.name||id} · ${candles.length} candles · candle history · latest ${fmt(livePrice>0?livePrice:last.close)}`;
- $("chartMeta").textContent=`LIVE ticks · EMA 9 / 21 · ${chartTimeframe}-minute view`;
+ $("chartMeta").textContent=`LIVE ticks · EMA 9 / 21 · ${chartTimeframe===0.5?"30-second":chartTimeframe+"-minute"} view`;
 }
 
 
@@ -826,15 +894,15 @@ function handleLiveTick(raw){
  const id=OTC_SYMBOLS[symbol];
  if(!id||!Number.isFinite(price)||price<=0)return;
  const previous=liveTicks[id]?.price ?? results[id]?.price ?? price;
- const receivedAt=Date.now(),minuteStart=Math.floor(receivedAt/60000)*60000;
+ const receivedAt=Date.now(),candleStart=Math.floor(receivedAt/30000)*30000;
  liveTicks[id]={price,change:price-previous,time:tick.time||tick.timestamp||receivedAt,receivedAt};
  if(results[id]){
   const result=results[id];result.livePrice=price;result.liveChange=price-previous;result.liveUpdated=receivedAt;
   const candles=result.candles||(result.candles=[]),last=candles[candles.length-1];
-  if(last&&Math.floor(Number(last.timeMs||0)/60000)===Math.floor(minuteStart/60000)){
+  if(last&&Math.floor(Number(last.timeMs||0)/30000)===Math.floor(candleStart/30000)){
    last.high=Math.max(last.high,price);last.low=Math.min(last.low,price);last.close=price;
   }else{
-   candles.push({time:new Date(minuteStart).toISOString(),timeMs:minuteStart,open:last?last.close:price,high:price,low:price,close:price,live:true});
+   candles.push({time:new Date(candleStart).toISOString(),timeMs:candleStart,open:last?last.close:price,high:price,low:price,close:price,live:true});
    if(candles.length>240)candles.splice(0,candles.length-240);
   }
   const asset=ASSETS.find(x=>x.id===id);
@@ -876,7 +944,7 @@ function connectLiveStream(){
 function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
 function renderScanner(){
  let arr=[...watch].map(id=>results[id]).filter(Boolean),rows=[...arr].sort((a,b)=>b.analysis.score-a.analysis.score);
- $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.direction==="CALL"?"BUY":s.direction==="PUT"?"SELL":"—",cls=shownDirection==="BUY"?"call":shownDirection==="SELL"?"put":"wait",change=r.change,timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+60000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":s.trend==="DOWN"?"red":"muted"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">01:00</small>`:""}</td><td><span class="${s.signalLevel==="CONFIRMED"?"green":"blue"}">${s.signalLevel||"EARLY"}</span></td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
+ $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.direction==="CALL"?"BUY":s.direction==="PUT"?"SELL":"—",cls=shownDirection==="BUY"?"call":shownDirection==="SELL"?"put":"wait",change=r.change,timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+30000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":s.trend==="DOWN"?"red":"muted"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">00:30</small>`:""}</td><td><span class="${s.signalLevel==="CONFIRMED"?"green":"blue"}">${s.signalLevel||"EARLY"}</span></td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
  document.querySelectorAll("#scannerBody tr[data-asset]").forEach(tr=>tr.addEventListener("click",()=>{selectedChart=tr.dataset.asset;$("chartAsset").value=selectedChart;updateChartOptions();drawChart()}));
  let fresh=arr.filter(r=>r.analysis.fresh&&hasCurrentFeed(r.id,r.candles?.at(-1))).length,signals=arr.filter(r=>["CALL","PUT"].includes(r.analysis.direction));
  $("kScanned").textContent=arr.length+" / "+watch.size;$("kSignals").textContent=signals.length;$("freshCount").textContent=arr.length;$("staleCount").textContent="—";
@@ -891,7 +959,7 @@ function lockedCandleDirection(r){
  const candle=r?.candles?.at(-1);
  if(!r||!candle)return r?.analysis?.direction||"WAIT";
  const raw=Number(candle.timeMs||0);
- const candleKey=`${r.id}|${raw>0?Math.floor(raw/60000):Math.floor(Date.now()/60000)}`;
+ const candleKey=`${r.id}|${raw>0?Math.floor(raw/30000):Math.floor(Date.now()/30000)}`;
  const now=Date.now();
  const price=Number(r.livePrice??candle.close);
  const open=Number(candle.open);
@@ -901,7 +969,7 @@ function lockedCandleDirection(r){
   state={direction:null,firstSeen:now,pending:null,pendingSince:0,pendingTicks:0,lastSwitch:0};
   candleDirectionLocks.set(candleKey,state);
  }
- // Give each new 1-minute candle four seconds to establish its first direction.
+ // Give each new 30-second candle four seconds to establish its first direction.
  if(!state.direction){
   if(now-state.firstSeen<4000)return "WAIT";
   state.direction=candidate||r.analysis?.direction||"WAIT";
@@ -922,20 +990,38 @@ function lockedCandleDirection(r){
  }
  return state.direction||"WAIT";
 }
+const AI_HOLD_OPTIONS=[5,10,15,30,60,180,300,900,1800,3600,14400];
+function formatHold(seconds){const n=Number(seconds)||30;if(n<60)return `${n}s`;if(n<3600)return `${n/60}m`;return `${n/3600}h`;}
 function candleDurationSeconds(r){
- const c=r?.candles?.at(-1),a=r?.analysis;
- if(!c||!a)return 10;
- const span=Math.max(1e-12,Number(c.high)-Number(c.low));
- const body=Math.abs(Number(c.close)-Number(c.open))/span;
- const age=Number(a.age);
- // Heuristic suggestion only; not a statistically validated expiry prediction.
- if(body>=.72&&age<=12)return 5;
- if(body>=.55&&age<=25)return 10;
- if(body>=.35&&age<=40)return 15;
- return 20;
+ const a=r?.analysis,c=r?.candles||[];
+ if(!a||!["CALL","PUT"].includes(a.direction)||c.length<12)return 30;
+ if(!a.fresh)return 30;
+ const side=a.direction==="CALL"?1:-1,close=c.map(x=>Number(x.close));
+ const aligned=(n)=>{const d=close.slice(-n-1).slice(1).map((v,i)=>Math.sign(v-close.slice(-n-1)[i])).filter(Boolean);return d.length?d.filter(x=>x===side).length/d.length:0};
+ const c6=aligned(6),c12=aligned(12),c24=aligned(24),c48=aligned(48);
+ const trend=(side===1&&a.trend==="UP")||(side===-1&&a.trend==="DOWN");
+ const confluence=(Number(a.score)||0)>=75;
+ const strong=trend&&confluence&&a.signalLevel==="CONFIRMED"&&c12>=.68&&c24>=.62;
+ // Match the holding period to persistence and volatility. Long horizons are selected
+ // only when a long sample actually exists; with an 80-bar feed, cap at 30 minutes.
+ const bars=c.length,options=[
+  [14400,bars>=480&&strong&&c48>=.78],
+  [3600,bars>=120&&strong&&c48>=.75],
+  [1800,bars>=60&&strong&&c24>=.75],
+  [900,bars>=30&&strong&&c24>=.72],
+  [300,bars>=20&&trend&&confluence&&c24>=.68],
+  [180,bars>=12&&trend&&confluence&&c12>=.70],
+  [60,trend&&confluence&&c12>=.65],
+  [30,c12>=.58],
+  [15,c6>=.58],
+  [10,c6>=.50],
+  [5,true]
+ ];
+ return options.find(x=>x[1])[0];
 }
 function candleDurationSuggestion(r){
- return `${candleDurationSeconds(r)} seconds`;
+ const seconds=candleDurationSeconds(r);
+ return `${formatHold(seconds)} AI hold`;
 }
 function updateTop(rows){
  const selectedId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
@@ -950,7 +1036,7 @@ function updateTop(rows){
  const timerKey=candidate?`${candidate.id}|${dir}|${candidate.analysis.candleTime}`:"";
  if(timerKey&&timerKey!==signalTimerKey){
   signalTimerKey=timerKey;
-  signalExpiries[timerKey]=signalExpiries[timerKey]||Date.now()+60000;
+  signalExpiries[timerKey]=signalExpiries[timerKey]||Date.now()+30000;
   signalExpiryAt=signalExpiries[timerKey];
  }
  if(!timerKey){signalTimerKey="";signalExpiryAt=0;}
@@ -961,7 +1047,7 @@ function updateTop(rows){
    const side=dir==="CALL"?"BUY":"SELL";
    banner.className="signal-callout "+(side==="BUY"?"buy":"sell");
    const duration=candleDurationSeconds(r);
-   banner.innerHTML=`<strong style="display:block;font-size:1.18em">${side} SIGNAL · ${r.name}</strong><span style="display:block;margin-top:7px;font-size:1.12em">TRADE DURATION: ${duration} SECONDS</span><small style="display:block;margin-top:5px">ENTRY ${fmt(r.livePrice??r.price)} · SCORE ${s.score}/100</small>`;
+   banner.innerHTML=`<strong style="display:block;font-size:1.18em">${side} SIGNAL · ${r.name}</strong><span style="display:block;margin-top:7px;font-size:1.12em">AI HOLD: ${formatHold(duration)}</span><small style="display:block;margin-top:5px">ENTRY ${fmt(r.livePrice??r.price)} · SCORE ${s.score}/100</small>`;
   }else{
    banner.className="signal-callout neutral";
    banner.textContent=!r?"SELECT AN OTC PAIR TO START":
@@ -994,7 +1080,7 @@ function updateTop(rows){
  if($("heroLiveLabel"))$("heroLiveLabel").textContent=fresh?(liveTicks[r.id]?"Live tick updates · active":"Candle data · recent"):r?.candles?.length?"Latest candle analysis":"Waiting for scan";
  $("topExpiry").textContent=candidate?"Live direction · callouts update when candle momentum changes":
   "Waiting for a live directional candle.";
- if($("durationAdvice"))$("durationAdvice").textContent=candidate?`${candleDurationSuggestion(r)} · suggested`:"Waiting for candle";
+ if($("durationAdvice"))$("durationAdvice").textContent=candidate?`${candleDurationSuggestion(r)} · ${formatHold(candleDurationSeconds(r))}`:"AI evaluating market structure…";
 }
 
 function renderHistory(){$("signalHistory").innerHTML=history.length?history.map(x=>`<tr><td>${x.time}</td><td>${x.asset}</td><td><span class="tag ${x.side.toLowerCase()}">${x.side}</span></td><td>${fmt(x.entry)}</td><td>${x.score}</td><td>${x.age}s</td></tr>`).join(""):'<tr><td colspan="6" class="empty">No directional setups recorded yet.</td></tr>'}
@@ -1038,7 +1124,7 @@ function ageForCandle(c){const t=Number(c?.timeMs||0);return t?Math.max(0,(Date.
 function hasCurrentFeed(assetId,candle){
  const tick=liveTicks[assetId],tickAge=tick?Date.now()-Number(tick.receivedAt||0):Infinity;
  // A recent provider tick is stronger freshness evidence than the timestamp of the
- // last completed 1-minute candle. Fall back to the candle timestamp for history-only.
+ // last completed 30-second candle. Fall back to the candle timestamp for history-only.
  return (Number.isFinite(tickAge)&&tickAge>=0&&tickAge<=30000)||ageForCandle(candle)<=150;
 }
 function updateCountdowns(){
@@ -1051,7 +1137,7 @@ function updateCountdowns(){
  const selected=results[$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart];
  const candle=selected?.candles?.at(-1);
  if(candle&&ageForCandle(candle)<150){
-  const left=Math.max(1,Math.ceil((60000-(now%60000))/1000));
+  const left=Math.max(1,Math.ceil((30000-(now%30000))/1000));
   $("candleCountdown").textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
  }else $("candleCountdown").textContent="--:--";
  document.querySelectorAll(".row-countdown").forEach(el=>{
@@ -1071,7 +1157,7 @@ function renderPaperLiveBoard(){
  el.innerHTML="<b>LIVE PAPER POSITIONS</b>"+(open.length?open.map(t=>{
   const left=Math.max(0,Math.ceil((Number(t.expiryAt||0)-Date.now())/1000));
   const side=t.side==="CALL"?"BUY":"SELL";
-  return `<div class="paper-position"><strong class="${t.side==="CALL"?"green":"red"}">${side} · ${t.asset}</strong><span class="pending">${left>0?"OPEN · "+left+"s":"WAITING FOR EXIT QUOTE"}</span><small>Entry ${fmt(t.entry)} · $${Number(t.stake).toFixed(2)} · ${t.automatic?"AUTO":"MANUAL"}</small><small>${t.entrySource||"OTCharts price"} · score ${t.score}/100</small></div>`;
+  return `<div class="paper-position"><strong class="${t.side==="CALL"?"green":"red"}">${side} · ${t.asset}</strong><span class="pending">${left>0?"OPEN · "+left+"s":"WAITING FOR EXIT QUOTE"}</span><small>Entry ${fmt(t.entry)} · $${Number(t.stake).toFixed(2)} · ${t.automatic?"AUTO":"MANUAL"}</small><small>${t.entrySource||"OTCharts price"} · AI hold ${formatHold(t.expirySeconds||60)} · score ${t.score}/100</small></div>`;
  }).join(""):"<span>No open paper trades yet · waiting for a qualified signal.</span>");
 }
 
@@ -1092,7 +1178,7 @@ function renderTrades(){
  const today=new Date().toLocaleDateString(),todayTrades=settled.filter(t=>new Date().toLocaleDateString()===today && t.timeDate===today);
  const todayPnl=trades.filter(t=>t.dayKey===new Date().toISOString().slice(0,10)).reduce((n,t)=>n+(Number(t.pnl)||0),0);
  $("jTodayPnl").textContent=money(todayPnl);$("jTodayPnl").className=todayPnl>=0?"green":"red";$("jTodayCount").textContent=trades.filter(t=>t.dayKey===new Date().toISOString().slice(0,10)&&["WIN","LOSS","TIE"].includes(t.result)).length;
- $("tradeBody").innerHTML=trades.length?trades.map(t=>`<tr><td>${t.time}</td><td>${t.asset}</td><td>${t.side}</td><td>${fmt(t.entry)}</td><td>${t.expirySeconds||60}s</td><td>${t.exit==null?"—":fmt(t.exit)}</td><td>${money(t.stake)}</td><td>${t.result==="PENDING"?(t.expiryAt&&Date.now()>=t.expiryAt?"AWAITING EXIT PRICE":`PENDING · ${Math.max(0,Math.ceil((t.expiryAt-Date.now())/1000))}s`):t.result}</td><td>${t.result==="PENDING"?"AUTO SETTLEMENT":"VERIFIED"}</td></tr>`).join(""):'<tr><td colspan="9" class="empty">No paper trades logged.</td></tr>';
+ $("tradeBody").innerHTML=trades.length?trades.map(t=>`<tr><td>${t.time}</td><td>${t.asset}</td><td>${t.side}</td><td>${fmt(t.entry)}</td><td>${formatHold(t.expirySeconds||60)}</td><td>${t.exit==null?"—":fmt(t.exit)}</td><td>${money(t.stake)}</td><td>${t.result==="PENDING"?(t.expiryAt&&Date.now()>=t.expiryAt?"AWAITING EXIT PRICE":`PENDING · ${Math.max(0,Math.ceil((t.expiryAt-Date.now())/1000))}s`):t.result}</td><td>${t.result==="PENDING"?"AUTO SETTLEMENT":"VERIFIED"}</td></tr>`).join(""):'<tr><td colspan="9" class="empty">No paper trades logged.</td></tr>';
 
  renderPaperLiveBoard();}
 function persistAll(){saveState();renderTrades()}
@@ -1101,9 +1187,9 @@ const announcedCandleKeys=new Set();
 function signalCandleKey(r){
  const candle=r?.candles?.at(-1);
  const rawTime=Number(candle?.timeMs||0);
- // Normalize every forming 1-minute candle to one stable key, even if
+ // Normalize every forming 30-second candle to one stable key, even if
  // the provider refreshes its timestamp or sends many ticks per second.
- const minute=rawTime>0?Math.floor(rawTime/60000):Math.floor(Date.now()/60000);
+ const minute=rawTime>0?Math.floor(rawTime/30000):Math.floor(Date.now()/30000);
  return `${r.id}|${minute}`;
 }
 function announceSignal(r){
@@ -1115,15 +1201,12 @@ function announceSignal(r){
  if(announcedCandleKeys.size>500)announcedCandleKeys.clear();
  if(calloutsEnabled){
   try{
-   if("speechSynthesis" in window){speechSynthesis.cancel();const freshness=r.analysis.fresh?"Live quote available.":"Based on latest candle; live quote may be delayed.";const level=r.analysis.signalLevel==="CONFIRMED"?"confirmed setup":"early directional bias";const duration=candleDurationSeconds(r);const utterance=new SpeechSynthesisUtterance(`${side}. ${level}. ${r.name}. Suggested trade duration ${duration} seconds. Entry ${fmt(r.livePrice??r.price)}. ${freshness}`);utterance.rate=1.02;utterance.pitch=1.05;speechSynthesis.speak(utterance);}
+   if("speechSynthesis" in window){speechSynthesis.cancel();const freshness=r.analysis.fresh?"Live quote available.":"Based on latest candle; live quote may be delayed.";const level=r.analysis.signalLevel==="CONFIRMED"?"confirmed setup":"early directional bias";const duration=formatHold(candleDurationSeconds(r));const utterance=new SpeechSynthesisUtterance(`${side}. ${level}. ${r.name}. AI selected hold ${duration}. Entry ${fmt(r.livePrice??r.price)}. ${freshness}`);utterance.rate=1.02;utterance.pitch=1.05;speechSynthesis.speak(utterance);}
    const AC=window.AudioContext||window.webkitAudioContext;
    if(AC){const ctx=new AC(),osc=ctx.createOscillator(),gain=ctx.createGain();osc.type="sine";osc.frequency.value=side==="BUY"?880:520;gain.gain.setValueAtTime(.0001,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.12,ctx.currentTime+.025);gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.28);osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+.3);osc.onended=()=>ctx.close();}
   }catch(e){}
  }
 }
-$("tradeDuration")?.addEventListener("change",()=>{
- if($("paperStatus"))$("paperStatus").textContent=`Trade duration set to ${$("tradeDuration").value} seconds.`;
-});
 $("alertToggle").addEventListener("click",()=>{
  calloutsEnabled=!calloutsEnabled;
  $("alertToggle").textContent=calloutsEnabled?"🔊 Callouts ON":"🔔 Enable callouts";
@@ -1198,7 +1281,7 @@ function openPaperTrade(r,side,isAutomatic=true,signalKey=""){
   if($("paperStatus"))$("paperStatus").textContent="Paper trade skipped · no valid entry quote.";
   return false;
  }
- const expirySeconds=Math.max(5,Math.min(20,Number($("tradeDuration")?.value||10))),payoutRate=Math.max(1,Math.min(100,+$("payout").value||85))/100,now=Date.now();
+ const expirySeconds=candleDurationSeconds(r),payoutRate=Math.max(1,Math.min(100,+$("payout").value||85))/100,now=Date.now();
  const t={
   id:now.toString(36)+Math.random().toString(36).slice(2,6),
   signalKey:key,time:clock(),timeDate:new Date().toLocaleDateString(),dayKey:new Date().toISOString().slice(0,10),
@@ -1209,7 +1292,7 @@ function openPaperTrade(r,side,isAutomatic=true,signalKey=""){
   score:r.analysis.score,result:"PENDING",pnl:0,practiceMode:true,automatic:!!isAutomatic
  };
  trades.unshift(t);trades=trades.slice(0,250);renderTrades();renderPaperLiveBoard();saveState();
- if($("paperStatus"))$("paperStatus").textContent=`AUTO PAPER ${side==="CALL"?"BUY":"SELL"} · ${t.asset} · ${fmt(entry)} · $${stake} stake · ${expirySeconds}s expiry · awaiting verified exit quote.`;
+ if($("paperStatus"))$("paperStatus").textContent=`AUTO PAPER ${side==="CALL"?"BUY":"SELL"} · ${t.asset} · ${fmt(entry)} · $${stake} stake · AI hold ${formatHold(expirySeconds)} · awaiting verified exit quote.`;
  if($("autoPaperStatus"))$("autoPaperStatus").textContent=`${autoPaperEnabled?"ON":"OFF"} · ${trades.filter(x=>x.result==="PENDING").length} open paper trade(s)`;
  return true;
 }
@@ -1229,7 +1312,7 @@ function manualSettle(id,result){
  t.result=result;t.exit=null;let payout=Math.max(1,Math.min(100,+$("payout").value||85))/100;t.pnl=result==="WIN"?t.stake*payout:-t.stake;
  renderTrades();saveState();
 }
-function exportCSV(){let rows=[["Time","Asset","Side","Entry","Expiry seconds","Exit","Stake","Score","Result","PnL"],...trades.map(t=>[t.time,t.asset,t.side,t.entry,t.expirySeconds||60,t.exit??"",t.stake,t.score,t.result,t.pnl])];let csv=rows.map(r=>r.map(x=>`"${String(x).replaceAll('"','""')}"`).join(",")).join("\n");let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="apexscan-paper-journal.csv";a.click();URL.revokeObjectURL(a.href)}
+function exportCSV(){let rows=[["Time","Asset","Side","Entry","AI hold","Exit","Stake","Score","Result","PnL"],...trades.map(t=>[t.time,t.asset,t.side,t.entry,t.expirySeconds||60,t.exit??"",t.stake,t.score,t.result,t.pnl])];let csv=rows.map(r=>r.map(x=>`"${String(x).replaceAll('"','""')}"`).join(",")).join("\n");let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="apexscan-paper-journal.csv";a.click();URL.revokeObjectURL(a.href)}
 function setMarketCategory(category){
  activeMarketCategory=category;
  document.querySelectorAll(".market-tab").forEach(b=>b.classList.toggle("active",b.dataset.marketCategory===category));
