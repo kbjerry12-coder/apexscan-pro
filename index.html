@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="8.9-otc-two-scan-confirmation-fast-callouts-off">
-<title>APEXSCAN PRO · V8.8 OTC BUY / SELL</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="8.11-otc-multifactor-candle-lock-fast-callouts-off">
+<title>APEXSCAN PRO · V8.11 OTC BUY / SELL</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -622,24 +622,30 @@ function analyze(candles,asset){
  const candleAge=last.timeMs?Math.max(0,(Date.now()-last.timeMs)/1000):Infinity;
  const fresh=tickAge<=30||candleAge<=150;
  const age=Math.min(tickAge,candleAge);
- // Candle-color-first signal logic: the latest forming candle determines direction.
- // Indicators remain supporting analysis and cannot override candle color.
+ // Multi-factor direction selection: candle colour is supporting evidence,
+ // never the deciding vote. Trend, momentum and price structure must agree.
  const directionBias=bull-bear;
- const score=Math.round(Math.max(bull,bear));
- const liveDelta=Number.isFinite(Number(tick?.change))?Number(tick.change):0;
- let direction;
- if(last.close>last.open) direction="CALL";
- else if(last.close<last.open) direction="PUT";
- else if(liveDelta>0) direction="CALL";
- else if(liveDelta<0) direction="PUT";
- else direction=prev.close>=prev.open?"CALL":"PUT";
- const signalLevel=(direction==="CALL"?(trendUp&&macdUp&&momentum>0):(trendDown&&macdDown&&momentum<0))?"CONFIRMED":"EARLY";
- reasons.unshift(direction==="CALL"?"latest candle is GREEN · CALL direction":"latest candle is RED · PUT direction");
- if(!fresh)reasons.push("latest candle direction shown; live quote may be delayed");
- const nextBias=direction; // Live candle color is the primary directional signal; no undefined edge threshold.
- const nextStrength=Math.min(95,Math.round(50+Math.abs(bull-bear)*.45));
- const breakdown={trend:trendUp?"Bullish aligned":trendDown?"Bearish aligned":"Mixed / transitional",momentum:rv.toFixed(1)+" RSI · "+(momentum>0?"rising":"falling"),volatility:atrPct.toFixed(3)+"% ATR / "+(volOK?"normal":"high or quiet"),price:Math.round(bodyRatio*100)+"% candle body",structure:last.close>swingHigh?"Upside break":last.close<swingLow?"Downside break":"Inside recent range",feed:tickAge<=30?Math.round(tickAge)+"s · live tick":fresh?Math.round(candleAge)+"s · candle":"no recent data"};
- return {direction,signalLevel,score,reason:reasons.join(" · "),fresh,age,rsi:rv,trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry:last.close,age,quality:bodyRatio,candleTime:last.time,atr,atrPct,macdHistogram:hist,bullScore:Math.round(bull),bearScore:Math.round(bear),nextBias,nextStrength,breakdown};
+ const rawScore=Math.max(bull,bear);
+ const score=Math.round(rawScore/84*100);
+ const bullCore=(trendUp?1:0)+(macdUp?1:0)+(momentum>0?1:0);
+ const bearCore=(trendDown?1:0)+(macdDown?1:0)+(momentum<0?1:0);
+ const bullStructure=candleBull||last.close>swingHigh;
+ const bearStructure=candleBear||last.close<swingLow;
+ const bullQualified=bull>=44&&directionBias>=14&&bullCore>=2&&bullStructure;
+ const bearQualified=bear>=44&&directionBias<=-14&&bearCore>=2&&bearStructure;
+ let direction="WAIT";
+ if(bullQualified&&!bearQualified)direction="CALL";
+ else if(bearQualified&&!bullQualified)direction="PUT";
+ const coreCount=direction==="CALL"?bullCore:direction==="PUT"?bearCore:0;
+ const signalLevel=direction!=="WAIT"&&coreCount===3&&rawScore>=52?"CONFIRMED":"EARLY";
+ if(direction==="CALL")reasons.unshift("BUY qualified · bullish trend + momentum + candle structure aligned");
+ else if(direction==="PUT")reasons.unshift("SELL qualified · bearish trend + momentum + candle structure aligned");
+ else reasons.unshift("No trade · trend, momentum and candle structure do not agree yet");
+ if(!fresh)reasons.push("latest quote may be delayed · verify feed before entry");
+ const nextBias=direction;
+ const nextStrength=direction==="WAIT"?Math.round(50+Math.abs(directionBias)*.25):Math.min(95,Math.round(50+Math.abs(directionBias)*.45));
+ const breakdown={trend:trendUp?"Bullish aligned":trendDown?"Bearish aligned":"Mixed / transitional",momentum:rv.toFixed(1)+" RSI · "+(momentum>0?"rising":"falling"),volatility:atrPct.toFixed(3)+"% ATR / "+(volOK?"normal":"high or quiet"),price:Math.round(bodyRatio*100)+"% candle body",structure:last.close>swingHigh?"Upside break":last.close<swingLow?"Downside break":candleBull?"Bullish rejection / body":candleBear?"Bearish rejection / body":"No clear candle pattern",feed:tickAge<=30?Math.round(tickAge)+"s · live tick":fresh?Math.round(candleAge)+"s · candle":"no recent data"};
+ return {direction,signalLevel,score,reason:reasons.join(" · "),fresh,age,rsi:rv,trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry:last.close,quality:bodyRatio,candleTime:last.time,atr,atrPct,macdHistogram:hist,bullScore:Math.round(bull),bearScore:Math.round(bear),nextBias,nextStrength,breakdown};
 }
 async function regularData(symbol){
  if(!apiKey)throw Error("Twelve Data API key missing");
@@ -840,8 +846,9 @@ function handleLiveTick(raw){
   const asset=ASSETS.find(x=>x.id===id);
   if(asset&&candles.length>=35){
    result.analysis=analyze(candles,asset);
-   // Emit a signal immediately when the live candle turns green or red.
-   addSignal(result);
+   applyCandleDirectionLock(result);
+   // Publish only the candle's locked direction; later ticks cannot flip it.
+   if(result.analysis.direction!=="WAIT")addSignal(result);
   }
   renderScanner();
   if(selectedChart===id||$("chartAsset")?.value===id){drawChart();$("chartCaption").textContent=`${result.name} · LIVE ${fmt(price)} · updating each provider tick`;}
@@ -875,7 +882,7 @@ function connectLiveStream(){
 function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
 function renderScanner(){
  let arr=[...watch].map(id=>results[id]).filter(Boolean),rows=[...arr].sort((a,b)=>b.analysis.score-a.analysis.score);
- $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.direction==="CALL"?"BUY":s.direction==="PUT"?"SELL":"—",cls=shownDirection==="BUY"?"call":shownDirection==="SELL"?"put":"wait",change=r.change,timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+60000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":s.trend==="DOWN"?"red":"muted"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">01:00</small>`:""}</td><td><span class="${s.signalLevel==="CONFIRMED"?"green":"blue"}">${s.signalLevel||"EARLY"}</span></td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
+ $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.direction==="CALL"?"BUY":s.direction==="PUT"?"SELL":"—",cls=shownDirection==="BUY"?"call":shownDirection==="SELL"?"put":"wait",change=r.change,timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Number(r.candles?.at(-1)?.timeMs||Date.now())+60000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":s.trend==="DOWN"?"red":"muted"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">01:00</small>`:""}</td><td><span class="${s.signalLevel==="CONFIRMED"?"green":"blue"}">${s.signalLevel||"EARLY"}</span></td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
  document.querySelectorAll("#scannerBody tr[data-asset]").forEach(tr=>tr.addEventListener("click",()=>{selectedChart=tr.dataset.asset;$("chartAsset").value=selectedChart;updateChartOptions();drawChart()}));
  let fresh=arr.filter(r=>r.analysis.fresh&&hasCurrentFeed(r.id,r.candles?.at(-1))).length,signals=arr.filter(r=>["CALL","PUT"].includes(r.analysis.direction));
  $("kScanned").textContent=arr.length+" / "+watch.size;$("kSignals").textContent=signals.length;$("freshCount").textContent=arr.length;$("staleCount").textContent="—";
@@ -890,26 +897,30 @@ function lockedCandleDirection(r){
  const candle=r?.candles?.at(-1);
  if(!r||!candle)return "WAIT";
  const raw=Number(candle.timeMs||0);
- const candleKey=`${r.id}|${raw>0?Math.floor(raw/60000):Math.floor(Date.now()/60000)}`;
+ const minute=raw>0?Math.floor(raw/60000):Math.floor(Date.now()/60000);
+ const candleKey=`${r.id}|${minute}`;
  const proposed=r.analysis?.direction;
  let lock=candleDirectionLocks.get(candleKey);
- // Require the same direction on two consecutive scans before displaying it.
- // Once confirmed, hold that direction until the next 1-minute candle.
- if(lock?.confirmed)return lock.direction;
+ // The first qualified direction owns this 1-minute candle. Unqualified
+ // WAIT analysis never reserves a candle; later qualified direction locks.
+ if(lock?.direction)return lock.direction;
  if(!["CALL","PUT"].includes(proposed))return "WAIT";
- if(!lock||lock.direction!==proposed){
-  lock={direction:proposed,count:1,confirmed:false,firstSeenAt:Date.now()};
-  candleDirectionLocks.set(candleKey,lock);
-  return "WAIT";
- }
- lock.count++;
- if(lock.count>=2)lock.confirmed=true;
+ lock={direction:proposed,firstSeenAt:Date.now(),minute};
  candleDirectionLocks.set(candleKey,lock);
  if(candleDirectionLocks.size>500){
   const keep=[...candleDirectionLocks.entries()].slice(-250);
   candleDirectionLocks.clear();keep.forEach(([k,v])=>candleDirectionLocks.set(k,v));
  }
- return lock.confirmed?lock.direction:"WAIT";
+ return lock.direction;
+}
+function applyCandleDirectionLock(result){
+ if(!result?.analysis||!result?.candles?.length)return result;
+ const locked=lockedCandleDirection(result);
+ if(["CALL","PUT"].includes(locked)&&result.analysis.direction!==locked){
+  result.analysis={...result.analysis,direction:locked,
+   reason:`${locked==="CALL"?"BUY":"SELL"} locked for this 1-minute candle · no mid-candle reversals · `+result.analysis.reason};
+ }
+ return result;
 }
 function candleDurationSeconds(r){
  const c=r?.candles?.at(-1),a=r?.analysis;
@@ -939,7 +950,7 @@ function updateTop(rows){
  const timerKey=candidate?`${candidate.id}|${dir}|${candidate.analysis.candleTime}`:"";
  if(timerKey&&timerKey!==signalTimerKey){
   signalTimerKey=timerKey;
-  signalExpiries[timerKey]=signalExpiries[timerKey]||Date.now()+60000;
+  signalExpiries[timerKey]=signalExpiries[timerKey]||Number(candle?.timeMs||Date.now())+60000;
   signalExpiryAt=signalExpiries[timerKey];
  }
  if(!timerKey){signalTimerKey="";signalExpiryAt=0;}
@@ -981,8 +992,8 @@ function updateTop(rows){
  }else $("analysisBreakdown").innerHTML="<div><span>Analysis</span><b>Waiting for market data</b></div>";
  if($("heroSelectedMarket"))$("heroSelectedMarket").textContent=r?.name||"Select a market";
  if($("heroLiveLabel"))$("heroLiveLabel").textContent=fresh?(liveTicks[r.id]?"Live tick updates · active":"Candle data · recent"):r?.candles?.length?"Latest candle analysis":"Waiting for scan";
- $("topExpiry").textContent=candidate?"Live direction · callouts update when candle momentum changes":
-  "Waiting for a live directional candle.";
+ $("topExpiry").textContent=candidate?"Direction locked · held until this 1-minute candle closes":
+  "Waiting for trend, momentum and candle structure alignment.";
  if($("durationAdvice"))$("durationAdvice").textContent=candidate?`${candleDurationSuggestion(r)} · suggested`:"Waiting for candle";
 }
 
@@ -1140,19 +1151,11 @@ function addSignal(r){
   try{
    if(a.kind==="regular"&&!apiKey)throw Error("Twelve Data API key required for this regular-market symbol; OTC scanning continues.");
    let data=await fetchAsset(a);let old=results[id],price=data.at(-1).close,analysis=analyze(data,a);
-   // FAST CALLOUTS OFF: require two consecutive scans to agree, then hold
-   // that direction for the rest of this 1-minute candle.
-   if(["CALL","PUT"].includes(analysis.direction)){
-    const proposed=analysis.direction;
-    const locked=lockedCandleDirection({id,candles:data,analysis,livePrice:liveTicks[id]?.price});
-    if(locked!==proposed){
-     analysis={...analysis,direction:locked,reason:locked==="WAIT"?`Confirming ${proposed==="CALL"?"BUY":"SELL"} direction on the next scan · fast callouts disabled · `+analysis.reason:`${locked==="CALL"?"BUY":"SELL"} direction held for this candle · fast reversals disabled · `+analysis.reason};
-    }
-   }
    let prior=old?.price??null,change=prior===null?null:price-prior;
    results[id]={id,name:a.name,price,change,candles:data,analysis,scannedAt:Date.now()};
+   applyCandleDirectionLock(results[id]);
    if(liveTicks[id]){results[id].livePrice=liveTicks[id].price;results[id].liveChange=liveTicks[id].change;}
-   if(analysis.direction!=="WAIT")addSignal(results[id]);
+   if(results[id].analysis.direction!=="WAIT")addSignal(results[id]);
    if(selectedChart===id||!selectedChart){try{drawChart()}catch(chartError){console.error(chartError)}}
   }catch(e){
    errors++;errorDetails.push(a.name+": "+(e.message||"Unknown data error"));
