@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="7.3-control-scan-fix">
-<title>APEXSCAN PRO · Mobile Signal Terminal</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="7.4-chart-feed-signal-repair">
+<title>APEXSCAN PRO · V7.4 Mobile Signal Terminal</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -254,7 +254,7 @@ const ASSETS=[
  {id:"OTC:GBP/USD",name:"GBP/USD OTC",kind:"otc",symbol:"GBPUSD_otc",default:true},
  {id:"OTC:USD/JPY",name:"USD/JPY OTC",kind:"otc",symbol:"USDJPY_otc",default:true}
 ];
-let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
+let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6}),clock=()=>new Date().toLocaleTimeString();
 function status(t,ok=false){$("statusText").textContent=t;$("statusLed").style.background=ok?"var(--green)":"var(--amber)"}
 function saveState(){try{localStorage.setItem(STORE,JSON.stringify({watch:[...watch],history:history.slice(0,150),trades:trades.slice(0,250),threshold:$("threshold").value,mode:$("scanMode").value,interval:$("interval").value,stake:$("stake").value,payout:$("payout").value,chart:selectedChart}))}catch(e){}}
@@ -271,6 +271,7 @@ function loadState(){
   if(st.stake)$("stake").value=st.stake;
   if(st.payout)$("payout").value=st.payout;
   if(st.chart&&ASSETS.some(a=>a.id===st.chart))selectedChart=st.chart;
+  if(!watch.has(selectedChart))selectedChart=[...watch][0]||"OTC:EUR/USD";
  }catch(e){console.warn("Saved settings could not be loaded",e)}
 }
 function assetCategory(a){return a.id==="BTC/USD"||a.id==="ETH/USD"?"crypto":"currencies"}
@@ -349,6 +350,12 @@ function analyze(candles,asset){
  if(!volOK){direction="WAIT";signalLevel="NONE";reasons.push("volatility filter — entry blocked")}
  if(bodyRatio<.16){direction="WAIT";signalLevel="NONE";reasons.push("indecision candle — entry blocked")}
  if(!prev||last.close===prev.close){direction="WAIT";signalLevel="NONE";reasons.push("no price movement")}
+ // Surface a directional lean for every fresh feed snapshot. This is explicitly EARLY/LOW-CONFIDENCE,
+ // not a confirmed entry; stale data remains blocked and is never turned into a fabricated signal.
+ if(direction==="WAIT"&&fresh){
+   if(bull>=bear){direction="CALL";signalLevel="EARLY";reasons.push("directional lean only · weak alignment")}
+   else{direction="PUT";signalLevel="EARLY";reasons.push("directional lean only · weak alignment")}
+ }
  const breakdown={trend:trendUp?"Bullish aligned":trendDown?"Bearish aligned":"Mixed / transitional",momentum:rv.toFixed(1)+" RSI · "+(momentum>0?"rising":"falling"),volatility:atrPct.toFixed(3)+"% ATR / "+(volOK?"normal":"filtered"),price:Math.round(bodyRatio*100)+"% candle body",structure:last.close>swingHigh?"Upside break":last.close<swingLow?"Downside break":"Inside recent range",feed:fresh?Math.round(age)+"s · fresh":""+Math.round(age)+"s · stale"};
  return {direction,signalLevel,score,reason:reasons.join(" · "),rsi:rv,trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry:last.close,age,quality:bodyRatio,candleTime:last.time,atr,atrPct,macdHistogram:hist,bullScore:Math.round(bull),bearScore:Math.round(bear),breakdown};
 }
@@ -362,9 +369,75 @@ async function otcData(symbol){
  const r=await fetch(`/.netlify/functions/otc-candles?symbol=${encodeURIComponent(symbol)}`);let j={};try{j=await r.json()}catch(e){}
  if(!r.ok)throw Error(j.error||"OTC endpoint unavailable");
  if(!j.candles?.length)throw Error("No OTC candles returned");
- return j.candles.slice(-80).map(v=>({time:new Date(v.time*1000).toISOString(),timeMs:Number(v.time)*1000,open:+v.open,high:+v.high,low:+v.low,close:+v.close}));
+ return j.candles.slice(-240).map(v=>{
+  const raw=v.time??v.timestamp??v.datetime??v.t;
+  let ms=typeof raw==="string"&&!/^\\d+(?:\\.\\d+)?$/.test(raw)?Date.parse(raw):Number(raw);
+  if(Number.isFinite(ms)&&ms>0&&ms<1e12)ms*=1000;
+  if(!Number.isFinite(ms)||ms<=0)throw Error("OTC candle timestamp is missing or invalid");
+  const open=Number(v.open??v.o),high=Number(v.high??v.h),low=Number(v.low??v.l),close=Number(v.close??v.c);
+  if(![open,high,low,close].every(Number.isFinite))throw Error("OTC candle has invalid OHLC values");
+  return {time:new Date(ms).toISOString(),timeMs:ms,open,high,low,close};
+ }).filter(c=>c.timeMs>0);
 }
 async function fetchAsset(a){return a.kind==="otc"?otcData(a.symbol):regularData(a.symbol)}
+
+function setChartTimeframe(minutes){
+ chartTimeframe=[1,5,15].includes(minutes)?minutes:1;
+ document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===chartTimeframe));
+ $("tfNote").textContent=chartTimeframe+"-minute candles";
+ $("chartMeta").textContent=`EMA 9 · EMA 21 · ${chartTimeframe}-minute candles`;
+ drawChart();
+}
+function aggregateCandles(candles,minutes){
+ if(minutes===1)return candles.slice(-100);
+ const bucketMs=minutes*60000,map=new Map();
+ candles.forEach(c=>{
+  const key=Math.floor(c.timeMs/bucketMs)*bucketMs;
+  if(!map.has(key))map.set(key,{time:new Date(key).toISOString(),timeMs:key,open:c.open,high:c.high,low:c.low,close:c.close});
+  else{const b=map.get(key);b.high=Math.max(b.high,c.high);b.low=Math.min(b.low,c.low);b.close=c.close;}
+ });
+ return [...map.values()].slice(-100);
+}
+function drawChart(){
+ const canvas=$("chart");if(!canvas)return;
+ const ctx=canvas.getContext("2d");if(!ctx)return;
+ const rect=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);
+ const w=Math.max(300,Math.floor(rect.width||canvas.clientWidth||600));
+ const h=Math.max(180,Math.floor(rect.height||canvas.clientHeight||300));
+ canvas.width=Math.floor(w*dpr);canvas.height=Math.floor(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+ ctx.clearRect(0,0,w,h);
+ const id=$("chartAsset")?.value||$("mobileAsset")?.value||selectedChart;
+ const result=results[id],raw=result?.candles||[],candles=aggregateCandles(raw,chartTimeframe);
+ ctx.fillStyle="#081321";ctx.fillRect(0,0,w,h);
+ const left=48,right=12,top=18,bottom=24,plotW=w-left-right,plotH=h-top-bottom;
+ ctx.strokeStyle="#1b3552";ctx.lineWidth=1;ctx.font="10px system-ui";ctx.fillStyle="#8ea4c2";
+ for(let i=0;i<=4;i++){const y=top+plotH*i/4;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(w-right,y);ctx.stroke();}
+ if(candles.length<2){
+  ctx.fillStyle="#8ea4c2";ctx.font="13px system-ui";ctx.textAlign="center";
+  ctx.fillText(result?.analysis?.reason||"Waiting for fresh candles · press Scan",w/2,h/2);
+  $("chartCaption").textContent=result?.analysis?.fresh?"Loading chart…":result?"No usable candle history · check feed":"Waiting for candles";
+  return;
+ }
+ const lo=Math.min(...candles.map(c=>c.low)),hi=Math.max(...candles.map(c=>c.high)),pad=(hi-lo)*.08||Math.abs(hi)*.0002||1;
+ const min=lo-pad,max=hi+pad,span=max-min||1;
+ const y=v=>top+(max-v)/span*plotH;
+ for(let i=0;i<=4;i++){const val=max-(max-min)*i/4;ctx.textAlign="right";ctx.fillText(fmt(val),left-6,top+plotH*i/4+3);}
+ const step=plotW/candles.length,cw=Math.max(2,Math.min(10,step*.62));
+ candles.forEach((c,i)=>{
+  const x=left+i*step+step/2,up=c.close>=c.open,color=up?"#38efb1":"#ff6688";
+  ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.moveTo(x,y(c.high));ctx.lineTo(x,y(c.low));ctx.stroke();
+  const bodyTop=y(Math.max(c.open,c.close)),bodyBottom=y(Math.min(c.open,c.close));
+  ctx.fillRect(x-cw/2,bodyTop,cw,Math.max(1.5,bodyBottom-bodyTop));
+ });
+ const closes=candles.map(c=>c.close),e9=ema(closes,9),e21=ema(closes,21);
+ if(e9!==null){ctx.strokeStyle="#ffd078";ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(left, y(e9));ctx.lineTo(w-right,y(e9));ctx.stroke();}
+ if(e21!==null){ctx.strokeStyle="#72adff";ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(left, y(e21));ctx.lineTo(w-right,y(e21));ctx.stroke();}
+ const last=candles[candles.length-1],age=Math.max(0,(Date.now()-last.timeMs)/1000);
+ $("chartCaption").textContent=`${ASSETS.find(a=>a.id===id)?.name||id} · ${candles.length} candles · ${age<150?"fresh":"stale"} · latest ${fmt(last.close)}`;
+ $("chartMeta").textContent=`EMA 9 · EMA 21 · ${chartTimeframe}-minute view`;
+}
+
 
 // One browser EventSource owns the single OTCharts stream for all three OTC pairs.
 let liveStream=null,liveStreamState="CONNECTING",liveTicks={};
@@ -414,7 +487,7 @@ function connectLiveStream(){
 function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
 function renderScanner(){
  let arr=[...watch].map(id=>results[id]).filter(Boolean),rows=[...arr].sort((a,b)=>b.analysis.score-a.analysis.score);
- $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,cls=s.direction==="CALL"?"call":s.direction==="PUT"?"put":"wait",change=r.change,age=Number.isFinite(s.age)?Math.round(s.age)+"s":"—",timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+60000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":"red"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${s.direction}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">01:00</small>`:""}</td><td>${s.fresh?'<span class="green">FRESH</span>':'<span class="amber">STALE</span>'}</td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
+ $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.fresh?s.direction:"STALE",cls=shownDirection==="CALL"?"call":shownDirection==="PUT"?"put":"stale",change=r.change,age=Number.isFinite(s.age)?Math.round(s.age)+"s":"—",timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+60000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":"red"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">01:00</small>`:""}</td><td>${s.fresh?'<span class="green">FRESH</span>':'<span class="amber">STALE</span>'}</td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
  document.querySelectorAll("#scannerBody tr[data-asset]").forEach(tr=>tr.addEventListener("click",()=>{selectedChart=tr.dataset.asset;$("chartAsset").value=selectedChart;updateChartOptions();drawChart()}));
  let fresh=arr.filter(r=>r.analysis.fresh).length,stale=arr.length-fresh,signals=arr.filter(r=>r.analysis.direction!=="WAIT");
  $("kScanned").textContent=arr.length+" / "+watch.size;$("kSignals").textContent=signals.length;$("freshCount").textContent=fresh;$("staleCount").textContent=stale;
@@ -426,7 +499,7 @@ function renderScanner(){
 }
 function updateTop(rows){
  // Keep signal qualification separate from the market snapshot shown on the card.
- const candidates=rows.filter(r=>r.analysis.direction!=="WAIT"&&r.analysis.fresh)
+ const candidates=rows.filter(r=>["CALL","PUT"].includes(r.analysis.direction)&&r.analysis.fresh)
    .sort((a,b)=>b.analysis.score-a.analysis.score);
  const candidate=candidates[0]||null;
  const preferredId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
@@ -434,7 +507,7 @@ function updateTop(rows){
  latestTop=candidate; // Paper-trade action remains disabled unless a qualified signal exists.
  const r=candidate||snapshot;
  const s=r?.analysis||null;
- const dir=candidate?candidate.analysis.direction:"WAIT";
+ const dir=candidate?candidate.analysis.direction:(s&&!s.fresh?"STALE":"NO DATA");
  const timerKey=candidate&&s?`${candidate.id}|${dir}|${s.candleTime}`:"";
  if(timerKey&&timerKey!==signalTimerKey){
    signalTimerKey=timerKey;
@@ -443,10 +516,10 @@ function updateTop(rows){
  }
  if(!timerKey){signalTimerKey="";signalExpiryAt=0;}
  $("topSignal").className="signal-card "+(dir==="CALL"?"call":dir==="PUT"?"put":"wait");
- $("topDirection").textContent=dir;
+ $("topDirection").textContent=candidate?dir:(s&&!s.fresh?"STALE":"NO DATA");
  $("topScore").textContent=candidate
    ? (s.signalLevel==="EARLY"?"EARLY · ":"CONFIRMED · ")+s.score+" / 100"
-   : (s?`WAIT · ${s.score??0} / 100`:"NO DATA · SCAN REQUIRED");
+    : (s&&!s.fresh?"FEED STALE":s?`EARLY · ${s.score??0} / 100`:"NO DATA · SCAN REQUIRED");
  $("topReason").textContent=candidate
    ? (s.signalLevel==="EARLY"?"Early setup · confirmation pending. ":"")+s.reason
    : snapshot
@@ -454,7 +527,7 @@ function updateTop(rows){
      : "No market data loaded yet. Select a market and run a scan.";
  $("signalStatusLine").textContent=candidate
    ? (dir==="CALL"?"Your signal is UP · CALL bias":"Your signal is DOWN · PUT bias")
-   : "WAIT · market data shown, no aligned entry";
+    : (s&&!s.fresh?"FEED STALE · signals paused until fresh candles arrive":"Waiting for market data");
  if($("indicatorChips")){
    $("indicatorChips").innerHTML=s&&Number.isFinite(s.rsi)
      ? `<span>EMA trend · ${s.trend||"—"}</span><span>RSI 14 · ${s.rsi.toFixed(1)}</span><span>MACD · ${Number.isFinite(s.macdHistogram)?(s.macdHistogram>=0?"Bullish":"Bearish"):"—"}</span><span>Candle quality · ${Math.round((s.quality||0)*100)}%</span><span>Feed · ${s.fresh?"Fresh":"Stale"}</span>`
@@ -473,8 +546,8 @@ function updateTop(rows){
  if($("heroSelectedMarket"))$("heroSelectedMarket").textContent=r?.name||"Select a market";
  if($("heroLiveLabel"))$("heroLiveLabel").textContent=s?.fresh?"Live candle data · fresh":s?"Candle data · stale":"Waiting for scan";
  $("topExpiry").textContent=candidate
-   ?"Signal validity: 60 seconds · Paper expiry: 60 seconds"
-   :"No active signal · countdown starts only after a qualified CALL / PUT";
+   ?(s.signalLevel==="EARLY"?"Early directional bias · low confluence · 60s paper expiry":"Confirmed technical setup · 60s paper expiry")
+   :"Feed must be fresh before a paper position can open";
 }
 
 function renderHistory(){$("signalHistory").innerHTML=history.length?history.map(x=>`<tr><td>${x.time}</td><td>${x.asset}</td><td><span class="tag ${x.side.toLowerCase()}">${x.side}</span></td><td>${fmt(x.entry)}</td><td>${x.score}</td><td>${x.age}s</td></tr>`).join(""):'<tr><td colspan="6" class="empty">No qualified signals yet.</td></tr>'}
@@ -494,8 +567,14 @@ function settleExpiredTrades(){
  let changed=false, now=Date.now();
  for(const t of trades){
   if(t.result!=="PENDING" || !t.expiryAt || now<t.expiryAt) continue;
-  const quote=currentMarketPrice(t.assetId,t.expiryAt);
-  if(!quote || !Number.isFinite(quote.price)) continue; // Wait for a post-expiry quote; never fabricate an exit.
+  let quote=currentMarketPrice(t.assetId,t.expiryAt);
+  // Candle-history fallback is valid only when a genuinely newer candle has arrived after entry.
+  if(!quote){
+   const latest=results[t.assetId]?.candles?.at(-1),scanned=Number(results[t.assetId]?.scannedAt||0);
+   if(latest&&Number(latest.timeMs)>Number(t.entryCandleTime||0)&&scanned>=t.expiryAt&&ageForCandle(latest)<150)
+    quote={price:Number(latest.close),observedAt:scanned};
+  }
+  if(!quote || !Number.isFinite(quote.price)) continue; // Wait for a real post-expiry quote/new candle; never fabricate an exit.
   const exit=quote.price;
   t.exit=exit;
   t.exitObservedAt=quote.observedAt;
@@ -510,6 +589,7 @@ function settleExpiredTrades(){
  }
  if(changed){renderTrades();saveState()}
 }
+function ageForCandle(c){const t=Number(c?.timeMs||0);return t?Math.max(0,(Date.now()-t)/1000):Infinity}
 function updateCountdowns(){
  const now=Date.now();
  if(signalExpiryAt){
@@ -521,10 +601,12 @@ function updateCountdowns(){
  const candle=selected?.candles?.at(-1);
  if(candle){
   const stamp=Number(candle.timeMs||candle.timestamp||0);
-  const candleStart=stamp>0?(stamp<1e12?stamp*1000:stamp):0;
-  const candleEnd=candleStart?candleStart+60000:0;
+  const stampMs=stamp>0?(stamp<1e12?stamp*1000:stamp):0;
+  const bucketMs=chartTimeframe*60000;
+  const candleStart=stampMs?Math.floor(stampMs/bucketMs)*bucketMs:0;
+  const candleEnd=candleStart?candleStart+bucketMs:0;
   const left=candleEnd?Math.max(0,Math.ceil((candleEnd-now)/1000)):0;
-  $("candleCountdown").textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
+  $("candleCountdown").textContent=ageForCandle(candle)<150?String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0"):"STALE";
  }else $("candleCountdown").textContent="--:--";
  document.querySelectorAll(".row-countdown").forEach(el=>{
   const left=Math.max(0,Math.ceil((Number(el.dataset.expiry)-now)/1000));
@@ -564,14 +646,14 @@ async function scan(){
    results[id]={id,name:a.name,price,change,candles:data,analysis,scannedAt:Date.now()};
    if(liveTicks[id]){results[id].livePrice=liveTicks[id].price;results[id].liveChange=liveTicks[id].change;}
    if(analysis.direction!=="WAIT")addSignal(results[id]);
-   if(selectedChart===id||!selectedChart)drawChart();
+   if(selectedChart===id||!selectedChart){try{drawChart()}catch(chartError){console.error(chartError)}}
   }catch(e){errors++;errorDetails.push(a.name+": "+(e.message||"Unknown data error"));results[id]={id,name:a.name,price:NaN,change:null,candles:[],analysis:{direction:"WAIT",score:0,reason:e.message,fresh:false,age:Infinity}}}
   done++;$("scanProgress").style.width=(done/ids.length*100)+"%";$("progressText").textContent=`Scanned ${done} of ${ids.length} · ${errors} errors`;
   renderScanner();
   // Avoid bursting the provider and stay within low-tier rate limits.
   if(done<ids.length)await new Promise(resolve=>setTimeout(resolve,900));
  }
- latestScan=Date.now();renderScanner();drawChart();settleExpiredTrades();$("scanNow").disabled=false;busy=false;
+ latestScan=Date.now();renderScanner();try{drawChart()}catch(chartError){console.error("Chart render:",chartError)}settleExpiredTrades();$("scanNow").disabled=false;busy=false;
  let fresh=[...watch].filter(id=>results[id]?.analysis.fresh).length;status(fresh?"SCAN COMPLETE · DATA RECEIVED":"SCAN COMPLETE · CHECK DATA",fresh>0);
  $("connectionStatus").textContent=`Regular feed: ${apiKey?"API key saved; per-symbol requests":"not configured"}\nOTC feed: endpoint checked when selected\nLast scan: ${clock()}\n${errorDetails.length?"DATA ERRORS: "+errorDetails.join(" | "):"No provider errors reported."}`;
  $("progressText").textContent=`Complete · ${fresh} fresh markets · ${errors} errors`;saveState();
@@ -600,7 +682,7 @@ function addPaper(){
  const entry=Number(r.livePrice||r.price),stake=Math.max(1,Math.min(100000,+$("stake").value||10));
  if(!Number.isFinite(entry)||entry<=0){$("paperStatus").textContent="Cannot start: no valid live entry price.";return}
  const expirySeconds=60,payoutRate=Math.max(1,Math.min(100,+$("payout").value||85))/100,now=Date.now();
- const t={id:now.toString(36)+Math.random().toString(36).slice(2,6),time:clock(),timeDate:new Date().toLocaleDateString(),dayKey:new Date().toISOString().slice(0,10),asset:r.name,assetId:r.id,side,entry,expirySeconds,expiryAt:now+expirySeconds*1000,exit:null,stake,payoutRate,score:r.analysis.score,result:"PENDING",pnl:0,practiceMode:requested!=="AUTO"};
+ const t={id:now.toString(36)+Math.random().toString(36).slice(2,6),time:clock(),timeDate:new Date().toLocaleDateString(),dayKey:new Date().toISOString().slice(0,10),asset:r.name,assetId:r.id,side,entry,entryCandleTime:Number(r.analysis.candleTime||0),expirySeconds,expiryAt:now+expirySeconds*1000,exit:null,stake,payoutRate,score:r.analysis.score,result:"PENDING",pnl:0,practiceMode:requested!=="AUTO"};
  trades.unshift(t);renderTrades();saveState();
  $("paperStatus").textContent=`Paper ${side} started on ${t.asset} at ${fmt(entry)}. Expires in 60 seconds; settlement requires a fresh exit quote.`;
 }
@@ -658,12 +740,12 @@ $("paperFromTop").onclick=addPaper;$("exportCsv").onclick=exportCSV;
 $("scanMode").addEventListener("change",()=>{saveState();if(latestScan)renderScanner()});
 $("clearSignals").onclick=()=>{if(confirm("Clear signal history?")){history=[];renderHistory();saveState()}};
 $("clearTrades").onclick=()=>{if(confirm("Delete all paper journal records?")){trades=[];renderTrades();saveState()}};
-$("chartAsset").onchange=()=>{selectedChart=$("chartAsset").value;watch.add(selectedChart);renderWatch();drawChart();saveState()};
+$("chartAsset").onchange=()=>{selectedChart=$("chartAsset").value;watch.add(selectedChart);$("mobileAsset").value=selectedChart;renderWatch();drawChart();saveState();if(!busy)scan()};
 document.querySelectorAll(".tf-btn").forEach(b=>b.addEventListener("click",()=>setChartTimeframe(Number(b.dataset.tf))));
 $("threshold").onchange=()=>{$("thresholdText").textContent=$("threshold").value+" / 100";if(latestScan)scan();saveState()};
 $("interval").onchange=()=>{if(running){clearInterval(cycle);cycle=setInterval(()=>{if(!busy)scan()},Math.max(15000,+$("interval").value))}$("cycleText").textContent=(+$("interval").value/1000)+" sec";saveState()};
 ["stake","payout"].forEach(id=>$(id).addEventListener("change",saveState));
 setInterval(()=>{$("clock").textContent=clock();updateCountdowns()},1000);
-loadState();updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();drawChart();setMobileScreen("scanner");$("clock").textContent=clock();connectLiveStream();
+loadState();updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();connectLiveStream();setTimeout(()=>{if(!busy)scan()},250);
 </script>
 </body></html>
