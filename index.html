@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="8.1-otc-buy-sell-signals">
-<title>APEXSCAN PRO · V8.1 OTC BUY / SELL</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="8.2-single-pair-buy-sell">
+<title>APEXSCAN PRO · V8.2 OTC BUY / SELL</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -366,8 +366,8 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
      <div class="mini"><label>Fresh markets</label><b id="freshCount">0</b></div>
      <div class="mini"><label>Stale / errors</label><b id="staleCount">0</b></div>
     </div>
-    <div class="scan-table-wrap"><table><thead><tr><th>Market</th><th>Price</th><th>Change</th><th>Trend</th><th>RSI</th><th>Score</th><th>Signal</th><th>Feed</th></tr></thead><tbody id="scannerBody"><tr><td colspan="8" class="empty">Connect a data provider, choose markets, then scan.</td></tr></tbody></table></div>
-    <div class="chartfoot"><span id="scanFoot">Signals are generated from closed candle history.</span><span id="lastUpdated">—</span></div>
+    <div class="scan-table-wrap"><table><thead><tr><th>Market</th><th>Price</th><th>Change</th><th>Trend</th><th>RSI</th><th>Score</th><th>BUY / SELL SIGNAL</th></tr></thead><tbody id="scannerBody"><tr><td colspan="7" class="empty">Select an OTC pair and scan.</td></tr></tbody></table></div>
+    <div class="chartfoot"><span id="scanFoot">Signals are generated from the selected pair's candle history.</span><span id="lastUpdated">—</span></div>
    </div>
    <div class="panel" id="chartPanel">
     <div class="panel-head chart-head"><h2>LIVE OTC CANDLE CHART</h2><select id="chartAsset" style="max-width:170px;background:#091321;color:white;border:1px solid var(--line);padding:7px;border-radius:7px"></select></div>
@@ -472,7 +472,7 @@ const ASSETS=[
  {id:"OTC:GBP/USD",name:"GBP/USD OTC",kind:"otc",symbol:"GBPUSD_otc",default:true},
  {id:"OTC:USD/JPY",name:"USD/JPY OTC",kind:"otc",symbol:"USDJPY_otc",default:true}
 ];
-let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
+let apiKey="",watch=new Set(["OTC:EUR/USD"]),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6}),clock=()=>new Date().toLocaleTimeString();
 function status(t,ok=false){$("statusText").textContent=t;$("statusLed").style.background=ok?"var(--green)":"var(--amber)"}
 function saveState(){try{localStorage.setItem(STORE,JSON.stringify({watch:[...watch],history:history.slice(0,150),trades:trades.slice(0,250),threshold:$("threshold").value,mode:$("scanMode").value,interval:$("interval").value,stake:$("stake").value,payout:$("payout").value,chart:selectedChart}))}catch(e){}}
@@ -490,8 +490,8 @@ function loadState(){
   if(st.payout)$("payout").value=st.payout;
   if(st.chart&&ASSETS.some(a=>a.id===st.chart))selectedChart=st.chart;
   watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));
-  if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));
   if(!watch.has(selectedChart))selectedChart=[...watch][0]||"OTC:EUR/USD";
+  watch=new Set([selectedChart]);
  }catch(e){console.warn("Saved settings could not be loaded",e)}
 }
 function assetCategory(a){return a.id==="BTC/USD"||a.id==="ETH/USD"?"crypto":"currencies"}
@@ -724,23 +724,21 @@ function connectLiveStream(){
 function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
 function renderScanner(){
  let arr=[...watch].map(id=>results[id]).filter(Boolean),rows=[...arr].sort((a,b)=>b.analysis.score-a.analysis.score);
- $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.fresh&&s.direction==="CALL"?"BUY":s.fresh&&s.direction==="PUT"?"SELL":"—",cls=shownDirection==="BUY"?"call":shownDirection==="SELL"?"put":"wait",change=r.change,age=Number.isFinite(s.age)?Math.round(s.age)+"s":"—",timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+60000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":"red"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">01:00</small>`:""}</td><td>${s.fresh?'<span class="green">FRESH</span>':'<span class="amber">STALE</span>'}</td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
+ $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.fresh&&s.direction==="CALL"?"BUY":s.fresh&&s.direction==="PUT"?"SELL":"—",cls=shownDirection==="BUY"?"call":shownDirection==="SELL"?"put":"wait",change=r.change,timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(["CALL","PUT"].includes(s.direction)&&s.fresh&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+60000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":"red"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">01:00</small>`:""}</td></tr>`}).join(""):'<tr><td colspan="7" class="empty">Select an OTC pair and start a scan.</td></tr>';
  document.querySelectorAll("#scannerBody tr[data-asset]").forEach(tr=>tr.addEventListener("click",()=>{selectedChart=tr.dataset.asset;$("chartAsset").value=selectedChart;updateChartOptions();drawChart()}));
  let fresh=arr.filter(r=>r.analysis.fresh).length,stale=arr.length-fresh,signals=arr.filter(r=>r.analysis.fresh&&["CALL","PUT"].includes(r.analysis.direction));
  $("kScanned").textContent=arr.length+" / "+watch.size;$("kSignals").textContent=signals.length;$("freshCount").textContent=fresh;$("staleCount").textContent=stale;
  $("kHealth").textContent=arr.length?(stale===0?"HEALTHY":fresh?"PARTIAL":"STALE"):"OFFLINE";$("kHealthNote").textContent=fresh+" fresh · "+stale+" stale / errors";
  $("kScanTime").textContent=latestScan?"Last scan "+new Date(latestScan).toLocaleTimeString():"Not scanned yet";$("lastUpdated").textContent=latestScan?"Updated "+clock():"—";
  $("staleCount").textContent=stale;$("kBest").textContent=rows[0]?.analysis.score??"—";$("kBestAsset").textContent=rows[0]?.name||"Awaiting scan";
- $("scanFoot").textContent=`${watch.size} OTC markets selected · ${fresh} fresh candles · ${signals.length} BUY/SELL signals`;
+ $("scanFoot").textContent=`${ASSETS.find(a=>a.id===([...watch][0]||selectedChart))?.name||"Selected OTC pair"} · ${signals.length} qualified BUY / SELL signal(s)`;
  updateTop(rows);updateChartOptions();
 }
 function updateTop(rows){
  // Keep signal qualification separate from the market snapshot shown on the card.
- const candidates=rows.filter(r=>["CALL","PUT"].includes(r.analysis.direction)&&r.analysis.fresh)
-   .sort((a,b)=>b.analysis.score-a.analysis.score);
- const candidate=candidates[0]||null;
  const preferredId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
- const snapshot=rows.find(r=>r.id===preferredId)||rows.find(r=>r.analysis.fresh)||rows[0]||null;
+ const snapshot=rows.find(r=>r.id===preferredId)||rows[0]||null;
+ const candidate=snapshot&&["CALL","PUT"].includes(snapshot.analysis.direction)&&snapshot.analysis.fresh?snapshot:null;
  latestTop=candidate; // Paper-trade action remains disabled unless a qualified signal exists.
  const r=candidate||snapshot;
  const s=r?.analysis||null;
@@ -753,22 +751,22 @@ function updateTop(rows){
  }
  if(!timerKey){signalTimerKey="";signalExpiryAt=0;}
  $("topSignal").className="signal-card "+(candidate?(dir==="CALL"?"call":"put"):"wait");
- $("topDirection").textContent=candidate?(dir==="CALL"?"BUY":"SELL"):"SCANNING";
+ $("topDirection").textContent=candidate?(dir==="CALL"?"BUY":"SELL"):"—";
  $("topScore").textContent=candidate
    ? (s.signalLevel==="EARLY"?"EARLY · ":"CONFIRMED · ")+s.score+" / 100"
-    : (s&&!s.fresh?"CHECKING FEED":s?`ANALYZING · ${s.score??0} / 100`:"READY TO SCAN");
+    : (s?`NO SETUP · ${s.score??0} / 100`:"READY TO SCAN");
  $("topReason").textContent=candidate
    ? (s.signalLevel==="EARLY"?"Early setup · confirmation pending. ":"")+s.reason
    : snapshot
-     ? (s&&!s.fresh?"Waiting for a current candle before evaluating an entry.":"No qualified directional setup: trend and momentum are not aligned.")
+     ? ("No qualified BUY or SELL setup on this pair yet. Keep scanning for confirmation.")
      : "No market data loaded yet. Select a market and run a scan.";
  $("signalStatusLine").textContent=candidate
    ? (dir==="CALL"?"BUY · upward market direction":"SELL · downward market direction")
-    : (s&&!s.fresh?"No fresh signal · feed needs a current candle":"No qualified CALL/PUT · trend confirmation required");
+    : ("No qualified BUY / SELL setup yet · waiting for trend confirmation");
  if($("indicatorChips")){
    $("indicatorChips").innerHTML=s&&Number.isFinite(s.rsi)
-     ? `<span>EMA trend · ${s.trend||"—"}</span><span>RSI 14 · ${s.rsi.toFixed(1)}</span><span>MACD · ${Number.isFinite(s.macdHistogram)?(s.macdHistogram>=0?"Bullish":"Bearish"):"—"}</span><span>Candle quality · ${Math.round((s.quality||0)*100)}%</span><span>Feed · ${s.fresh?"Fresh":"Stale"}</span>`
-     : '<span>EMA 9 / 21 · waiting</span><span>RSI 14 · waiting</span><span>MACD · waiting</span><span>Candle pressure · waiting</span><span>Feed freshness · waiting</span>';
+     ? `<span>EMA trend · ${s.trend||"—"}</span><span>RSI 14 · ${s.rsi.toFixed(1)}</span><span>MACD · ${Number.isFinite(s.macdHistogram)?(s.macdHistogram>=0?"Bullish":"Bearish"):"—"}</span><span>Candle quality · ${Math.round((s.quality||0)*100)}%</span><span>OTC data · checked</span>`
+     : '<span>EMA 9 / 21 · waiting</span><span>RSI 14 · waiting</span><span>MACD · waiting</span><span>Candle pressure · waiting</span>';
  }
  $("topAsset").textContent=r?.name||"—";
  $("topEntry").textContent=s&&Number.isFinite(s.entry)?fmt(s.entry):"—";
@@ -781,7 +779,7 @@ function updateTop(rows){
    $("analysisBreakdown").innerHTML="<div><span>Analysis</span><b>Waiting for market data</b></div>";
  }
  if($("heroSelectedMarket"))$("heroSelectedMarket").textContent=r?.name||"Select a market";
- if($("heroLiveLabel"))$("heroLiveLabel").textContent=s?.fresh?"Live candle data · fresh":s?"Candle data · stale":"Waiting for scan";
+ if($("heroLiveLabel"))$("heroLiveLabel").textContent=candidate?"BUY / SELL signal active":"OTC pair selected · scanning";
  $("topExpiry").textContent=candidate
    ?(s.signalLevel==="EARLY"?"Early directional bias · confirmation pending · 60s validity":"Confirmed trend alignment · 60s validity")
    :"Signals appear only when a fresh CALL/PUT setup qualifies";
@@ -898,7 +896,7 @@ $("alertToggle").addEventListener("click",()=>{
 });
 function addSignal(r){let key=r.id+"|"+r.analysis.direction+"|"+r.analysis.candleTime;if(history.some(x=>x.key===key))return;announceSignal(r);history.unshift({key,time:clock(),asset:r.name,side:r.analysis.direction==="CALL"?"BUY":"SELL",entry:r.livePrice??r.price,score:r.analysis.score,age:Math.round(r.analysis.age)});history=history.slice(0,150);renderHistory();saveState()}
 async function scan(){
- if(busy)return;if(!watch.size){alert("Select at least one market in Watchlist Configuration.");return}
+ if(busy)return;if(!watch.size){alert("Select an OTC pair first.");return}
  busy=true;status("SCANNING",true);$("scanNow").disabled=true;$("progressText").textContent="Starting scan…";$("scanProgress").style.width="0%";
  let ids=[...watch],done=0,errors=0,errorDetails=[];
  for(const id of ids){
@@ -971,7 +969,7 @@ function setMobileScreen(screen){
 }
 document.querySelectorAll(".market-tab").forEach(b=>b.addEventListener("click",()=>setMarketCategory(b.dataset.marketCategory)));
 document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>setMobileScreen(b.dataset.screen)));
-$("mobileAsset").addEventListener("change",()=>{const id=$("mobileAsset").value;$("chartAsset").value=id;selectedChart=id;watch.add(id);renderWatch();drawChart();updateMobileMarketLabel();saveState();if(!busy)scan()});
+$("mobileAsset").addEventListener("change",()=>{const id=$("mobileAsset").value;if(!id)return;$("chartAsset").value=id;selectedChart=id;watch=new Set([id]);renderWatch();if(liveStream){liveStream.close();liveStream=null;}connectLiveStream();drawChart();updateMobileMarketLabel();saveState();if(!busy)scan()});
 $("mobileInterval").addEventListener("change",()=>{$("interval").value=$("mobileInterval").value;$("interval").dispatchEvent(new Event("change"));});
 function syncMobileControls(){if($("mobileInterval"))$("mobileInterval").value=$("interval").value||"15000";updateChartOptions()}
 window.addEventListener("resize",()=>{setMobileScreen(activeMobileScreen);drawChart()});
