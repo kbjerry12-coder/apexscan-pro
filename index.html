@@ -628,7 +628,7 @@ function analyze(candles,asset){
  const signalLevel=(direction==="CALL"?(trendUp&&macdUp&&momentum>0):(trendDown&&macdDown&&momentum<0))?"CONFIRMED":"EARLY";
  reasons.unshift(direction==="CALL"?"latest candle is GREEN · CALL direction":"latest candle is RED · PUT direction");
  if(!fresh)reasons.push("latest candle direction shown; live quote may be delayed");
- const nextBias=bull-bear>=edge?"CALL":bear-bull>=edge?"PUT":direction;
+ const nextBias=direction; // Live candle color is the primary directional signal; no undefined edge threshold.
  const nextStrength=Math.min(95,Math.round(50+Math.abs(bull-bear)*.45));
  const breakdown={trend:trendUp?"Bullish aligned":trendDown?"Bearish aligned":"Mixed / transitional",momentum:rv.toFixed(1)+" RSI · "+(momentum>0?"rising":"falling"),volatility:atrPct.toFixed(3)+"% ATR / "+(volOK?"normal":"high or quiet"),price:Math.round(bodyRatio*100)+"% candle body",structure:last.close>swingHigh?"Upside break":last.close<swingLow?"Downside break":"Inside recent range",feed:tickAge<=30?Math.round(tickAge)+"s · live tick":fresh?Math.round(candleAge)+"s · candle":"no recent data"};
  return {direction,signalLevel,score,reason:reasons.join(" · "),fresh,age,rsi:rv,trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry:last.close,age,quality:bodyRatio,candleTime:last.time,atr,atrPct,macdHistogram:hist,bullScore:Math.round(bull),bearScore:Math.round(bear),nextBias,nextStrength,breakdown};
