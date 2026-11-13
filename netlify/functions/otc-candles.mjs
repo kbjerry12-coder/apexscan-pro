@@ -17,10 +17,11 @@ export default async (request) => {
   }
 
   const upstream = new URL("https://otcharts.com/v1/candles");
+
   upstream.searchParams.set("venue", "otc");
   upstream.searchParams.set("symbol", symbol);
-  upstream.searchParams.set("tf", "60");
-  upstream.searchParams.set("limit", "80");
+  upstream.searchParams.set("tf", "30");
+  upstream.searchParams.set("limit", "500");
 
   try {
     const response = await fetch(upstream, {
@@ -41,23 +42,29 @@ export default async (request) => {
     if (!response.ok) {
       return Response.json({
         error: body.error || body.message ||
-          `OTCharts returned HTTP ${response.status}`,
-        upstreamStatus: response.status
+          `OTCharts returned HTTP ${response.status}`
       }, { status: response.status });
     }
 
-    const candles = Array.isArray(body) ? body :
-      (body.candles || body.data?.candles ||
-       body.data || body.results || []);
+    const candles = Array.isArray(body)
+      ? body
+      : (body.candles ||
+         body.data?.candles ||
+         body.data ||
+         body.results ||
+         []);
 
     if (!Array.isArray(candles) || !candles.length) {
       return Response.json({
-        error: "OTCharts responded successfully but did not return a recognized candle array.",
-        responseKeys: Object.keys(body || {})
+        error: "No recognized OTC candles returned."
       }, { status: 502 });
     }
 
-    return Response.json({ candles }, {
+    return Response.json({
+      candles: candles.slice(-500),
+      timeframe: 30,
+      symbol
+    }, {
       headers: {
         "Cache-Control": "no-store, max-age=0"
       }
