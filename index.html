@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="8.1-otc-buy-sell-signals">
-<title>APEXSCAN PRO · V8.1 OTC BUY / SELL</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="8.5-otc-live-data-paper-recovery">
+<title>APEXSCAN PRO · V8.5 OTC BUY / SELL</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -343,6 +343,32 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 /* Final override: keep auto-paper status visible on mobile and desktop. */
 #signalPanel #paperStatus{display:block!important;visibility:visible!important;margin-top:8px!important}
 #signalPanel #autoPaperControls{display:flex!important;visibility:visible!important}
+
+/* V8.5 recovery: restore the original split signal banner + analysis card layout. */
+.signal-callout{display:block;margin:0 0 10px;padding:12px;border:1px solid #365780;border-radius:11px;background:#0a1730;color:#afc4e8;font-weight:900;font-size:12px;text-align:center;line-height:1.4}
+.signal-callout.buy{background:#073d36;border-color:#20d3a5;color:#7ff8d7;box-shadow:0 0 20px #18d5a333}
+.signal-callout.sell{background:#481d2c;border-color:#ff617c;color:#ffb4c0;box-shadow:0 0 20px #ff466333}
+.signal-status-line{font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:#a9c6e7!important;text-align:center;font-size:12px}
+#topReason{display:block!important;font-size:11px;line-height:1.5;margin:9px 0 5px;color:var(--muted)}
+#signalStatusLine{display:block!important}
+#signalPanel #signalCallout{margin:0 0 10px;min-height:0;font-size:14px;padding:15px 12px}
+#signalPanel #paperStatus{display:block!important;visibility:visible!important;margin-top:8px!important}
+.paper-live-board{margin:10px 0 2px;padding:10px;border:1px solid #31527a;border-radius:10px;background:#07182a;display:flex;flex-direction:column;gap:7px}
+.paper-live-board>b{font-size:10px;letter-spacing:.1em;color:#9ed5ff}
+.paper-live-board .paper-position{display:grid;grid-template-columns:1fr auto;gap:5px 8px;padding:8px;border:1px solid #29496d;border-radius:8px;background:#0b1d33;font-size:10px}
+.paper-live-board .paper-position strong{font-size:11px}
+.paper-live-board .paper-position small{color:#9bb5d5}
+.paper-live-board .paper-position .pending{color:#ffd078;font-weight:900}
+.auto-paper-controls{display:flex;flex-direction:column;gap:5px;margin-top:12px;padding:11px;border:1px solid #2b4b70;border-radius:10px;background:#07182a}
+.auto-paper-controls label{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:1000;letter-spacing:.08em;color:#9ed9ff}
+.auto-paper-controls input{width:19px;height:19px;accent-color:#29dca9}
+#autoPaperStatus,#paperStatus{font-size:10px;line-height:1.4;color:#9bb5d5;margin:0}
+@media(max-width:700px){
+ #signalPanel #signalCallout{font-size:13px;padding:13px 9px}
+ #signalPanel .signal-card{padding:15px 11px;min-height:0}
+ .paper-live-board .paper-position{font-size:10px}
+}
+
 </style>
 </head>
 <body>
@@ -433,7 +459,10 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
   <aside>
    <div class="panel" id="signalPanel">
     <div class="panel-head"><h2>LIVE OTC SIGNAL</h2><div class="signal-tools"><span class="pill">BUY / SELL ONLY</span><button type="button" id="alertToggle" class="small" aria-pressed="false">🔔 Enable callouts</button></div></div>
-    <div class="signal-card wait" id="topSignal"><div id="signalCallout" class="signal-callout" role="status" aria-live="assertive">SCANNING · WAITING FOR A QUALIFIED BUY / SELL</div><div class="signal-top" style="display:none"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>EMA 9 / 21</span><span>RSI 14</span><span>MACD</span><span>Candle pressure</span><span>Feed freshness</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · New qualified signals open simulated trades automatically</span></div><div class="countdown-grid">
+    <div id="signalCallout" class="signal-callout" role="status" aria-live="assertive">Waiting for a qualified OTC BUY or SELL signal</div>
+    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Technical engine is checking trend, momentum and candle structure</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>EMA 9 / 21</span><span>RSI 14</span><span>MACD</span><span>Candle pressure</span><span>Feed freshness</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · New qualified signals open simulated trades automatically</span></div>
+     <div id="paperLiveBoard" class="paper-live-board" aria-live="polite"><b>LIVE PAPER POSITIONS</b><span>No open paper trades yet · waiting for a qualified signal.</span></div>
+     <div class="countdown-grid">
       <div><small>BUY / SELL VALID FOR</small><b id="signalCountdown">--:--</b></div>
       <div><small>1-MIN CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
      </div>
@@ -442,7 +471,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
       <p>Open the same OTC pair in Pocket Option, enter its displayed price, then compare against the latest OTCharts live tick.</p>
       <div class="po-compare-entry"><input id="poPriceInput" type="number" inputmode="decimal" step="any" min="0" placeholder="Enter Pocket Option price" aria-label="Pocket Option displayed price"><button id="poCompareBtn" type="button" class="small">COMPARE</button></div>
       <div id="poCompareResult" role="status" aria-live="polite">Waiting for a Pocket Option quote and a fresh OTCharts tick.</div>
-      <small>Manual comparison only · APEXSCAN cannot read Pocket Option directly. Auto paper trades for this pair require a close match (within 0.2 pip) with both quotes under 10 seconds old.</small>
+      <small>Manual comparison only · APEXSCAN cannot read Pocket Option directly. This check is informational and does not stop simulated trades.</small>
      </div>
      <p class="tiny" id="paperStatus" aria-live="polite">Paper journal ready · trades settle only from a newer market quote or candle.</p>
      <div hidden aria-hidden="true">
@@ -633,6 +662,13 @@ async function otcData(symbol){
  if(parsed.length<35)throw Error(`OTCharts returned ${parsed.length} usable candles; at least 35 are required.`);
  return parsed;
 }
+async function fetchAsset(asset){
+ if(!asset)throw new Error("No market selected.");
+ if(asset.kind==="otc")return otcData(asset.symbol);
+ if(asset.kind==="regular")return regularData(asset.symbol);
+ throw new Error("Unsupported market type: "+String(asset.kind));
+}
+
 function setChartTimeframe(minutes){
  chartTimeframe=[1,5,15].includes(minutes)?minutes:1;
  document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===chartTimeframe));
@@ -802,6 +838,7 @@ function handleLiveTick(raw){
  }
  setLiveStreamState("LIVE · "+Object.keys(liveTicks).length+" / 3 pairs received",true);
  renderPOComparison();
+ renderPaperLiveBoard();
  settleExpiredTrades();
 }
 function connectLiveStream(){
@@ -836,50 +873,63 @@ function renderScanner(){
  updateTop(rows);updateChartOptions();
 }
 function updateTop(rows){
- const candidates=rows.filter(r=>["CALL","PUT"].includes(r.analysis.direction)&&r.analysis.fresh&&ageForCandle(r.candles?.at(-1))<=150)
-   .sort((a,b)=>b.analysis.score-a.analysis.score);
- const candidate=candidates[0]||null;
- const preferredId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
- const snapshot=rows.find(r=>r.id===preferredId)||rows.find(r=>r.analysis.fresh)||rows[0]||null;
+ const selectedId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
+ const r=rows.find(item=>item.id===selectedId)||results[selectedId]||null;
+ const s=r?.analysis||null;
+ const candle=r?.candles?.at(-1);
+ const fresh=!!(r&&s&&s.fresh&&r.candles?.length>=35&&candle&&ageForCandle(candle)<=150);
+ const candidate=fresh&&["CALL","PUT"].includes(s.direction)?r:null;
  latestTop=candidate;
- const r=candidate||snapshot,s=r?.analysis||null,dir=candidate?candidate.analysis.direction:"";
- const timerKey=candidate&&s?`${candidate.id}|${dir}|${s.candleTime}`:"";
+ const dir=candidate?.analysis.direction||"";
+ const timerKey=candidate?`${candidate.id}|${dir}|${candidate.analysis.candleTime}`:"";
  if(timerKey&&timerKey!==signalTimerKey){
-   signalTimerKey=timerKey;
-   signalExpiries[timerKey]=signalExpiries[timerKey]||Date.now()+60000;
-   signalExpiryAt=signalExpiries[timerKey];
+  signalTimerKey=timerKey;
+  signalExpiries[timerKey]=signalExpiries[timerKey]||Date.now()+60000;
+  signalExpiryAt=signalExpiries[timerKey];
  }
  if(!timerKey){signalTimerKey="";signalExpiryAt=0;}
  $("topSignal").className="signal-card "+(candidate?(dir==="CALL"?"call":"put"):"wait");
- const callout=$("signalCallout");
- if(callout){
+ const banner=$("signalCallout");
+ if(banner){
   if(candidate){
    const side=dir==="CALL"?"BUY":"SELL";
-   callout.className="signal-callout "+(side==="BUY"?"buy":"sell");
-   callout.textContent=`${side} SIGNAL · ${candidate.name} · ENTRY ${fmt(candidate.livePrice??candidate.price)} · SCORE ${s.score}/100`;
+   banner.className="signal-callout "+(side==="BUY"?"buy":"sell");
+   banner.textContent=`${side} SIGNAL · ${r.name} · ENTRY ${fmt(r.livePrice??r.price)} · SCORE ${s.score}/100`;
   }else{
-   callout.className="signal-callout neutral";
-   callout.textContent=snapshot
-    ?`SCANNING · ${snapshot.name} · WAITING FOR A QUALIFIED BUY / SELL`
-    :"SCANNING · SELECT AN OTC PAIR";
+   banner.className="signal-callout neutral";
+   banner.textContent=!r?"SELECT AN OTC PAIR TO START":
+    !r.candles?.length?"OTC DATA UNAVAILABLE · CHECK THE FEED":
+    !fresh?`NO FRESH CANDLE · ${r.name} · WAITING FOR LIVE DATA`:
+    `SCANNING · ${r.name} · WAITING FOR A QUALIFIED BUY / SELL`;
   }
  }
  $("topDirection").textContent=candidate?(dir==="CALL"?"BUY":"SELL"):"SCANNING";
- $("topScore").textContent=candidate?(s.signalLevel==="EARLY"?"EARLY · ":"CONFIRMED · ")+s.score+" / 100":(s&&!s.fresh?"CHECKING FEED":s?`ANALYZING · ${s.score??0} / 100`:"READY TO SCAN");
+ $("topDirection").style.color=candidate?(dir==="CALL"?"var(--green)":"var(--red)"):"";
+ $("topScore").textContent=candidate?(s.signalLevel==="EARLY"?"EARLY SETUP · ":"CONFIRMED · ")+s.score+" / 100":
+  !r?"NO PAIR":!r.candles?.length?"NO DATA":!fresh?"STALE FEED":`ANALYZING · ${s.score??0}/100`;
+ $("topReason").textContent=!r?"Select an OTC pair to load candle history.":
+  !r.candles?.length?(s?.reason||r.lastError||"OTC candle request did not return usable history."):
+  candidate?s.reason:
+  !fresh?"Waiting for a current candle before evaluating an entry.":s?.reason||"No qualified directional setup yet.";
+ $("signalStatusLine").textContent=!r?"DATA NOT LOADED":
+  !r.candles?.length?"FEED ERROR · ENTRY AND RSI UNAVAILABLE":
+  !fresh?"NO FRESH SIGNAL · FEED NEEDS A CURRENT CANDLE":
+  candidate?`${dir==="CALL"?"BUY":"SELL"} SETUP ACTIVE · PAPER TRADE ${autoPaperEnabled?"ENABLED":"PAUSED"}`:
+  "LIVE CANDLES RECEIVED · TECHNICAL ANALYSIS RUNNING";
  $("topAsset").textContent=r?.name||"—";
- $("topEntry").textContent=s&&Number.isFinite(s.entry)?fmt(candidate?(candidate.livePrice??candidate.price):s.entry):"—";
- $("topRsi").textContent=s&&Number.isFinite(s.rsi)?s.rsi.toFixed(1):"—";
- if($("indicatorChips")){
-   $("indicatorChips").innerHTML=s&&Number.isFinite(s.rsi)
-     ? `<span>EMA trend · ${s.trend||"—"}</span><span>RSI 14 · ${s.rsi.toFixed(1)}</span><span>MACD · ${Number.isFinite(s.macdHistogram)?(s.macdHistogram>=0?"Bullish":"Bearish"):"—"}</span><span>Candle quality · ${Math.round((s.quality||0)*100)}%</span><span>Feed · ${ageForCandle(r.candles?.at(-1))<=150?"Fresh":"Stale"}</span>`
-     : '<span>EMA 9 / 21 · waiting</span><span>RSI 14 · waiting</span><span>MACD · waiting</span><span>Candle pressure · waiting</span><span>Feed freshness · waiting</span>';
- }
+ const entry=Number(r?.livePrice??r?.price??s?.entry);
+ $("topEntry").textContent=Number.isFinite(entry)&&entry>0?fmt(entry):"—";
+ $("topRsi").textContent=Number.isFinite(Number(s?.rsi))?Number(s.rsi).toFixed(1):"—";
+ $("indicatorChips").innerHTML=s&&r?.candles?.length>=35
+  ?`<span>EMA trend · ${s.trend||"—"}</span><span>RSI 14 · ${Number.isFinite(s.rsi)?s.rsi.toFixed(1):"—"}</span><span>MACD · ${Number.isFinite(s.macdHistogram)?(s.macdHistogram>=0?"Bullish":"Bearish"):"—"}</span><span>Candle quality · ${Math.round((s.quality||0)*100)}%</span><span>Feed · ${fresh?"Fresh":"Stale"}</span>`
+  :'<span>EMA 9 / 21 · waiting</span><span>RSI 14 · waiting</span><span>MACD · waiting</span><span>Candle pressure · waiting</span><span>Feed freshness · waiting</span>';
  if(s?.breakdown){
-   $("analysisBreakdown").innerHTML=Object.entries(s.breakdown).map(([k,v])=>`<div><span>${({trend:"Trend structure",momentum:"Momentum",volatility:"Volatility",price:"Price action",structure:"Market structure",feed:"Feed integrity"})[k]||k}</span><b>${v||"—"}</b></div>`).join("");
+  $("analysisBreakdown").innerHTML=Object.entries(s.breakdown).map(([k,v])=>`<div><span>${({trend:"Trend structure",momentum:"Momentum",volatility:"Volatility",price:"Price action",structure:"Market structure",feed:"Feed integrity"})[k]||k}</span><b>${v||"—"}</b></div>`).join("");
  }else $("analysisBreakdown").innerHTML="<div><span>Analysis</span><b>Waiting for market data</b></div>";
  if($("heroSelectedMarket"))$("heroSelectedMarket").textContent=r?.name||"Select a market";
- if($("heroLiveLabel"))$("heroLiveLabel").textContent=s&&ageForCandle(r.candles?.at(-1))<=150?"Live candle data · fresh":s?"Candle data · stale":"Waiting for scan";
- $("topExpiry").textContent=candidate?(s.signalLevel==="EARLY"?"Early directional setup · 60s validity":"Confirmed trend alignment · 60s validity"):"Scanning selected market · waiting for a qualified setup";
+ if($("heroLiveLabel"))$("heroLiveLabel").textContent=fresh?"Live candle data · fresh":r?.candles?.length?"Candle data · stale":"Waiting for scan";
+ $("topExpiry").textContent=candidate?"Signal valid for 60 seconds · Paper trade expiry 60 seconds":
+  "Signal will appear only when the selected pair has a fresh qualified setup.";
 }
 
 function renderHistory(){$("signalHistory").innerHTML=history.length?history.map(x=>`<tr><td>${x.time}</td><td>${x.asset}</td><td><span class="tag ${x.side.toLowerCase()}">${x.side}</span></td><td>${fmt(x.entry)}</td><td>${x.score}</td><td>${x.age}s</td></tr>`).join(""):'<tr><td colspan="6" class="empty">No qualified signals yet.</td></tr>'}
@@ -941,8 +991,19 @@ function updateCountdowns(){
   const remaining=Math.max(0,Math.ceil((t.expiryAt-now)/1000));
   t.countdown=remaining;
  }
+ renderPaperLiveBoard();
  settleExpiredTrades();
 }
+function renderPaperLiveBoard(){
+ const el=$("paperLiveBoard");if(!el)return;
+ const open=trades.filter(t=>t.result==="PENDING").slice(0,4);
+ el.innerHTML="<b>LIVE PAPER POSITIONS</b>"+(open.length?open.map(t=>{
+  const left=Math.max(0,Math.ceil((Number(t.expiryAt||0)-Date.now())/1000));
+  const side=t.side==="CALL"?"BUY":"SELL";
+  return `<div class="paper-position"><strong class="${t.side==="CALL"?"green":"red"}">${side} · ${t.asset}</strong><span class="pending">${left>0?"OPEN · "+left+"s":"WAITING FOR EXIT QUOTE"}</span><small>Entry ${fmt(t.entry)} · $${Number(t.stake).toFixed(2)} · ${t.automatic?"AUTO":"MANUAL"}</small><small>${t.entrySource||"OTCharts price"} · score ${t.score}/100</small></div>`;
+ }).join(""):"<span>No open paper trades yet · waiting for a qualified signal.</span>");
+}
+
 function renderTrades(){
  let settled=trades.filter(t=>["WIN","LOSS","TIE"].includes(t.result)),wins=settled.filter(t=>t.result==="WIN").length,losses=settled.filter(t=>t.result==="LOSS").length,pending=trades.filter(t=>t.result==="PENDING").length,rate=settled.length?(wins/settled.length*100).toFixed(1)+"%":"—",net=trades.reduce((s,t)=>s+(Number(t.pnl)||0),0),avg=settled.length?Math.round(settled.reduce((s,t)=>s+t.score,0)/settled.length):null;
  $("kWinRate").textContent=rate;$("kWinLoss").textContent=`${wins} wins · ${losses} losses`;$("kPnl").textContent=money(net);$("kPnl").className=net>=0?"green":"red";$("kSettled").textContent=settled.length+" settled trades";
@@ -961,7 +1022,8 @@ function renderTrades(){
  const todayPnl=trades.filter(t=>t.dayKey===new Date().toISOString().slice(0,10)).reduce((n,t)=>n+(Number(t.pnl)||0),0);
  $("jTodayPnl").textContent=money(todayPnl);$("jTodayPnl").className=todayPnl>=0?"green":"red";$("jTodayCount").textContent=trades.filter(t=>t.dayKey===new Date().toISOString().slice(0,10)&&["WIN","LOSS","TIE"].includes(t.result)).length;
  $("tradeBody").innerHTML=trades.length?trades.map(t=>`<tr><td>${t.time}</td><td>${t.asset}</td><td>${t.side}</td><td>${fmt(t.entry)}</td><td>${t.expirySeconds||60}s</td><td>${t.exit==null?"—":fmt(t.exit)}</td><td>${money(t.stake)}</td><td>${t.result==="PENDING"?(t.expiryAt&&Date.now()>=t.expiryAt?"AWAITING EXIT PRICE":`PENDING · ${Math.max(0,Math.ceil((t.expiryAt-Date.now())/1000))}s`):t.result}</td><td>${t.result==="PENDING"?"AUTO SETTLEMENT":"VERIFIED"}</td></tr>`).join(""):'<tr><td colspan="9" class="empty">No paper trades logged.</td></tr>';
-}
+
+ renderPaperLiveBoard();}
 function persistAll(){saveState();renderTrades()}
 let calloutsEnabled=false,lastAnnouncedSignal="",autoPaperEnabled=true;
 function announceSignal(r){
@@ -986,11 +1048,12 @@ $("alertToggle").addEventListener("click",()=>{
 function addSignal(r){
  if(!r?.analysis?.fresh||!["CALL","PUT"].includes(r.analysis.direction)||ageForCandle(r.candles?.at(-1))>150)return;
  const key=r.id+"|"+r.analysis.direction+"|"+r.analysis.candleTime;
+ // Try paper execution before history de-duplication. openPaperTrade itself prevents duplicates.
+ if(autoPaperEnabled)openPaperTrade(r,r.analysis.direction,true,key);
  if(history.some(x=>x.key===key))return;
  announceSignal(r);
  history.unshift({key,time:clock(),asset:r.name,side:r.analysis.direction==="CALL"?"BUY":"SELL",entry:r.livePrice??r.price,score:r.analysis.score,age:Math.round(r.analysis.age)});
  history=history.slice(0,150);renderHistory();saveState();
- if(autoPaperEnabled)openPaperTrade(r,r.analysis.direction,true,key);
 }
 async function scan(){
  if(busy)return;if(!watch.size){alert("Select at least one market in Watchlist Configuration.");return}
@@ -1006,7 +1069,17 @@ async function scan(){
    if(liveTicks[id]){results[id].livePrice=liveTicks[id].price;results[id].liveChange=liveTicks[id].change;}
    if(analysis.direction!=="WAIT")addSignal(results[id]);
    if(selectedChart===id||!selectedChart){try{drawChart()}catch(chartError){console.error(chartError)}}
-  }catch(e){errors++;errorDetails.push(a.name+": "+(e.message||"Unknown data error"));results[id]={id,name:a.name,price:NaN,change:null,candles:[],analysis:{direction:"WAIT",score:0,reason:e.message,fresh:false,age:Infinity}}}
+  }catch(e){
+   errors++;errorDetails.push(a.name+": "+(e.message||"Unknown data error"));
+   const previous=results[id];
+   if(previous?.candles?.length>=35){
+    // Keep the last verified history/chart; analyze() will naturally mark it stale as its timestamp ages.
+    const retained=previous.candles;
+    results[id]={...previous,analysis:analyze(retained,a),lastError:e.message,scannedAt:Date.now()};
+   }else{
+    results[id]={id,name:a.name,price:NaN,change:null,candles:[],analysis:{direction:"WAIT",score:0,reason:e.message,fresh:false,age:Infinity},lastError:e.message};
+   }
+  }
   done++;$("scanProgress").style.width=(done/ids.length*100)+"%";$("progressText").textContent=`Scanned ${done} of ${ids.length} · ${errors} errors`;
   renderScanner();
   // Avoid bursting the provider and stay within low-tier rate limits.
@@ -1014,14 +1087,10 @@ async function scan(){
  }
  latestScan=Date.now();renderScanner();try{drawChart()}catch(chartError){console.error("Chart render:",chartError)}settleExpiredTrades();$("scanNow").disabled=false;busy=false;
  let fresh=[...watch].filter(id=>results[id]?.analysis.fresh).length;status(fresh?"SCAN COMPLETE · DATA RECEIVED":"SCAN COMPLETE · CHECK DATA",fresh>0);
- $("connectionStatus").textContent=`Regular feed: ${apiKey?"API key saved; per-symbol requests":"not configured"}\nOTC feed: endpoint checked when selected\nLast scan: ${clock()}\n${errorDetails.length?"DATA ERRORS: "+errorDetails.join(" | "):"No provider errors reported."}`;
+ $("connectionStatus").textContent=`Regular feed: ${apiKey?"API key saved; per-symbol requests":"not configured"}\nOTC history: ${errorDetails.length?"ERROR · "+errorDetails.join(" | "):"last request completed"}\nOTC live stream: ${liveStreamState}\nLast scan: ${clock()}`;
  $("progressText").textContent=`Complete · ${fresh} fresh markets · ${errors} errors`;saveState();
 }
 function openPaperTrade(r,side,isAutomatic=true,signalKey=""){
- if(isAutomatic&&r&&!isPOComparisonVerified(r.id)){
-  if($("paperStatus"))$("paperStatus").textContent="AUTO PAPER BLOCKED · Compare this same pair with Pocket Option first. Both quotes must be under 10 seconds old and within 0.2 pip.";
-  return false;
- }
  if(!r||!r.analysis?.fresh||ageForCandle(r.candles?.at(-1))>150||!["CALL","PUT"].includes(side)){
   if($("paperStatus"))$("paperStatus").textContent="Paper trade skipped · waiting for a fresh qualified signal.";
   return false;
@@ -1033,7 +1102,7 @@ function openPaperTrade(r,side,isAutomatic=true,signalKey=""){
  }
  const live=liveTicks[r.id];
  const liveIsFresh=live&&Number.isFinite(Number(live.price))&&Date.now()-Number(live.receivedAt||0)<=20000;
- const entry=Number(liveIsFresh?live.price:r.price);
+ const entry=Number(liveIsFresh?live.price:r.candles?.at(-1)?.close??r.price);
  const stake=Math.max(1,Math.min(100000,+$("stake").value||10));
  if(!Number.isFinite(entry)||entry<=0){
   if($("paperStatus"))$("paperStatus").textContent="Paper trade skipped · no valid entry quote.";
@@ -1045,10 +1114,11 @@ function openPaperTrade(r,side,isAutomatic=true,signalKey=""){
   signalKey:key,time:clock(),timeDate:new Date().toLocaleDateString(),dayKey:new Date().toISOString().slice(0,10),
   asset:r.name,assetId:r.id,side,entry,entryCandleTime:Number(r.candles?.at(-1)?.timeMs||0),
   entryObservedAt:liveIsFresh?Number(live.receivedAt):Number(r.scannedAt||now),
+  entrySource:liveIsFresh?"OTCharts live tick":"latest OTCharts candle close",
   expirySeconds,expiryAt:now+expirySeconds*1000,exit:null,stake,payoutRate,
   score:r.analysis.score,result:"PENDING",pnl:0,practiceMode:true,automatic:!!isAutomatic
  };
- trades.unshift(t);trades=trades.slice(0,250);renderTrades();saveState();
+ trades.unshift(t);trades=trades.slice(0,250);renderTrades();renderPaperLiveBoard();saveState();
  if($("paperStatus"))$("paperStatus").textContent=`AUTO PAPER ${side==="CALL"?"BUY":"SELL"} · ${t.asset} · ${fmt(entry)} · $${stake} stake · 60s expiry · awaiting verified exit quote.`;
  if($("autoPaperStatus"))$("autoPaperStatus").textContent=`${autoPaperEnabled?"ON":"OFF"} · ${trades.filter(x=>x.result==="PENDING").length} open paper trade(s)`;
  return true;
