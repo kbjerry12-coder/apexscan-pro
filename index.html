@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080d17">
-<title>APEXSCAN PRO · OTC Intelligence Terminal</title>
+<title>APEXSCAN PRO · Mobile Signal Terminal</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -47,6 +47,75 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
 .tf-row{display:flex;align-items:center;gap:8px;margin:12px 0 10px;flex-wrap:wrap}.tf-btn{padding:8px 14px;border-radius:8px;background:#0a1729;border:1px solid #294461;color:#a9c4e3;font-size:11px;font-weight:900;letter-spacing:.08em}.tf-btn.active{background:linear-gradient(120deg,#0e8e79,#176cae);border-color:#4eb8d1;color:#fff;box-shadow:0 0 16px #168cb944}.tf-note{font-size:10px;color:#91a9c8;margin-left:auto}.countdown-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.countdown-grid div{padding:10px;border-radius:9px;background:#071626;border:1px solid #24415e}.countdown-grid small{display:block;font-size:9px;color:#8da9c9;letter-spacing:.1em}.countdown-grid b{display:block;font-size:22px;font-variant-numeric:tabular-nums;color:#f2f7ff;margin-top:3px}.chart-head{gap:10px}.chartbox{height:340px}.signal-card{padding:16px}.signal-dir{font-size:36px}.signal-card.call .signal-dir:before{content:'▲ ';font-size:20px}.signal-card.put .signal-dir:before{content:'▼ ';font-size:20px}.signal-card.call .signal-stats b{color:#57edbd}.signal-card.put .signal-stats b{color:#ff8ba0}.row-countdown{display:block;font-size:9px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums}
 @media(max-width:600px){.chartbox{height:285px}.tf-btn{flex:1;padding:9px 6px}.tf-note{width:100%;margin-left:0}.countdown-grid b{font-size:20px}}
 
+
+/* V7 · signal-first mobile app layout */
+.mobile-command,.mobile-nav{display:none}
+.signal-status-line{font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:#a9c6e7!important}
+.indicator-chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 2px}
+.indicator-chips span{border:1px solid #2c496b;border-radius:30px;padding:5px 9px;background:#0a1a2d;color:#a8c7e9;font-size:9px;font-weight:800;letter-spacing:.03em}
+@media(max-width:700px){
+ body{padding-bottom:calc(86px + env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% -10%,#142f4f 0,transparent 42%),linear-gradient(160deg,#050914,#07101e 58%,#050914);background-attachment:fixed}
+ header{padding:10px 14px;gap:8px;background:rgba(5,11,22,.94);border-bottom:1px solid #25415f}
+ .brand{gap:8px;font-size:12px;letter-spacing:.12em}.logo{width:30px;height:30px;border-radius:9px}.brand small{font-size:8px}
+ .headright{font-size:9px;gap:4px}.headright .headlabel{display:none}#statusText{display:inline-block;max-width:105px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+ .wrap{padding:9px 11px 22px;max-width:560px}
+ .top{display:block;padding:13px 14px;margin-bottom:9px;border-radius:15px;background:linear-gradient(135deg,#102b47ed,#11172ddd 78%);border-color:#2c4e72;box-shadow:0 10px 28px #0005}
+ .top:after{display:none}.top h1{font-size:19px;line-height:1.15;letter-spacing:-.025em}.top p{display:none}.eyebrow{font-size:8px;letter-spacing:.12em;margin-bottom:4px}
+ .actions{display:flex;gap:6px;margin-top:10px}.actions button{flex:1;min-width:0;padding:8px 5px;font-size:10px;border-radius:9px;white-space:nowrap}
+ .notice{margin:0 0 9px;padding:8px 10px;font-size:9px;line-height:1.35;border-radius:10px;background:#211d19e8}
+ .mobile-command{display:block;margin:0 0 10px;padding:10px;border:1px solid #2c496a;border-radius:15px;background:linear-gradient(155deg,#0f2036f5,#091626f5);box-shadow:0 10px 26px #0004}
+ .market-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:9px}
+ .market-tab{padding:8px 3px;border-radius:9px;background:#101c30;border:1px solid #2a3f5e;color:#9fb7d4;font-size:9px;font-weight:900;letter-spacing:.035em;text-transform:uppercase}
+ .market-tab.active{background:linear-gradient(120deg,#0d8b82,#175c91);border-color:#44c7c1;color:#fff;box-shadow:0 0 16px #0ba7a144}
+ .market-tab[data-market-category="commodities"]{border-style:dashed;color:#7389a5}
+ .mobile-control-row{display:grid;grid-template-columns:1.2fr .8fr;gap:7px}
+ .mobile-control{display:flex;flex-direction:column;gap:4px;min-width:0}
+ .mobile-control span{font-size:8px;color:#8fa9ca;font-weight:900;letter-spacing:.1em}
+ .mobile-control select{width:100%;min-width:0;padding:10px 8px;border:1px solid #2a4768;border-radius:9px;background:#071426;color:#f0f6ff;font-weight:800;font-size:11px;outline:none}
+ .mobile-market-meta{display:flex;justify-content:space-between;gap:8px;margin-top:8px;color:#9bb6d5;font-size:9px}
+ .mobile-market-meta span:last-child{text-align:right;color:#63d9bd}
+ .category-note{display:none;margin-top:8px;font-size:9px;color:#ffc978}
+ .kpis{display:none}
+ .main-grid{display:flex;flex-direction:column;gap:0;align-items:stretch}
+ .main-grid>section,.main-grid>aside{display:contents}
+ .panel{width:100%;padding:11px;margin:0 0 10px;border-radius:14px;background:linear-gradient(155deg,rgba(15,29,49,.98),rgba(7,15,28,.99));border-color:#23405f;box-shadow:0 9px 24px #0004}
+ .panel-head{padding-bottom:8px;margin-bottom:9px;gap:8px}.panel h2{font-size:10px;letter-spacing:.1em}
+ #signalPanel{order:0}.main-grid #scannerPanel{order:1}.main-grid #chartPanel{order:2}.main-grid #signalHistoryPanel{order:3}.main-grid #journalPanel{order:4}.main-grid #dataPanel{order:5}.main-grid #watchPanel{order:6}.main-grid #enginePanel{order:7}
+ .signal-card{padding:17px 12px;border-radius:14px;text-align:center;min-height:220px}
+ .signal-top{justify-content:center;flex-direction:column;gap:5px}
+ .signal-dir{font-size:42px;line-height:1.06;letter-spacing:.055em}
+ .signal-card.call .signal-dir:before{content:'↗ ';font-size:30px;vertical-align:3px}
+ .signal-card.put .signal-dir:before{content:'↘ ';font-size:30px;vertical-align:3px}
+ .signal-card.wait .signal-dir:before{content:'⌁ ';font-size:26px}
+ #topScore{font-size:9px}
+ #topReason{font-size:10px;line-height:1.4;margin:9px 0 5px}
+ .signal-status-line{font-size:12px!important;margin:6px 0 11px!important;color:#ff7895!important}
+ .signal-card.call .signal-status-line{color:#42e2b2!important}
+ .signal-card.wait .signal-status-line{color:#ffd078!important}
+ .signal-stats{gap:5px;text-align:left}.signal-stats div{padding:8px 7px;background:#06111f;border:1px solid #1c3551;border-radius:8px}.signal-stats small{font-size:8px}.signal-stats b{font-size:11px;word-break:break-word}
+ .indicator-chips{justify-content:center;gap:5px;margin:10px 0 2px}.indicator-chips span{font-size:8px;padding:5px 7px}
+ .countdown-grid{gap:6px;margin-top:10px}.countdown-grid div{padding:8px 6px;border-radius:8px}.countdown-grid small{font-size:8px}.countdown-grid b{font-size:20px}
+ #topExpiry{text-align:center;font-size:9px!important}
+ #paperFromTop{min-height:42px;font-size:11px;border-radius:10px}
+ .scan-table-wrap{max-height:340px;border-radius:9px}
+ table{font-size:10px}th{font-size:8px;padding:8px 6px}td{padding:9px 6px}
+ .chart-head{align-items:center}.chart-head select{max-width:145px!important;font-size:10px!important}
+ .tf-row{gap:5px;margin:8px 0}.tf-btn{font-size:9px;padding:8px 5px}.chartbox{height:260px}
+ .chartfoot{font-size:9px}
+ .metricrow{gap:6px}.metricbox{padding:8px}.metricbox small{font-size:8px}.metricbox b{font-size:13px}
+ .fields{grid-template-columns:1fr 1fr}.field.wide{grid-column:1/-1}.field label{font-size:8px}.field input,.field select{font-size:11px}
+ .checkgrid{grid-template-columns:1fr 1fr}.check{font-size:9px;padding:7px}
+ .analysis-breakdown{grid-template-columns:1fr 1fr;gap:5px}.analysis-breakdown div{font-size:9px;padding:7px}
+ .footer{font-size:8px;padding:10px 4px}
+ .mobile-hidden{display:none!important}
+ .mobile-nav{position:fixed;z-index:50;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:7px 8px calc(7px + env(safe-area-inset-bottom));background:rgba(5,12,24,.96);border-top:1px solid #28496b;backdrop-filter:blur(18px);box-shadow:0 -10px 30px #0006}
+ .nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 2px;border:0;border-radius:9px;background:transparent;color:#7f97b6;font-size:9px;font-weight:800}
+ .nav-item .nav-icon{font-size:18px;line-height:1.1}
+ .nav-item.active{color:#53d9c2;background:linear-gradient(180deg,#12334988,#10253a22)}
+ .nav-item.active .nav-icon{text-shadow:0 0 12px #2ddfc2}
+}
+@media(min-width:701px){.mobile-command,.mobile-nav{display:none!important}}
+
 </style>
 </head>
 <body>
@@ -57,9 +126,24 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
 <main class="wrap">
  <div class="top">
   <div><div class="eyebrow">POCKET OPTION OTC / PRIMARY MARKET SCANNER</div><h1>APEXSCAN PRO · OTC TERMINAL</h1><p>Pocket Option OTC priority · technical confluence · signal quality controls · paper-trade analytics</p></div>
-  <div class="actions"><button id="scanNow">↻ Scan now</button><button id="startBtn" class="primary">▶ Start auto scanner</button><button id="pauseBtn" class="danger" disabled>Ⅱ Pause</button></div>
+  <div class="actions"><button id="scanNow">↻ Scan</button><button id="startBtn" class="primary">▶ Auto scan</button><button id="pauseBtn" class="danger" disabled>Ⅱ Pause</button></div>
  </div>
  <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. The app marks candles older than 150 seconds STALE and blocks fresh 1-minute signals. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
+ <section class="mobile-command" aria-label="Market controls">
+  <div class="market-tabs" role="group" aria-label="Market category">
+   <button type="button" class="market-tab active" data-market-category="currencies">Currencies</button>
+   <button type="button" class="market-tab" data-market-category="crypto">Crypto</button>
+   <button type="button" class="market-tab" data-market-category="commodities">Commodities</button>
+  </div>
+  <div class="mobile-control-row">
+   <label class="mobile-control"><span>MARKET PAIR</span><select id="mobileAsset" aria-label="Market pair"><option value="">Select a market</option></select></label>
+   <label class="mobile-control"><span>SCAN CYCLE</span><select id="mobileInterval" aria-label="Scan cycle">
+    <option value="15000">15 sec</option><option value="30000">30 sec</option><option value="60000">60 sec</option><option value="120000">2 min</option><option value="300000">5 min</option>
+   </select></label>
+  </div>
+  <div class="mobile-market-meta"><span id="heroSelectedMarket">OTC market selected</span><span id="heroLiveLabel">1-minute candle analysis</span></div>
+  <div class="category-note" id="categoryNote" aria-live="polite">OTC currency markets are selected by default.</div>
+ </section>
  <section class="kpis">
   <div class="kpi"><label>Markets scanned</label><strong id="kScanned">0 / 0</strong><small id="kScanTime">Not scanned yet</small></div>
   <div class="kpi"><label>Active opportunities</label><strong id="kSignals">0</strong><small>Fresh CALL / PUT candidates</small></div>
@@ -70,8 +154,8 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
  </section>
  <div class="main-grid">
   <section>
-   <div class="panel">
-    <div class="panel-head"><h2>LIVE SCANNER · WATCHLIST</h2><span class="pill" id="scanMode">MANUAL</span></div>
+   <div class="panel" id="scannerPanel">
+    <div class="panel-head"><h2>LIVE SCANNER · WATCHLIST</h2><span class="pill" id="scanStateBadge">MANUAL</span></div>
     <div class="scanner-strip">
      <div class="mini"><label>Scan cycle</label><b id="cycleText">60 sec</b></div>
      <div class="mini"><label>Signal threshold</label><b id="thresholdText">30 / 100</b></div>
@@ -81,7 +165,7 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
     <div class="scan-table-wrap"><table><thead><tr><th>Market</th><th>Price</th><th>Change</th><th>Trend</th><th>RSI</th><th>Score</th><th>Signal</th><th>Data</th></tr></thead><tbody id="scannerBody"><tr><td colspan="8" class="empty">Connect a data provider, choose markets, then scan.</td></tr></tbody></table></div>
     <div class="chartfoot"><span id="scanFoot">Signals are generated from closed candle history.</span><span id="lastUpdated">—</span></div>
    </div>
-   <div class="panel">
+   <div class="panel" id="chartPanel">
     <div class="panel-head chart-head"><h2>MARKET CHART · SELECTED ASSET</h2><select id="chartAsset" style="max-width:170px;background:#091321;color:white;border:1px solid var(--line);padding:7px;border-radius:7px"></select></div>
     <div class="tf-row" role="group" aria-label="Chart timeframe">
      <button type="button" class="tf-btn active" data-tf="1">1 MIN</button>
@@ -92,11 +176,11 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
     <div class="chartbox"><canvas id="chart"></canvas></div>
     <div class="chartfoot"><span id="chartCaption">Waiting for candles</span><span id="chartMeta">EMA 9 · EMA 21 · 1-minute candles</span></div>
    </div>
-   <div class="panel">
+   <div class="panel" id="signalHistoryPanel">
     <div class="panel-head"><h2>SIGNAL HISTORY</h2><button class="small" id="clearSignals">Clear signals</button></div>
     <div class="scan-table-wrap"><table><thead><tr><th>Time</th><th>Market</th><th>Side</th><th>Entry</th><th>Score</th><th>Data age</th></tr></thead><tbody id="signalHistory"><tr><td colspan="6" class="empty">No qualified signals yet.</td></tr></tbody></table></div>
    </div>
-   <div class="panel">
+   <div class="panel" id="journalPanel">
     <div class="panel-head"><h2>PAPER TRADE JOURNAL</h2><div class="btnrow"><button class="small" id="exportCsv">Export CSV</button><button class="small" id="clearTrades">Clear journal</button></div></div>
     <div class="metricrow" style="margin-bottom:8px">
      <div class="metricbox"><small>Wins</small><b class="green" id="jWins">0</b></div><div class="metricbox"><small>Losses</small><b class="red" id="jLosses">0</b></div><div class="metricbox"><small>Pending</small><b id="jPending">0</b></div><div class="metricbox"><small>Average score</small><b id="jScore">—</b></div>
@@ -108,16 +192,16 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
    </div>
   </section>
   <aside>
-   <div class="panel">
-    <div class="panel-head"><h2>TOP AI OPPORTUNITY</h2><span class="pill">FILTERED</span></div>
-    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">WAIT</div><span class="pill" id="topScore">NO SETUP</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><div class="countdown-grid">
+   <div class="panel" id="signalPanel">
+    <div class="panel-head"><h2>LIVE AI SIGNAL</h2><span class="pill">CONFLUENCE CHECK</span></div>
+    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">WAIT</div><span class="pill" id="topScore">NO SETUP</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Waiting for a fresh market scan</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>EMA 9 / 21</span><span>RSI 14</span><span>MACD</span><span>Candle pressure</span><span>Feed freshness</span></div><div class="countdown-grid">
       <div><small>SIGNAL EXPIRES IN</small><b id="signalCountdown">--:--</b></div>
       <div><small>CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
      </div>
      <p class="tiny" id="topExpiry" style="margin:10px 0 0">Signal validity: 60 seconds · Paper expiry: 60 seconds</p><button class="primary" id="paperFromTop" style="width:100%;margin-top:11px" disabled>＋ Log paper trade</button></div>
     <p class="tiny" style="margin:9px 0 0">A score is a technical confluence rating, not a probability of winning. Wait means filters did not agree.</p>
    </div>
-   <div class="panel">
+   <div class="panel" id="dataPanel">
     <div class="panel-head"><h2>DATA CONNECTIONS</h2><span class="pill">PROVIDER SETUP</span></div>
     <div class="fields">
      <div class="field wide"><label>Twelve Data API key · regular markets</label><input id="apiKey" type="password" placeholder="Paste Twelve Data API key"></div>
@@ -127,12 +211,12 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
      <div class="field wide"><div class="tiny" id="connectionStatus">Regular feed: not tested<br>OTC feed: function will be tested when selected</div></div>
     </div>
    </div>
-   <div class="panel">
+   <div class="panel" id="watchPanel">
     <div class="panel-head"><h2>WATCHLIST CONFIGURATION</h2><span class="pill">SELECT MARKETS</span></div>
     <div class="tiny" style="margin-bottom:8px">Choose a small batch to respect provider request limits. Free API plans may limit requests per minute/day.</div>
     <div class="checkgrid" id="watchChecks"></div>
     <div class="fields" style="margin-top:11px">
-     <div class="field"><label>Auto scan interval</label><select id="interval"><option value="60000">60 seconds</option><option value="120000">2 minutes</option><option value="300000">5 minutes</option></select></div>
+     <div class="field"><label>Auto scan interval</label><select id="interval"><option value="15000" selected>15 seconds</option><option value="30000">30 seconds</option><option value="60000">60 seconds</option><option value="120000">2 minutes</option><option value="300000">5 minutes</option></select></div>
      <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. This strategy currently analyzes 1-minute candles, so its initial practice expiry is 60 seconds; validate with paper results before considering real trades.</div></div>
      <div class="field"><label>Scanner mode</label><select id="scanMode"><option value="aggressive" selected>Aggressive · early setups</option><option value="balanced">Balanced · confirmed only</option></select></div>
      <div class="field"><label>Signal threshold</label><select id="threshold"><option value="15" selected>15 · Very sensitive</option><option value="30">30 · More sensitive</option><option value="70">70 · Active</option><option value="75">75 · Balanced</option><option value="80">80 · Selective</option><option value="85">85 · Strict</option></select></div>
@@ -142,7 +226,7 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
     </div>
     <div class="progress"><span id="scanProgress"></span></div><div class="tiny" id="progressText" style="margin-top:5px">Idle</div>
    </div>
-   <div class="panel">
+   <div class="panel" id="enginePanel">
     <div class="panel-head"><h2>SCANNER ENGINE</h2><span class="pill">TECHNICAL CONFLUENCE</span></div>
     <div class="tiny">Multi-factor OTC analysis: trend alignment, momentum, MACD histogram, volatility regime, candle body/wick quality, recent swing structure, and feed freshness. Aggressive mode also surfaces early momentum setups; these are labeled EARLY and are not confirmed entries. Stale data and unsafe volatility still block signals. Scores are confluence ratings—not win probabilities.</div><div id="analysisBreakdown" class="analysis-breakdown"><div><span>Trend structure</span><b>Awaiting scan</b></div><div><span>Momentum</span><b>Awaiting scan</b></div><div><span>Volatility</span><b>Awaiting scan</b></div><div><span>Price action</span><b>Awaiting scan</b></div><div><span>Market structure</span><b>Awaiting scan</b></div><div><span>Feed integrity</span><b>Awaiting scan</b></div></div>
     <div style="margin-top:10px" class="metricrow"><div class="metricbox"><small>Trend</small><b>EMA 9/21</b></div><div class="metricbox"><small>Momentum</small><b>RSI 14</b></div><div class="metricbox"><small>Confirm</small><b>MACD</b></div><div class="metricbox"><small>Quality</small><b>Candle</b></div></div>
@@ -150,6 +234,12 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
   </aside>
  </div>
  <div class="footer">APEXSCAN PRO · Independent market-data analysis · No broker execution · Trading involves substantial risk.</div>
+ <nav class="mobile-nav" id="mobileNav" aria-label="Main navigation">
+  <button type="button" class="nav-item active" data-screen="scanner"><span class="nav-icon">⌁</span><span>Signals</span></button>
+  <button type="button" class="nav-item" data-screen="chart"><span class="nav-icon">▥</span><span>Chart</span></button>
+  <button type="button" class="nav-item" data-screen="history"><span class="nav-icon">◷</span><span>History</span></button>
+  <button type="button" class="nav-item" data-screen="setup"><span class="nav-icon">⚙</span><span>Setup</span></button>
+ </nav>
 </main>
 <script>
 const $=id=>document.getElementById(id), STORE="apexscan_pro_dashboard_v6", LEGACY_STORE="apexscan_pro_dashboard_v5";
@@ -164,12 +254,20 @@ const ASSETS=[
  {id:"OTC:GBP/USD",name:"GBP/USD OTC",kind:"otc",symbol:"GBPUSD_otc",default:true},
  {id:"OTC:USD/JPY",name:"USD/JPY OTC",kind:"otc",symbol:"USDJPY_otc",default:true}
 ];
-let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={};
+let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6}),clock=()=>new Date().toLocaleTimeString();
 function status(t,ok=false){$("statusText").textContent=t;$("statusLed").style.background=ok?"var(--green)":"var(--amber)"}
 function saveState(){try{localStorage.setItem(STORE,JSON.stringify({watch:[...watch],history:history.slice(0,150),trades:trades.slice(0,250),threshold:$("threshold").value,mode:$("scanMode").value,interval:$("interval").value,stake:$("stake").value,payout:$("payout").value,chart:selectedChart}))}catch(e){}}
 function loadState(){apiKey=localStorage.getItem("apex_key")||"";$("apiKey").value=apiKey;try{let s=JSON.parse(localStorage.getItem(STORE)||localStorage.getItem(LEGACY_STORE)||"{}");if(s.history)history=s.history;if(s.trades)trades=s.trades;history=s.history||[];trades=s.trades||[];if(s.threshold)$("threshold").value=(String(s.threshold)==="65"||String(s.threshold)==="30"?"15":s.threshold);if(s.mode)$("scanMode").value=s.mode;if(s.interval)$("interval").value=s.interval;if(s.stake)$("stake").value=s.stake;if(s.payout)$("payout").value=s.payout;if(s.chart)selectedChart=s.chart}catch(e){}}
-function renderWatch(){let box=$("watchChecks");box.innerHTML="";ASSETS.forEach(a=>{let lab=document.createElement("label");lab.className="check";let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState();if([...watch].some(id=>ASSETS.find(x=>x.id===id)?.kind==="otc"))connectLiveStream();else stopLiveStream()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});let opts=[...watch].map(id=>`<option value="${id}">${id}</option>`).join("");$("chartAsset").innerHTML=opts||'<option value="">No watchlist</option>';if(watch.has(selectedChart))$("chartAsset").value=selectedChart;else selectedChart=[...watch][0]||""}
+function assetCategory(a){return a.id==="BTC/USD"||a.id==="ETH/USD"?"crypto":"currencies"}
+function renderWatch(){
+ let box=$("watchChecks");box.innerHTML="";
+ let visible=ASSETS.filter(a=>activeMarketCategory==="commodities"?false:assetCategory(a)===activeMarketCategory);
+ if(!visible.length){box.innerHTML='<div class="empty">No commodities data provider is connected yet. Currency and crypto feeds remain available.</div>'}
+ visible.forEach(a=>{let lab=document.createElement("label");lab.className="check";lab.dataset.category=assetCategory(a);let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState();if([...watch].some(id=>ASSETS.find(x=>x.id===id)?.kind==="otc"))connectLiveStream();else stopLiveStream();updateChartOptions()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});
+ let note=$("categoryNote");if(note){note.style.display=activeMarketCategory==="commodities"?"block":"none";note.textContent=activeMarketCategory==="commodities"?"Commodities are not connected to a supported feed yet.":activeMarketCategory==="crypto"?"Crypto pairs use your Twelve Data connection. Add them to the watchlist in Setup.":"OTC currency markets use your existing Netlify OTCharts function."}
+ updateChartOptions();
+}
 function ema(v,p){if(v.length<p)return null;let k=2/(p+1),x=v.slice(0,p).reduce((a,b)=>a+b,0)/p;for(let i=p;i<v.length;i++)x=v[i]*k+x*(1-k);return x}
 function rsi(v,p=14){if(v.length<=p)return null;let g=0,l=0;for(let i=v.length-p;i<v.length;i++){let d=v[i]-v[i-1];if(d>0)g+=d;else l-=d}return l===0?100:100-100/(1+g/l)}
 function analyze(candles,asset){
@@ -279,7 +377,7 @@ function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setL
 function renderScanner(){
  let arr=[...watch].map(id=>results[id]).filter(Boolean),rows=[...arr].sort((a,b)=>b.analysis.score-a.analysis.score);
  $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,cls=s.direction==="CALL"?"call":s.direction==="PUT"?"put":"wait",change=r.change,age=Number.isFinite(s.age)?Math.round(s.age)+"s":"—",timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+60000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":"red"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${s.direction}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">01:00</small>`:""}</td><td>${s.fresh?'<span class="green">FRESH</span>':'<span class="amber">STALE</span>'}</td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
- document.querySelectorAll("#scannerBody tr[data-asset]").forEach(tr=>tr.addEventListener("click",()=>{selectedChart=tr.dataset.asset;$("chartAsset").value=selectedChart;drawChart()}));
+ document.querySelectorAll("#scannerBody tr[data-asset]").forEach(tr=>tr.addEventListener("click",()=>{selectedChart=tr.dataset.asset;$("chartAsset").value=selectedChart;updateChartOptions();drawChart()}));
  let fresh=arr.filter(r=>r.analysis.fresh).length,stale=arr.length-fresh,signals=arr.filter(r=>r.analysis.direction!=="WAIT");
  $("kScanned").textContent=arr.length+" / "+watch.size;$("kSignals").textContent=signals.length;$("freshCount").textContent=fresh;$("staleCount").textContent=stale;
  $("kHealth").textContent=arr.length?(stale===0?"HEALTHY":fresh?"PARTIAL":"STALE"):"OFFLINE";$("kHealthNote").textContent=fresh+" fresh · "+stale+" stale / errors";
@@ -292,11 +390,14 @@ function updateTop(rows){
  let candidates=rows.filter(r=>r.analysis.direction!=="WAIT"&&r.analysis.fresh).sort((a,b)=>b.analysis.score-a.analysis.score),r=candidates[0];latestTop=r||null;
  let s=r?.analysis,dir=s?.direction||"WAIT";let timerKey=r&&s?`${r.id}|${dir}|${s.candleTime}`:"";if(timerKey&&timerKey!==signalTimerKey){signalTimerKey=timerKey;signalExpiries[timerKey]=signalExpiries[timerKey]||Date.now()+60000;signalExpiryAt=signalExpiries[timerKey];}if(!timerKey){signalTimerKey="";signalExpiryAt=0;}$("topSignal").className="signal-card "+(dir==="CALL"?"call":dir==="PUT"?"put":"wait");$("topDirection").textContent=dir;$("topScore").textContent=s?(s.signalLevel==="EARLY"?"EARLY · ":"CONFIRMED · ")+s.score+" / 100":"NO SETUP";
  $("topReason").textContent=s?(s.signalLevel==="EARLY"?"Early setup · confirmation pending. ":"")+s.reason:"No fresh setup passed the data and safety filters. Check feed freshness.";
+ $("signalStatusLine").textContent=dir==="CALL"?"Your signal is UP · CALL bias":dir==="PUT"?"Your signal is DOWN · PUT bias":"WAIT · no aligned entry";
+ if($("indicatorChips")){$("indicatorChips").innerHTML=s?`<span>EMA trend · ${s.trend}</span><span>RSI 14 · ${s.rsi.toFixed(1)}</span><span>MACD · ${s.macdHistogram>=0?"Bullish":"Bearish"}</span><span>Candle quality · ${Math.round((s.quality||0)*100)}%</span><span>Feed · ${s.fresh?"Fresh":"Stale"}</span>`:'<span>EMA 9 / 21</span><span>RSI 14</span><span>MACD</span><span>Candle pressure</span><span>Feed freshness</span>'}
  $("topAsset").textContent=r?.name||"—";$("topEntry").textContent=s?fmt(s.entry):"—";$("topRsi").textContent=s?s.rsi.toFixed(1):"—";$("paperFromTop").disabled=!r;
  if(s?.breakdown){$("analysisBreakdown").innerHTML=Object.entries(s.breakdown).map(([k,v])=>`<div><span>${({trend:"Trend structure",momentum:"Momentum",volatility:"Volatility",price:"Price action",structure:"Market structure",feed:"Feed integrity"})[k]}</span><b>${v||"—"}</b></div>`).join("")}else{$("analysisBreakdown").innerHTML="<div><span>Analysis</span><b>Waiting for fresh candles</b></div>"}
  if(rows[0]){selectedChart=selectedChart||rows[0].id;if(!$("chartAsset").value)$("chartAsset").value=selectedChart}
 }
-function updateChartOptions(){let current=selectedChart;$("chartAsset").innerHTML=[...watch].map(id=>`<option value="${id}">${id}</option>`).join("");if(watch.has(current))$("chartAsset").value=current;else if(watch.size){selectedChart=[...watch][0];$("chartAsset").value=selectedChart}}
+function updateChartOptions(){let current=selectedChart,html=[...watch].map(id=>`<option value="${id}">${id}</option>`).join("");$("chartAsset").innerHTML=html;if(watch.has(current))$("chartAsset").value=current;else if(watch.size){selectedChart=[...watch][0];$("chartAsset").value=selectedChart}if($("mobileAsset")){ $("mobileAsset").innerHTML=html||'<option value="">No watched markets</option>';$("mobileAsset").value=selectedChart||"";updateMobileMarketLabel() }}
+function updateMobileMarketLabel(){if(!$('heroSelectedMarket'))return;let a=ASSETS.find(x=>x.id===selectedChart);$('heroSelectedMarket').textContent=a?(a.name+(a.kind==="otc"?" · OTC":"")):"No market selected";$('heroLiveLabel').textContent=a?(a.kind==="otc"?"OTC candles · 1m analysis":"Regular feed · 1m analysis"):"Waiting for market"}
 function aggregateCandles(candles,minutes){
  if(minutes===1)return candles.slice(-90);
  const bucketMs=minutes*60*1000,map=new Map();
@@ -389,9 +490,28 @@ function manualSettle(id,result){
  renderTrades();saveState();
 }
 function exportCSV(){let rows=[["Time","Asset","Side","Entry","Expiry seconds","Exit","Stake","Score","Result","PnL"],...trades.map(t=>[t.time,t.asset,t.side,t.entry,t.expirySeconds||60,t.exit??"",t.stake,t.score,t.result,t.pnl])];let csv=rows.map(r=>r.map(x=>`"${String(x).replaceAll('"','""')}"`).join(",")).join("\n");let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="apexscan-paper-journal.csv";a.click();URL.revokeObjectURL(a.href)}
+function setMarketCategory(category){
+ activeMarketCategory=category;
+ document.querySelectorAll(".market-tab").forEach(b=>b.classList.toggle("active",b.dataset.marketCategory===category));
+ renderWatch();
+}
+function setMobileScreen(screen){
+ activeMobileScreen=screen;
+ const panels=["signalPanel","scannerPanel","chartPanel","signalHistoryPanel","journalPanel","dataPanel","watchPanel","enginePanel"];
+ const visible={scanner:["signalPanel","scannerPanel"],chart:["signalPanel","chartPanel"],history:["signalHistoryPanel","journalPanel"],setup:["dataPanel","watchPanel","enginePanel"]};
+ const mobile=window.matchMedia("(max-width: 700px)").matches;
+ panels.forEach(id=>{let el=$(id);if(el)el.classList.toggle("mobile-hidden",mobile&&!visible[screen].includes(id));});
+ document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.screen===screen));
+}
+document.querySelectorAll(".market-tab").forEach(b=>b.addEventListener("click",()=>setMarketCategory(b.dataset.marketCategory)));
+document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>setMobileScreen(b.dataset.screen)));
+$("mobileAsset").addEventListener("change",()=>{$("chartAsset").value=$("mobileAsset").value;selectedChart=$("mobileAsset").value;drawChart();updateMobileMarketLabel();saveState()});
+$("mobileInterval").addEventListener("change",()=>{$("interval").value=$("mobileInterval").value;$("interval").dispatchEvent(new Event("change"));});
+function syncMobileControls(){if($("mobileInterval"))$("mobileInterval").value=$("interval").value||"15000";updateChartOptions()}
+window.addEventListener("resize",()=>{setMobileScreen(activeMobileScreen);drawChart()});
 $("scanNow").onclick=scan;
-$("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanMode").textContent="AUTO SCAN";status("AUTO SCANNER ACTIVE",true);scan();cycle=setInterval(scan,+$("interval").value)};
-$("pauseBtn").onclick=()=>{running=false;clearInterval(cycle);$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanMode").textContent="PAUSED";status("SCANNER PAUSED")};
+$("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN";status("AUTO SCANNER ACTIVE",true);scan();cycle=setInterval(scan,+$("interval").value)};
+$("pauseBtn").onclick=()=>{running=false;clearInterval(cycle);$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED")};
 $("saveKey").type="button";
 $("saveKey").addEventListener("click",async(event)=>{
  event.preventDefault();
@@ -418,12 +538,12 @@ $("paperFromTop").onclick=addPaper;$("exportCsv").onclick=exportCSV;
 $("scanMode").addEventListener("change",()=>{saveState();if(latestScan)renderScanner()});
 $("clearSignals").onclick=()=>{if(confirm("Clear signal history?")){history=[];renderHistory();saveState()}};
 $("clearTrades").onclick=()=>{if(confirm("Delete all paper journal records?")){trades=[];renderTrades();saveState()}};
-$("chartAsset").onchange=()=>{selectedChart=$("chartAsset").value;drawChart();saveState()};
+$("chartAsset").onchange=()=>{selectedChart=$("chartAsset").value;drawChart();updateChartOptions();saveState()};
 document.querySelectorAll(".tf-btn").forEach(b=>b.addEventListener("click",()=>setChartTimeframe(Number(b.dataset.tf))));
 $("threshold").onchange=()=>{$("thresholdText").textContent=$("threshold").value+" / 100";if(latestScan)scan();saveState()};
 $("interval").onchange=()=>{if(running){clearInterval(cycle);cycle=setInterval(scan,+$("interval").value)}$("cycleText").textContent=(+$("interval").value/1000)+" sec";saveState()};
 ["stake","payout"].forEach(id=>$(id).addEventListener("change",saveState));
-window.addEventListener("resize",drawChart);setInterval(()=>{$("clock").textContent=clock();updateCountdowns()},1000);
-loadState();renderWatch();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();drawChart();$("clock").textContent=clock();connectLiveStream();
+setInterval(()=>{$("clock").textContent=clock();updateCountdowns()},1000);
+loadState();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();drawChart();setMobileScreen("scanner");$("clock").textContent=clock();connectLiveStream();
 </script>
 </body></html>
