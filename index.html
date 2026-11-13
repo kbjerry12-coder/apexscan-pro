@@ -198,7 +198,7 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
       <div><small>SIGNAL EXPIRES IN</small><b id="signalCountdown">--:--</b></div>
       <div><small>CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
      </div>
-     <p class="tiny" id="topExpiry" style="margin:10px 0 0">Signal validity: 60 seconds · Paper expiry: 60 seconds</p><button class="primary" id="paperFromTop" style="width:100%;margin-top:11px" disabled>＋ Log paper trade</button></div>
+     <p class="tiny" id="topExpiry" style="margin:10px 0 0">Signal validity: 60 seconds · Paper expiry: 60 seconds</p><button class="primary" id="paperFromTop" style="width:100%;margin-top:11px" disabled>＋ Start 60s paper trade</button><p class="tiny" id="paperStatus" style="margin:7px 0 0">Paper trades settle automatically at expiry when a fresh market price is available.</p></div>
     <p class="tiny" style="margin:9px 0 0">A score is a technical confluence rating, not a probability of winning. Wait means filters did not agree.</p>
    </div>
    <div class="panel" id="dataPanel">
@@ -345,7 +345,7 @@ function handleLiveTick(raw){
  const id=OTC_SYMBOLS[symbol];
  if(!id||!Number.isFinite(price)||price<=0)return;
  const previous=liveTicks[id]?.price ?? results[id]?.price ?? price;
- liveTicks[id]={price,change:price-previous,time:tick.time||tick.timestamp||Date.now()};
+ liveTicks[id]={price,change:price-previous,time:tick.time||tick.timestamp||Date.now(),receivedAt:Date.now()};
  if(results[id]){
   results[id].livePrice=price;
   results[id].liveChange=price-previous;
@@ -354,6 +354,7 @@ function handleLiveTick(raw){
   if(selectedChart===id){$("chartCaption").textContent=`${results[id].name} · LIVE ${fmt(price)} · candle analysis uses latest 1-minute history`}
  }
  setLiveStreamState("LIVE · "+Object.keys(liveTicks).length+" / 3 pairs received",true);
+ settleExpiredTrades();
 }
 function connectLiveStream(){
  if(liveStream||typeof EventSource==="undefined")return;
@@ -387,58 +388,116 @@ function renderScanner(){
  updateTop(rows);updateChartOptions();
 }
 function updateTop(rows){
- let candidates=rows.filter(r=>r.analysis.direction!=="WAIT"&&r.analysis.fresh).sort((a,b)=>b.analysis.score-a.analysis.score),r=candidates[0];latestTop=r||null;
- let s=r?.analysis,dir=s?.direction||"WAIT";let timerKey=r&&s?`${r.id}|${dir}|${s.candleTime}`:"";if(timerKey&&timerKey!==signalTimerKey){signalTimerKey=timerKey;signalExpiries[timerKey]=signalExpiries[timerKey]||Date.now()+60000;signalExpiryAt=signalExpiries[timerKey];}if(!timerKey){signalTimerKey="";signalExpiryAt=0;}$("topSignal").className="signal-card "+(dir==="CALL"?"call":dir==="PUT"?"put":"wait");$("topDirection").textContent=dir;$("topScore").textContent=s?(s.signalLevel==="EARLY"?"EARLY · ":"CONFIRMED · ")+s.score+" / 100":"NO SETUP";
- $("topReason").textContent=s?(s.signalLevel==="EARLY"?"Early setup · confirmation pending. ":"")+s.reason:"No fresh setup passed the data and safety filters. Check feed freshness.";
- $("signalStatusLine").textContent=dir==="CALL"?"Your signal is UP · CALL bias":dir==="PUT"?"Your signal is DOWN · PUT bias":"WAIT · no aligned entry";
- if($("indicatorChips")){$("indicatorChips").innerHTML=s?`<span>EMA trend · ${s.trend}</span><span>RSI 14 · ${s.rsi.toFixed(1)}</span><span>MACD · ${s.macdHistogram>=0?"Bullish":"Bearish"}</span><span>Candle quality · ${Math.round((s.quality||0)*100)}%</span><span>Feed · ${s.fresh?"Fresh":"Stale"}</span>`:'<span>EMA 9 / 21</span><span>RSI 14</span><span>MACD</span><span>Candle pressure</span><span>Feed freshness</span>'}
- $("topAsset").textContent=r?.name||"—";$("topEntry").textContent=s?fmt(s.entry):"—";$("topRsi").textContent=s?s.rsi.toFixed(1):"—";$("paperFromTop").disabled=!r;
- if(s?.breakdown){$("analysisBreakdown").innerHTML=Object.entries(s.breakdown).map(([k,v])=>`<div><span>${({trend:"Trend structure",momentum:"Momentum",volatility:"Volatility",price:"Price action",structure:"Market structure",feed:"Feed integrity"})[k]}</span><b>${v||"—"}</b></div>`).join("")}else{$("analysisBreakdown").innerHTML="<div><span>Analysis</span><b>Waiting for fresh candles</b></div>"}
- if(rows[0]){selectedChart=selectedChart||rows[0].id;if(!$("chartAsset").value)$("chartAsset").value=selectedChart}
-}
-function updateChartOptions(){let current=selectedChart,html=[...watch].map(id=>`<option value="${id}">${id}</option>`).join("");$("chartAsset").innerHTML=html;if(watch.has(current))$("chartAsset").value=current;else if(watch.size){selectedChart=[...watch][0];$("chartAsset").value=selectedChart}if($("mobileAsset")){ $("mobileAsset").innerHTML=html||'<option value="">No watched markets</option>';$("mobileAsset").value=selectedChart||"";updateMobileMarketLabel() }}
-function updateMobileMarketLabel(){if(!$('heroSelectedMarket'))return;let a=ASSETS.find(x=>x.id===selectedChart);$('heroSelectedMarket').textContent=a?(a.name+(a.kind==="otc"?" · OTC":"")):"No market selected";$('heroLiveLabel').textContent=a?(a.kind==="otc"?"OTC candles · 1m analysis":"Regular feed · 1m analysis"):"Waiting for market"}
-function aggregateCandles(candles,minutes){
- if(minutes===1)return candles.slice(-90);
- const bucketMs=minutes*60*1000,map=new Map();
- candles.forEach(q=>{
-  const t=Number(q.timeMs)||new Date(q.time).getTime();if(!Number.isFinite(t))return;
-  const key=Math.floor(t/bucketMs)*bucketMs;let b=map.get(key);
-  if(!b){b={time:new Date(key).toISOString(),timeMs:key,open:q.open,high:q.high,low:q.low,close:q.close};map.set(key,b)}
-  else{b.high=Math.max(b.high,q.high);b.low=Math.min(b.low,q.low);b.close=q.close}
- });
- return [...map.values()].sort((a,b)=>a.timeMs-b.timeMs).slice(-90);
-}
-function setChartTimeframe(minutes){chartTimeframe=minutes;document.querySelectorAll('.tf-btn').forEach(b=>b.classList.toggle('active',Number(b.dataset.tf)===minutes));$('tfNote').textContent=minutes+'-minute candles';drawChart()}
-function drawChart(){
- let r=results[selectedChart],c=$("chart"),ctx=c.getContext("2d"),w=c.clientWidth,h=c.clientHeight,dpr=window.devicePixelRatio||1;c.width=w*dpr;c.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
- const left=8,right=62,top=14,bottom=22,plotW=w-left-right,plotH=h-top-bottom;
- ctx.font='10px system-ui';ctx.strokeStyle='#1a2d46';ctx.lineWidth=1;
- for(let i=0;i<=4;i++){let y=top+plotH*i/4;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(left+plotW,y);ctx.stroke()}
- if(!r?.candles?.length){ctx.fillStyle="#91a3bb";ctx.font="12px sans-serif";ctx.fillText("No chart data for selected market",15,h/2);$("chartCaption").textContent="Waiting for selected asset";return}
- let a=aggregateCandles(r.candles,chartTimeframe),lo=Math.min(...a.map(x=>x.low)),hi=Math.max(...a.map(x=>x.high)),pad=(hi-lo)*.12||Math.abs(hi||1)*.0001;lo-=pad;hi+=pad;
- const y=v=>top+plotH-(v-lo)/(hi-lo)*plotH,step=plotW/Math.max(a.length,1);
- a.forEach((q,i)=>{let x=left+i*step+step/2,up=q.close>=q.open,col=up?'#24d6a0':'#ff6688';ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x,y(q.high));ctx.lineTo(x,y(q.low));ctx.stroke();let bodyY=Math.min(y(q.open),y(q.close)),bodyH=Math.max(2,Math.abs(y(q.open)-y(q.close)));ctx.fillRect(x-Math.max(1,step*.29),bodyY,Math.max(2,step*.58),bodyH)});
- for(let [period,col] of [[9,'#72adff'],[21,'#ffc66d']]){if(a.length<period)continue;ctx.beginPath();ctx.strokeStyle=col;ctx.lineWidth=1.5;for(let i=period-1;i<a.length;i++){let val=ema(a.slice(0,i+1).map(x=>x.close),period),x=left+i*step+step/2;if(i===period-1)ctx.moveTo(x,y(val));else ctx.lineTo(x,y(val))}ctx.stroke()}
- ctx.fillStyle='#9bb0ca';ctx.textAlign='left';ctx.textBaseline='middle';for(let i=0;i<=4;i++){let v=hi-(hi-lo)*i/4;ctx.fillText(fmt(v),left+plotW+7,top+plotH*i/4)}
- const last=a.at(-1);ctx.fillStyle='#eaf3ff';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(new Date(last.timeMs).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),left,h-17);
- const enough=a.length>=35;$("chartCaption").textContent=`${r.name} · ${chartTimeframe}m · ${a.length} candles · ${r.analysis.fresh?"fresh":"stale"}`;
- $("chartMeta").textContent=`EMA 9 · EMA 21 · ${chartTimeframe}-minute candles`;
- $("tfNote").textContent=enough?`${a.length} candles loaded`:`${a.length} candles · more history needed for full indicators`;
-}
-
-function countdownText(ms){if(!Number.isFinite(ms)||ms<=0)return '00:00';let sec=Math.ceil(ms/1000);return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')}
-function updateCountdowns(){
- const signalLeft=signalExpiryAt?signalExpiryAt-Date.now():0;
- $('signalCountdown').textContent=signalExpiryAt?countdownText(signalLeft):'--:--';
- $('signalCountdown').style.color=signalLeft>0?'var(--green)':'var(--amber)';
- document.querySelectorAll('.row-countdown[data-expiry]').forEach(el=>{const left=Number(el.dataset.expiry)-Date.now();el.textContent=left>0?countdownText(left):'EXPIRED';el.style.color=left>0?'var(--green)':'var(--amber)'});
- if(signalExpiryAt&&signalLeft<=0){$('topScore').textContent='EXPIRED';$('paperFromTop').disabled=true;}else if(signalExpiryAt&&latestTop){$('paperFromTop').disabled=false;}
- const candleMs=chartTimeframe*60000,now=Date.now(),left=candleMs-(now%candleMs);
- $('candleCountdown').textContent=countdownText(left);
+ // Keep signal qualification separate from the market snapshot shown on the card.
+ const candidates=rows.filter(r=>r.analysis.direction!=="WAIT"&&r.analysis.fresh)
+   .sort((a,b)=>b.analysis.score-a.analysis.score);
+ const candidate=candidates[0]||null;
+ const preferredId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
+ const snapshot=rows.find(r=>r.id===preferredId)||rows.find(r=>r.analysis.fresh)||rows[0]||null;
+ latestTop=candidate; // Paper-trade action remains disabled unless a qualified signal exists.
+ const r=candidate||snapshot;
+ const s=r?.analysis||null;
+ const dir=candidate?candidate.analysis.direction:"WAIT";
+ const timerKey=candidate&&s?`${candidate.id}|${dir}|${s.candleTime}`:"";
+ if(timerKey&&timerKey!==signalTimerKey){
+   signalTimerKey=timerKey;
+   signalExpiries[timerKey]=signalExpiries[timerKey]||Date.now()+60000;
+   signalExpiryAt=signalExpiries[timerKey];
+ }
+ if(!timerKey){signalTimerKey="";signalExpiryAt=0;}
+ $("topSignal").className="signal-card "+(dir==="CALL"?"call":dir==="PUT"?"put":"wait");
+ $("topDirection").textContent=dir;
+ $("topScore").textContent=candidate
+   ? (s.signalLevel==="EARLY"?"EARLY · ":"CONFIRMED · ")+s.score+" / 100"
+   : (s?`WAIT · ${s.score??0} / 100`:"NO DATA · SCAN REQUIRED");
+ $("topReason").textContent=candidate
+   ? (s.signalLevel==="EARLY"?"Early setup · confirmation pending. ":"")+s.reason
+   : snapshot
+     ? `Market data loaded. No qualified entry: ${s.reason||"indicator alignment is incomplete"}.`
+     : "No market data loaded yet. Select a market and run a scan.";
+ $("signalStatusLine").textContent=candidate
+   ? (dir==="CALL"?"Your signal is UP · CALL bias":"Your signal is DOWN · PUT bias")
+   : "WAIT · market data shown, no aligned entry";
+ if($("indicatorChips")){
+   $("indicatorChips").innerHTML=s&&Number.isFinite(s.rsi)
+     ? `<span>EMA trend · ${s.trend||"—"}</span><span>RSI 14 · ${s.rsi.toFixed(1)}</span><span>MACD · ${Number.isFinite(s.macdHistogram)?(s.macdHistogram>=0?"Bullish":"Bearish"):"—"}</span><span>Candle quality · ${Math.round((s.quality||0)*100)}%</span><span>Feed · ${s.fresh?"Fresh":"Stale"}</span>`
+     : '<span>EMA 9 / 21 · waiting</span><span>RSI 14 · waiting</span><span>MACD · waiting</span><span>Candle pressure · waiting</span><span>Feed freshness · waiting</span>';
+ }
+ $("topAsset").textContent=r?.name||"—";
+ $("topEntry").textContent=s&&Number.isFinite(s.entry)?fmt(s.entry):"—";
+ $("topRsi").textContent=s&&Number.isFinite(s.rsi)?s.rsi.toFixed(1):"—";
+ $("paperFromTop").disabled=!candidate;
+ if(s?.breakdown){
+   $("analysisBreakdown").innerHTML=Object.entries(s.breakdown).map(([k,v])=>`<div><span>${({trend:"Trend structure",momentum:"Momentum",volatility:"Volatility",price:"Price action",structure:"Market structure",feed:"Feed integrity"})[k]||k}</span><b>${v||"—"}</b></div>`).join("");
+ }else{
+   $("analysisBreakdown").innerHTML="<div><span>Analysis</span><b>Waiting for market data</b></div>";
+ }
+ if($("heroSelectedMarket"))$("heroSelectedMarket").textContent=r?.name||"Select a market";
+ if($("heroLiveLabel"))$("heroLiveLabel").textContent=s?.fresh?"Live candle data · fresh":s?"Candle data · stale":"Waiting for scan";
+ $("topExpiry").textContent=candidate
+   ?"Signal validity: 60 seconds · Paper expiry: 60 seconds"
+   :"No active signal · countdown starts only after a qualified CALL / PUT";
 }
 
 function renderHistory(){$("signalHistory").innerHTML=history.length?history.map(x=>`<tr><td>${x.time}</td><td>${x.asset}</td><td><span class="tag ${x.side.toLowerCase()}">${x.side}</span></td><td>${fmt(x.entry)}</td><td>${x.score}</td><td>${x.age}s</td></tr>`).join(""):'<tr><td colspan="6" class="empty">No qualified signals yet.</td></tr>'}
+
+function currentMarketPrice(assetId,notBefore=0){
+ const live=liveTicks[assetId];
+ if(live && Number.isFinite(Number(live.price)) && Number(live.receivedAt||0)>=notBefore)
+  return {price:Number(live.price),observedAt:Number(live.receivedAt)};
+ const result=results[assetId];
+ if(result && Number.isFinite(Number(result.livePrice)) && Number(result.liveUpdated||0)>=notBefore)
+  return {price:Number(result.livePrice),observedAt:Number(result.liveUpdated)};
+ if(result && Number.isFinite(Number(result.price)) && Number(result.scannedAt||0)>=notBefore)
+  return {price:Number(result.price),observedAt:Number(result.scannedAt)};
+ return null;
+}
+function settleExpiredTrades(){
+ let changed=false, now=Date.now();
+ for(const t of trades){
+  if(t.result!=="PENDING" || !t.expiryAt || now<t.expiryAt) continue;
+  const quote=currentMarketPrice(t.assetId,t.expiryAt);
+  if(!quote || !Number.isFinite(quote.price)) continue; // Wait for a post-expiry quote; never fabricate an exit.
+  const exit=quote.price;
+  t.exit=exit;
+  t.exitObservedAt=quote.observedAt;
+  const delta=exit-Number(t.entry);
+  const sideDelta=t.side==="CALL"?delta:-delta;
+  const epsilon=Math.max(Math.abs(Number(t.entry))*1e-9,1e-10);
+  if(Math.abs(sideDelta)<=epsilon){t.result="TIE";t.pnl=0}
+  else if(sideDelta>0){t.result="WIN";t.pnl=Number(t.stake)*Number(t.payoutRate||.85)}
+  else{t.result="LOSS";t.pnl=-Number(t.stake)}
+  t.settledAt=now;
+  changed=true;
+ }
+ if(changed){renderTrades();saveState()}
+}
+function updateCountdowns(){
+ const now=Date.now();
+ if(signalExpiryAt){
+  const left=Math.max(0,Math.ceil((signalExpiryAt-now)/1000));
+  $("signalCountdown").textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
+ }else $("signalCountdown").textContent="--:--";
+ // Candle countdown follows the selected asset's latest candle timestamp when available.
+ const selected=results[$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart];
+ const candle=selected?.candles?.at(-1);
+ if(candle){
+  const stamp=Number(candle.timeMs||candle.timestamp||0);
+  const candleStart=stamp>0?(stamp<1e12?stamp*1000:stamp):0;
+  const candleEnd=candleStart?candleStart+60000:0;
+  const left=candleEnd?Math.max(0,Math.ceil((candleEnd-now)/1000)):0;
+  $("candleCountdown").textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
+ }else $("candleCountdown").textContent="--:--";
+ document.querySelectorAll(".row-countdown").forEach(el=>{
+  const left=Math.max(0,Math.ceil((Number(el.dataset.expiry)-now)/1000));
+  el.textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
+ });
+ for(const t of trades.filter(x=>x.result==="PENDING"&&x.expiryAt)){
+  const remaining=Math.max(0,Math.ceil((t.expiryAt-now)/1000));
+  t.countdown=remaining;
+ }
+ settleExpiredTrades();
+}
 function renderTrades(){
  let settled=trades.filter(t=>["WIN","LOSS","TIE"].includes(t.result)),wins=settled.filter(t=>t.result==="WIN").length,losses=settled.filter(t=>t.result==="LOSS").length,pending=trades.filter(t=>t.result==="PENDING").length,rate=settled.length?(wins/settled.length*100).toFixed(1)+"%":"—",net=trades.reduce((s,t)=>s+(Number(t.pnl)||0),0),avg=settled.length?Math.round(settled.reduce((s,t)=>s+t.score,0)/settled.length):null;
  $("kWinRate").textContent=rate;$("kWinLoss").textContent=`${wins} wins · ${losses} losses`;$("kPnl").textContent=money(net);$("kPnl").className=net>=0?"green":"red";$("kSettled").textContent=settled.length+" settled trades";
@@ -449,7 +508,7 @@ function renderTrades(){
  const today=new Date().toLocaleDateString(),todayTrades=settled.filter(t=>new Date().toLocaleDateString()===today && t.timeDate===today);
  const todayPnl=trades.filter(t=>t.dayKey===new Date().toISOString().slice(0,10)).reduce((n,t)=>n+(Number(t.pnl)||0),0);
  $("jTodayPnl").textContent=money(todayPnl);$("jTodayPnl").className=todayPnl>=0?"green":"red";$("jTodayCount").textContent=trades.filter(t=>t.dayKey===new Date().toISOString().slice(0,10)&&["WIN","LOSS","TIE"].includes(t.result)).length;
- $("tradeBody").innerHTML=trades.length?trades.map(t=>`<tr><td>${t.time}</td><td>${t.asset}</td><td>${t.side}</td><td>${fmt(t.entry)}</td><td>${t.expirySeconds||60}s</td><td>${t.exit==null?"—":fmt(t.exit)}</td><td>${money(t.stake)}</td><td>${t.result}</td><td>${t.result==="PENDING"?`<button class="small" data-win="${t.id}">Win</button> <button class="small" data-loss="${t.id}">Loss</button>`:"—"}</td></tr>`).join(""):'<tr><td colspan="9" class="empty">No paper trades logged.</td></tr>';
+ $("tradeBody").innerHTML=trades.length?trades.map(t=>`<tr><td>${t.time}</td><td>${t.asset}</td><td>${t.side}</td><td>${fmt(t.entry)}</td><td>${t.expirySeconds||60}s</td><td>${t.exit==null?"—":fmt(t.exit)}</td><td>${money(t.stake)}</td><td>${t.result==="PENDING"?(t.expiryAt&&Date.now()>=t.expiryAt?"AWAITING EXIT PRICE":`PENDING · ${Math.max(0,Math.ceil((t.expiryAt-Date.now())/1000))}s`):t.result}</td><td>${t.result==="PENDING"?`<button class="small" data-win="${t.id}">Set Win</button> <button class="small" data-loss="${t.id}">Set Loss</button>`:"AUTO"}</td></tr>`).join(""):'<tr><td colspan="9" class="empty">No paper trades logged.</td></tr>';
  document.querySelectorAll("[data-win]").forEach(b=>b.onclick=()=>manualSettle(b.dataset.win,"WIN"));document.querySelectorAll("[data-loss]").forEach(b=>b.onclick=()=>manualSettle(b.dataset.loss,"LOSS"));
 }
 function persistAll(){saveState();renderTrades()}
@@ -464,7 +523,7 @@ async function scan(){
   try{
    let data=await fetchAsset(a);let old=results[id],price=data.at(-1).close,analysis=analyze(data,a);
    let prior=old?.price??null,change=prior===null?null:price-prior;
-   results[id]={id,name:a.name,price,change,candles:data,analysis};
+   results[id]={id,name:a.name,price,change,candles:data,analysis,scannedAt:Date.now()};
    if(liveTicks[id]){results[id].livePrice=liveTicks[id].price;results[id].liveChange=liveTicks[id].change;}
    if(analysis.direction!=="WAIT")addSignal(results[id]);
    if(selectedChart===id||!selectedChart)drawChart();
@@ -474,15 +533,23 @@ async function scan(){
   // Avoid bursting the provider and stay within low-tier rate limits.
   if(done<ids.length)await new Promise(resolve=>setTimeout(resolve,900));
  }
- latestScan=Date.now();renderScanner();drawChart();$("scanNow").disabled=false;busy=false;
+ latestScan=Date.now();renderScanner();drawChart();settleExpiredTrades();$("scanNow").disabled=false;busy=false;
  let fresh=[...watch].filter(id=>results[id]?.analysis.fresh).length;status(fresh?"SCAN COMPLETE · DATA RECEIVED":"SCAN COMPLETE · CHECK DATA",fresh>0);
  $("connectionStatus").textContent=`Regular feed: ${apiKey?"API key saved; per-symbol requests":"not configured"}\nOTC feed: endpoint checked when selected\nLast scan: ${clock()}\n${errorDetails.length?"DATA ERRORS: "+errorDetails.join(" | "):"No provider errors reported."}`;
  $("progressText").textContent=`Complete · ${fresh} fresh markets · ${errors} errors`;saveState();
 }
 function addPaper(){
- if(!latestTop)return;let r=latestTop,s=r.analysis,stake=Math.max(1,Math.min(100000,+$("stake").value||10));
- let t={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),time:clock(),dayKey:new Date().toISOString().slice(0,10),asset:r.name,assetId:r.id,side:s.direction,entry:s.entry,expirySeconds:60,exit:null,stake,score:s.score,result:"PENDING",pnl:0};
+ const r=latestTop;
+ if(!r || !r.analysis || !["CALL","PUT"].includes(r.analysis.direction) || !r.analysis.fresh){
+  $("paperStatus").textContent="No fresh qualified CALL/PUT setup. Run a scan and wait for a valid signal.";
+  return;
+ }
+ const s=r.analysis,entry=Number(s.entry),stake=Math.max(1,Math.min(100000,+$("stake").value||10));
+ if(!Number.isFinite(entry)||entry<=0){$("paperStatus").textContent="Cannot start trade: entry price is unavailable.";return}
+ const expirySeconds=60,payoutRate=Math.max(1,Math.min(100,+$("payout").value||85))/100,now=Date.now();
+ const t={id:now.toString(36)+Math.random().toString(36).slice(2,6),time:clock(),timeDate:new Date().toLocaleDateString(),dayKey:new Date().toISOString().slice(0,10),asset:r.name,assetId:r.id,side:s.direction,entry,expirySeconds,expiryAt:now+expirySeconds*1000,exit:null,stake,payoutRate,score:s.score,result:"PENDING",pnl:0};
  trades.unshift(t);renderTrades();saveState();
+ $("paperStatus").textContent=`Paper ${t.side} started on ${t.asset} at ${fmt(entry)}. Auto-settles in 60 seconds using the next available market quote.`;
 }
 function manualSettle(id,result){
  let t=trades.find(x=>x.id===id);if(!t||t.result!=="PENDING")return;
