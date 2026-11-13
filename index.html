@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="8.8-otc-directional-buy-sell-voice">
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="8.9-otc-two-scan-confirmation-fast-callouts-off">
 <title>APEXSCAN PRO · V8.8 OTC BUY / SELL</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
@@ -888,19 +888,28 @@ function renderScanner(){
 const candleDirectionLocks=new Map();
 function lockedCandleDirection(r){
  const candle=r?.candles?.at(-1);
- if(!r||!candle)return r?.analysis?.direction||"WAIT";
+ if(!r||!candle)return "WAIT";
  const raw=Number(candle.timeMs||0);
  const candleKey=`${r.id}|${raw>0?Math.floor(raw/60000):Math.floor(Date.now()/60000)}`;
+ const proposed=r.analysis?.direction;
  let lock=candleDirectionLocks.get(candleKey);
- if(!lock&&["CALL","PUT"].includes(r.analysis?.direction)){
-  lock={direction:r.analysis.direction,lockedAt:Date.now(),entry:Number(r.livePrice??candle.close)};
+ // Require the same direction on two consecutive scans before displaying it.
+ // Once confirmed, hold that direction until the next 1-minute candle.
+ if(lock?.confirmed)return lock.direction;
+ if(!["CALL","PUT"].includes(proposed))return "WAIT";
+ if(!lock||lock.direction!==proposed){
+  lock={direction:proposed,count:1,confirmed:false,firstSeenAt:Date.now()};
   candleDirectionLocks.set(candleKey,lock);
-  if(candleDirectionLocks.size>500){
-   const keep=[...candleDirectionLocks.entries()].slice(-250);
-   candleDirectionLocks.clear();keep.forEach(([k,v])=>candleDirectionLocks.set(k,v));
-  }
+  return "WAIT";
  }
- return lock?.direction||"WAIT";
+ lock.count++;
+ if(lock.count>=2)lock.confirmed=true;
+ candleDirectionLocks.set(candleKey,lock);
+ if(candleDirectionLocks.size>500){
+  const keep=[...candleDirectionLocks.entries()].slice(-250);
+  candleDirectionLocks.clear();keep.forEach(([k,v])=>candleDirectionLocks.set(k,v));
+ }
+ return lock.confirmed?lock.direction:"WAIT";
 }
 function candleDurationSeconds(r){
  const c=r?.candles?.at(-1),a=r?.analysis;
@@ -1116,8 +1125,8 @@ function addSignal(r){
  const candleKey=signalCandleKey(live);
  const key=`${candleKey}|${live.analysis.direction}`;
  if(history.some(x=>x.key===key))return;
- // A direction reversal during the same candle can produce a new fast callout.
- // Paper history remains deduplicated per direction per candle.
+ // Fast callouts are disabled: the first direction is held for this candle.
+ // Signal history and paper entries cannot flip BUY/SELL mid-candle.
  if(autoPaperEnabled&&live.analysis.signalLevel==="CONFIRMED"&&live.analysis.fresh&&hasCurrentFeed(live.id,live.candles?.at(-1)))openPaperTrade(live,live.analysis.direction,true,key);
  announceSignal(live);
  history.unshift({key,time:clock(),asset:live.name,side:live.analysis.direction==="CALL"?"BUY":"SELL",entry:live.livePrice??live.price,score:live.analysis.score,age:Math.round(live.analysis.age)});
@@ -1131,6 +1140,15 @@ function addSignal(r){
   try{
    if(a.kind==="regular"&&!apiKey)throw Error("Twelve Data API key required for this regular-market symbol; OTC scanning continues.");
    let data=await fetchAsset(a);let old=results[id],price=data.at(-1).close,analysis=analyze(data,a);
+   // FAST CALLOUTS OFF: require two consecutive scans to agree, then hold
+   // that direction for the rest of this 1-minute candle.
+   if(["CALL","PUT"].includes(analysis.direction)){
+    const proposed=analysis.direction;
+    const locked=lockedCandleDirection({id,candles:data,analysis,livePrice:liveTicks[id]?.price});
+    if(locked!==proposed){
+     analysis={...analysis,direction:locked,reason:locked==="WAIT"?`Confirming ${proposed==="CALL"?"BUY":"SELL"} direction on the next scan · fast callouts disabled · `+analysis.reason:`${locked==="CALL"?"BUY":"SELL"} direction held for this candle · fast reversals disabled · `+analysis.reason};
+    }
+   }
    let prior=old?.price??null,change=prior===null?null:price-prior;
    results[id]={id,name:a.name,price,change,candles:data,analysis,scannedAt:Date.now()};
    if(liveTicks[id]){results[id].livePrice=liveTicks[id].price;results[id].liveChange=liveTicks[id].change;}
