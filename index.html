@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17">
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="7.3-control-scan-fix">
 <title>APEXSCAN PRO · Mobile Signal Terminal</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
@@ -68,7 +68,7 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
  .market-tab{padding:8px 3px;border-radius:9px;background:#101c30;border:1px solid #2a3f5e;color:#9fb7d4;font-size:9px;font-weight:900;letter-spacing:.035em;text-transform:uppercase}
  .market-tab.active{background:linear-gradient(120deg,#0d8b82,#175c91);border-color:#44c7c1;color:#fff;box-shadow:0 0 16px #0ba7a144}
  .market-tab[data-market-category="commodities"]{border-style:dashed;color:#7389a5}
- .mobile-control-row{display:grid;grid-template-columns:1.2fr .8fr;gap:7px}
+ .mobile-control select{position:relative;z-index:3;pointer-events:auto;appearance:auto;-webkit-appearance:menulist;min-height:46px;width:100%;}.mobile-control-row{display:grid;grid-template-columns:1.2fr .8fr;gap:7px}
  .mobile-control{display:flex;flex-direction:column;gap:4px;min-width:0}
  .mobile-control span{font-size:8px;color:#8fa9ca;font-weight:900;letter-spacing:.1em}
  .mobile-control select{width:100%;min-width:0;padding:10px 8px;border:1px solid #2a4768;border-radius:9px;background:#071426;color:#f0f6ff;font-weight:800;font-size:11px;outline:none}
@@ -96,7 +96,7 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
  .indicator-chips{justify-content:center;gap:5px;margin:10px 0 2px}.indicator-chips span{font-size:8px;padding:5px 7px}
  .countdown-grid{gap:6px;margin-top:10px}.countdown-grid div{padding:8px 6px;border-radius:8px}.countdown-grid small{font-size:8px}.countdown-grid b{font-size:20px}
  #topExpiry{text-align:center;font-size:9px!important}
- #paperFromTop{min-height:42px;font-size:11px;border-radius:10px}
+ #paperFromTop{position:relative;z-index:5;pointer-events:auto;min-height:46px;font-size:11px;border-radius:10px}
  .scan-table-wrap{max-height:340px;border-radius:9px}
  table{font-size:10px}th{font-size:8px;padding:8px 6px}td{padding:9px 6px}
  .chart-head{align-items:center}.chart-head select{max-width:145px!important;font-size:10px!important}
@@ -198,7 +198,7 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
       <div><small>SIGNAL EXPIRES IN</small><b id="signalCountdown">--:--</b></div>
       <div><small>CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
      </div>
-     <p class="tiny" id="topExpiry" style="margin:10px 0 0">Signal validity: 60 seconds · Paper expiry: 60 seconds</p><button class="primary" id="paperFromTop" style="width:100%;margin-top:11px" disabled>＋ Start 60s paper trade</button><p class="tiny" id="paperStatus" style="margin:7px 0 0">Paper trades settle automatically at expiry when a fresh market price is available.</p></div>
+     <p class="tiny" id="topExpiry" style="margin:10px 0 0">Signal validity: 60 seconds · Paper expiry: 60 seconds</p><label class="tiny" for="paperSide" style="display:block;margin-top:10px">PAPER PRACTICE DIRECTION</label><select id="paperSide" style="width:100%;padding:10px;border-radius:9px;background:#091321;color:#eaf1fb;border:1px solid var(--line)"><option value="AUTO">Use qualified AI signal</option><option value="CALL">Practice CALL</option><option value="PUT">Practice PUT</option></select><button class="primary" id="paperFromTop" type="button" style="width:100%;margin-top:11px">＋ Start 60s paper trade</button><p class="tiny" id="paperStatus" style="margin:7px 0 0">Paper trades settle automatically at expiry when a fresh market price is available.</p></div>
     <p class="tiny" style="margin:9px 0 0">A score is a technical confluence rating, not a probability of winning. Wait means filters did not agree.</p>
    </div>
    <div class="panel" id="dataPanel">
@@ -258,8 +258,45 @@ let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={}
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6}),clock=()=>new Date().toLocaleTimeString();
 function status(t,ok=false){$("statusText").textContent=t;$("statusLed").style.background=ok?"var(--green)":"var(--amber)"}
 function saveState(){try{localStorage.setItem(STORE,JSON.stringify({watch:[...watch],history:history.slice(0,150),trades:trades.slice(0,250),threshold:$("threshold").value,mode:$("scanMode").value,interval:$("interval").value,stake:$("stake").value,payout:$("payout").value,chart:selectedChart}))}catch(e){}}
-function loadState(){apiKey=localStorage.getItem("apex_key")||"";$("apiKey").value=apiKey;try{let s=JSON.parse(localStorage.getItem(STORE)||localStorage.getItem(LEGACY_STORE)||"{}");if(s.history)history=s.history;if(s.trades)trades=s.trades;history=s.history||[];trades=s.trades||[];if(s.threshold)$("threshold").value=(String(s.threshold)==="65"||String(s.threshold)==="30"?"15":s.threshold);if(s.mode)$("scanMode").value=s.mode;if(s.interval)$("interval").value=s.interval;if(s.stake)$("stake").value=s.stake;if(s.payout)$("payout").value=s.payout;if(s.chart)selectedChart=s.chart}catch(e){}}
+function loadState(){
+ apiKey=localStorage.getItem("apex_key")||"";$("apiKey").value=apiKey;
+ try{
+  let st=JSON.parse(localStorage.getItem(STORE)||localStorage.getItem(LEGACY_STORE)||"{}");
+  history=Array.isArray(st.history)?st.history:[];
+  trades=Array.isArray(st.trades)?st.trades:[];
+  if(Array.isArray(st.watch)){const valid=st.watch.filter(id=>ASSETS.some(a=>a.id===id));if(valid.length)watch=new Set(valid)}
+  if(st.threshold)$("threshold").value=st.threshold;
+  if(st.mode)$("scanMode").value=st.mode;
+  if(st.interval)$("interval").value=st.interval;
+  if(st.stake)$("stake").value=st.stake;
+  if(st.payout)$("payout").value=st.payout;
+  if(st.chart&&ASSETS.some(a=>a.id===st.chart))selectedChart=st.chart;
+ }catch(e){console.warn("Saved settings could not be loaded",e)}
+}
 function assetCategory(a){return a.id==="BTC/USD"||a.id==="ETH/USD"?"crypto":"currencies"}
+
+function updateChartOptions(){
+ const categoryAssets=ASSETS.filter(a=>activeMarketCategory==="commodities"?false:assetCategory(a)===activeMarketCategory);
+ const allAssets=ASSETS.filter(a=>a.kind!=="commodity");
+ const mobile=$("mobileAsset"),chart=$("chartAsset");
+ const fill=(el,list,preferred)=>{
+  if(!el)return;
+  const previous=el.value||preferred;
+  el.innerHTML="";
+  list.forEach(a=>{const o=document.createElement("option");o.value=a.id;o.textContent=a.name+(a.kind==="otc"?" · OTC":a.kind==="regular"?" · LIVE FEED":"");el.append(o)});
+  if(list.some(a=>a.id===previous))el.value=previous;
+  else if(list.length)el.value=list[0].id;
+ };
+ fill(mobile,categoryAssets,selectedChart);
+ fill(chart,allAssets,selectedChart);
+ if(mobile && mobile.value){selectedChart=mobile.value;if(chart)chart.value=mobile.value;}
+ updateMobileMarketLabel();
+}
+function updateMobileMarketLabel(){
+ const a=ASSETS.find(x=>x.id===$("mobileAsset")?.value);
+ const el=$("mobileMarketLabel");
+ if(el&&a)el.textContent=a.name+(a.kind==="otc"?" · OTC":"");
+}
 function renderWatch(){
  let box=$("watchChecks");box.innerHTML="";
  let visible=ASSETS.filter(a=>activeMarketCategory==="commodities"?false:assetCategory(a)===activeMarketCategory);
@@ -426,7 +463,8 @@ function updateTop(rows){
  $("topAsset").textContent=r?.name||"—";
  $("topEntry").textContent=s&&Number.isFinite(s.entry)?fmt(s.entry):"—";
  $("topRsi").textContent=s&&Number.isFinite(s.rsi)?s.rsi.toFixed(1):"—";
- $("paperFromTop").disabled=!candidate;
+ $("paperFromTop").disabled=false;
+ $("paperFromTop").textContent=candidate?"＋ Start AI signal paper trade":"＋ Start practice paper trade";
  if(s?.breakdown){
    $("analysisBreakdown").innerHTML=Object.entries(s.breakdown).map(([k,v])=>`<div><span>${({trend:"Trend structure",momentum:"Momentum",volatility:"Volatility",price:"Price action",structure:"Market structure",feed:"Feed integrity"})[k]||k}</span><b>${v||"—"}</b></div>`).join("");
  }else{
@@ -515,12 +553,12 @@ function persistAll(){saveState();renderTrades()}
 function addSignal(r){let key=r.id+"|"+r.analysis.direction+"|"+r.analysis.candleTime;if(history.some(x=>x.key===key))return;history.unshift({key,time:clock(),asset:r.name,side:r.analysis.direction,entry:r.price,score:r.analysis.score,age:Math.round(r.analysis.age)});history=history.slice(0,150);renderHistory();saveState()}
 async function scan(){
  if(busy)return;if(!watch.size){alert("Select at least one market in Watchlist Configuration.");return}
- if([...watch].some(id=>ASSETS.find(a=>a.id===id).kind==="regular")&&!apiKey){status("API KEY REQUIRED");$("connectionStatus").textContent="Add your Twelve Data key to scan regular markets.";return}
  busy=true;status("SCANNING",true);$("scanNow").disabled=true;$("progressText").textContent="Starting scan…";$("scanProgress").style.width="0%";
  let ids=[...watch],done=0,errors=0,errorDetails=[];
  for(const id of ids){
   let a=ASSETS.find(x=>x.id===id);
   try{
+   if(a.kind==="regular"&&!apiKey)throw Error("Twelve Data API key required for this regular-market symbol; OTC scanning continues.");
    let data=await fetchAsset(a);let old=results[id],price=data.at(-1).close,analysis=analyze(data,a);
    let prior=old?.price??null,change=prior===null?null:price-prior;
    results[id]={id,name:a.name,price,change,candles:data,analysis,scannedAt:Date.now()};
@@ -539,17 +577,32 @@ async function scan(){
  $("progressText").textContent=`Complete · ${fresh} fresh markets · ${errors} errors`;saveState();
 }
 function addPaper(){
- const r=latestTop;
- if(!r || !r.analysis || !["CALL","PUT"].includes(r.analysis.direction) || !r.analysis.fresh){
-  $("paperStatus").textContent="No fresh qualified CALL/PUT setup. Run a scan and wait for a valid signal.";
+ const requested=$("paperSide")?.value||"AUTO";
+ const selectedId=$("mobileAsset")?.value||selectedChart;
+ const selected=results[selectedId];
+ const candidate=latestTop;
+ let r=null,side=null;
+ if(requested==="AUTO"){
+  if(candidate&&candidate.analysis?.fresh&&["CALL","PUT"].includes(candidate.analysis.direction)){
+   r=candidate;side=candidate.analysis.direction;
+  }
+ }else{
+  if(selected&&selected.analysis?.fresh&&Number.isFinite(Number(selected.price))&&Number(selected.price)>0){
+   r=selected;side=requested;
+  }
+ }
+ if(!r){
+  $("paperStatus").textContent=requested==="AUTO"
+   ?"No fresh qualified AI CALL/PUT signal. Choose a market and scan again, or select Practice CALL/PUT after fresh data loads."
+   :"Paper trade blocked: selected market data is stale or unavailable. Scan for fresh candles first.";
   return;
  }
- const s=r.analysis,entry=Number(s.entry),stake=Math.max(1,Math.min(100000,+$("stake").value||10));
- if(!Number.isFinite(entry)||entry<=0){$("paperStatus").textContent="Cannot start trade: entry price is unavailable.";return}
+ const entry=Number(r.livePrice||r.price),stake=Math.max(1,Math.min(100000,+$("stake").value||10));
+ if(!Number.isFinite(entry)||entry<=0){$("paperStatus").textContent="Cannot start: no valid live entry price.";return}
  const expirySeconds=60,payoutRate=Math.max(1,Math.min(100,+$("payout").value||85))/100,now=Date.now();
- const t={id:now.toString(36)+Math.random().toString(36).slice(2,6),time:clock(),timeDate:new Date().toLocaleDateString(),dayKey:new Date().toISOString().slice(0,10),asset:r.name,assetId:r.id,side:s.direction,entry,expirySeconds,expiryAt:now+expirySeconds*1000,exit:null,stake,payoutRate,score:s.score,result:"PENDING",pnl:0};
+ const t={id:now.toString(36)+Math.random().toString(36).slice(2,6),time:clock(),timeDate:new Date().toLocaleDateString(),dayKey:new Date().toISOString().slice(0,10),asset:r.name,assetId:r.id,side,entry,expirySeconds,expiryAt:now+expirySeconds*1000,exit:null,stake,payoutRate,score:r.analysis.score,result:"PENDING",pnl:0,practiceMode:requested!=="AUTO"};
  trades.unshift(t);renderTrades();saveState();
- $("paperStatus").textContent=`Paper ${t.side} started on ${t.asset} at ${fmt(entry)}. Auto-settles in 60 seconds using the next available market quote.`;
+ $("paperStatus").textContent=`Paper ${side} started on ${t.asset} at ${fmt(entry)}. Expires in 60 seconds; settlement requires a fresh exit quote.`;
 }
 function manualSettle(id,result){
  let t=trades.find(x=>x.id===id);if(!t||t.result!=="PENDING")return;
@@ -572,12 +625,12 @@ function setMobileScreen(screen){
 }
 document.querySelectorAll(".market-tab").forEach(b=>b.addEventListener("click",()=>setMarketCategory(b.dataset.marketCategory)));
 document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>setMobileScreen(b.dataset.screen)));
-$("mobileAsset").addEventListener("change",()=>{$("chartAsset").value=$("mobileAsset").value;selectedChart=$("mobileAsset").value;drawChart();updateMobileMarketLabel();saveState()});
+$("mobileAsset").addEventListener("change",()=>{const id=$("mobileAsset").value;$("chartAsset").value=id;selectedChart=id;watch.add(id);renderWatch();drawChart();updateMobileMarketLabel();saveState();if(!busy)scan()});
 $("mobileInterval").addEventListener("change",()=>{$("interval").value=$("mobileInterval").value;$("interval").dispatchEvent(new Event("change"));});
 function syncMobileControls(){if($("mobileInterval"))$("mobileInterval").value=$("interval").value||"15000";updateChartOptions()}
 window.addEventListener("resize",()=>{setMobileScreen(activeMobileScreen);drawChart()});
 $("scanNow").onclick=scan;
-$("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN";status("AUTO SCANNER ACTIVE",true);scan();cycle=setInterval(scan,+$("interval").value)};
+$("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN";status("AUTO SCANNER ACTIVE",true);scan();cycle=setInterval(()=>{if(!busy)scan()},Math.max(15000,+$("interval").value))};
 $("pauseBtn").onclick=()=>{running=false;clearInterval(cycle);$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED")};
 $("saveKey").type="button";
 $("saveKey").addEventListener("click",async(event)=>{
@@ -605,12 +658,12 @@ $("paperFromTop").onclick=addPaper;$("exportCsv").onclick=exportCSV;
 $("scanMode").addEventListener("change",()=>{saveState();if(latestScan)renderScanner()});
 $("clearSignals").onclick=()=>{if(confirm("Clear signal history?")){history=[];renderHistory();saveState()}};
 $("clearTrades").onclick=()=>{if(confirm("Delete all paper journal records?")){trades=[];renderTrades();saveState()}};
-$("chartAsset").onchange=()=>{selectedChart=$("chartAsset").value;drawChart();updateChartOptions();saveState()};
+$("chartAsset").onchange=()=>{selectedChart=$("chartAsset").value;watch.add(selectedChart);renderWatch();drawChart();saveState()};
 document.querySelectorAll(".tf-btn").forEach(b=>b.addEventListener("click",()=>setChartTimeframe(Number(b.dataset.tf))));
 $("threshold").onchange=()=>{$("thresholdText").textContent=$("threshold").value+" / 100";if(latestScan)scan();saveState()};
-$("interval").onchange=()=>{if(running){clearInterval(cycle);cycle=setInterval(scan,+$("interval").value)}$("cycleText").textContent=(+$("interval").value/1000)+" sec";saveState()};
+$("interval").onchange=()=>{if(running){clearInterval(cycle);cycle=setInterval(()=>{if(!busy)scan()},Math.max(15000,+$("interval").value))}$("cycleText").textContent=(+$("interval").value/1000)+" sec";saveState()};
 ["stake","payout"].forEach(id=>$(id).addEventListener("change",saveState));
 setInterval(()=>{$("clock").textContent=clock();updateCountdowns()},1000);
-loadState();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();drawChart();setMobileScreen("scanner");$("clock").textContent=clock();connectLiveStream();
+loadState();updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();drawChart();setMobileScreen("scanner");$("clock").textContent=clock();connectLiveStream();
 </script>
 </body></html>
