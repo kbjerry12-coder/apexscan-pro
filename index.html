@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="7.4-chart-feed-signal-repair">
-<title>APEXSCAN PRO · V7.4 Mobile Signal Terminal</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="7.4.1-countdown-paper-fix">
+<title>APEXSCAN PRO · V7.4.1 Mobile Signal Terminal</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -96,7 +96,7 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
  .indicator-chips{justify-content:center;gap:5px;margin:10px 0 2px}.indicator-chips span{font-size:8px;padding:5px 7px}
  .countdown-grid{gap:6px;margin-top:10px}.countdown-grid div{padding:8px 6px;border-radius:8px}.countdown-grid small{font-size:8px}.countdown-grid b{font-size:20px}
  #topExpiry{text-align:center;font-size:9px!important}
- #paperFromTop{position:relative;z-index:5;pointer-events:auto;min-height:46px;font-size:11px;border-radius:10px}
+ #paperFromTop{position:relative;z-index:5;pointer-events:auto;min-height:46px;font-size:11px;border-radius:10px}#paperStatus{display:block!important;position:relative;z-index:6;line-height:1.4}
  .scan-table-wrap{max-height:340px;border-radius:9px}
  table{font-size:10px}th{font-size:8px;padding:8px 6px}td{padding:9px 6px}
  .chart-head{align-items:center}.chart-head select{max-width:145px!important;font-size:10px!important}
@@ -196,9 +196,9 @@ button{transition:transform .16s ease,border-color .16s ease,filter .16s ease;bo
     <div class="panel-head"><h2>LIVE AI SIGNAL</h2><span class="pill">CONFLUENCE CHECK</span></div>
     <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">WAIT</div><span class="pill" id="topScore">NO SETUP</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Waiting for a fresh market scan</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>EMA 9 / 21</span><span>RSI 14</span><span>MACD</span><span>Candle pressure</span><span>Feed freshness</span></div><div class="countdown-grid">
       <div><small>SIGNAL EXPIRES IN</small><b id="signalCountdown">--:--</b></div>
-      <div><small>CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
+      <div><small>1-MIN CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
      </div>
-     <p class="tiny" id="topExpiry" style="margin:10px 0 0">Signal validity: 60 seconds · Paper expiry: 60 seconds</p><label class="tiny" for="paperSide" style="display:block;margin-top:10px">PAPER PRACTICE DIRECTION</label><select id="paperSide" style="width:100%;padding:10px;border-radius:9px;background:#091321;color:#eaf1fb;border:1px solid var(--line)"><option value="AUTO">Use qualified AI signal</option><option value="CALL">Practice CALL</option><option value="PUT">Practice PUT</option></select><button class="primary" id="paperFromTop" type="button" style="width:100%;margin-top:11px">＋ Start 60s paper trade</button><p class="tiny" id="paperStatus" style="margin:7px 0 0">Paper trades settle automatically at expiry when a fresh market price is available.</p></div>
+     <p class="tiny" id="topExpiry" style="margin:10px 0 0">Signal validity: 60 seconds · Paper expiry: 60 seconds</p><label class="tiny" for="paperSide" style="display:block;margin-top:10px">PAPER PRACTICE DIRECTION</label><select id="paperSide" style="width:100%;padding:10px;border-radius:9px;background:#091321;color:#eaf1fb;border:1px solid var(--line)"><option value="AUTO">Use qualified AI signal</option><option value="CALL">Practice CALL</option><option value="PUT">Practice PUT</option></select><button class="primary" id="paperFromTop" type="button" style="width:100%;margin-top:11px">＋ Start 60s paper trade</button><p class="tiny" id="paperStatus" role="status" aria-live="polite" style="display:block;margin:9px 0 0;padding:10px;border:1px solid #294665;border-radius:9px;background:#0a1a2d;min-height:38px">Paper trades settle automatically at expiry when a fresh market price is available.</p></div>
     <p class="tiny" style="margin:9px 0 0">A score is a technical confluence rating, not a probability of winning. Wait means filters did not agree.</p>
    </div>
    <div class="panel" id="dataPanel">
@@ -590,24 +590,21 @@ function settleExpiredTrades(){
  if(changed){renderTrades();saveState()}
 }
 function ageForCandle(c){const t=Number(c?.timeMs||0);return t?Math.max(0,(Date.now()-t)/1000):Infinity}
+let lastExpiryRefresh=0;
 function updateCountdowns(){
  const now=Date.now();
  if(signalExpiryAt){
   const left=Math.max(0,Math.ceil((signalExpiryAt-now)/1000));
-  $("signalCountdown").textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
+  $("signalCountdown").textContent=left===0?"EXPIRED":String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
  }else $("signalCountdown").textContent="--:--";
  // Candle countdown follows the selected asset's latest candle timestamp when available.
  const selected=results[$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart];
  const candle=selected?.candles?.at(-1);
- if(candle){
-  const stamp=Number(candle.timeMs||candle.timestamp||0);
-  const stampMs=stamp>0?(stamp<1e12?stamp*1000:stamp):0;
-  const bucketMs=chartTimeframe*60000;
-  const candleStart=stampMs?Math.floor(stampMs/bucketMs)*bucketMs:0;
-  const candleEnd=candleStart?candleStart+bucketMs:0;
-  const left=candleEnd?Math.max(0,Math.ceil((candleEnd-now)/1000)):0;
-  $("candleCountdown").textContent=ageForCandle(candle)<150?String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0"):"STALE";
- }else $("candleCountdown").textContent="--:--";
+ if(candle && ageForCandle(candle)<150){
+  // One-minute countdown aligned to the current minute boundary.
+  const left=Math.max(1,Math.ceil((60000-(now%60000))/1000));
+  $("candleCountdown").textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
+ }else $("candleCountdown").textContent=candle?"STALE":"--:--";
  document.querySelectorAll(".row-countdown").forEach(el=>{
   const left=Math.max(0,Math.ceil((Number(el.dataset.expiry)-now)/1000));
   el.textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
@@ -617,6 +614,11 @@ function updateCountdowns(){
   t.countdown=remaining;
  }
  settleExpiredTrades();
+ const needsQuote=trades.some(t=>t.result==="PENDING"&&t.expiryAt&&now>=t.expiryAt);
+ if(needsQuote&&!busy&&now-lastExpiryRefresh>5000){
+  lastExpiryRefresh=now;
+  scan().catch(err=>{const el=$("paperStatus");if(el)el.textContent="Trade expired; waiting for a fresh exit quote. Refresh error: "+(err?.message||"unknown")});
+ }
 }
 function renderTrades(){
  let settled=trades.filter(t=>["WIN","LOSS","TIE"].includes(t.result)),wins=settled.filter(t=>t.result==="WIN").length,losses=settled.filter(t=>t.result==="LOSS").length,pending=trades.filter(t=>t.result==="PENDING").length,rate=settled.length?(wins/settled.length*100).toFixed(1)+"%":"—",net=trades.reduce((s,t)=>s+(Number(t.pnl)||0),0),avg=settled.length?Math.round(settled.reduce((s,t)=>s+t.score,0)/settled.length):null;
@@ -658,33 +660,46 @@ async function scan(){
  $("connectionStatus").textContent=`Regular feed: ${apiKey?"API key saved; per-symbol requests":"not configured"}\nOTC feed: endpoint checked when selected\nLast scan: ${clock()}\n${errorDetails.length?"DATA ERRORS: "+errorDetails.join(" | "):"No provider errors reported."}`;
  $("progressText").textContent=`Complete · ${fresh} fresh markets · ${errors} errors`;saveState();
 }
-function addPaper(){
+async function addPaper(){
+ const button=$("paperFromTop"),statusEl=$("paperStatus");
+ if(button.dataset.busy==="1")return;
+ button.dataset.busy="1";button.disabled=true;
  const requested=$("paperSide")?.value||"AUTO";
- const selectedId=$("mobileAsset")?.value||selectedChart;
- const selected=results[selectedId];
- const candidate=latestTop;
- let r=null,side=null;
- if(requested==="AUTO"){
-  if(candidate&&candidate.analysis?.fresh&&["CALL","PUT"].includes(candidate.analysis.direction)){
-   r=candidate;side=candidate.analysis.direction;
+ try{
+  const selectedId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
+  if(selectedId&&ASSETS.some(a=>a.id===selectedId)&&!watch.has(selectedId)){watch.add(selectedId);renderWatch();saveState()}
+  let selected=results[selectedId],candidate=latestTop,r=null,side=null;
+  const eligible=x=>x&&x.analysis?.fresh&&Number.isFinite(Number(x.livePrice??x.price))&&Number(x.livePrice??x.price)>0;
+  const freshTick=()=>{const tick=liveTicks[selectedId];return tick&&Number.isFinite(Number(tick.price))&&Date.now()-Number(tick.receivedAt||0)<=15000?tick:null};
+  if(requested!=="AUTO"&&!eligible(selected)){
+   const tick=freshTick();
+   if(tick){
+    r={id:selectedId,name:ASSETS.find(a=>a.id===selectedId)?.name||selectedId,price:Number(tick.price),livePrice:Number(tick.price),analysis:{fresh:true,score:selected?.analysis?.score||0,candleTime:selected?.analysis?.candleTime||0}};
+    side=requested;
+   }else{
+    statusEl.textContent="Checking selected market for a fresh quote…";
+    await scan();selected=results[selectedId];
+    const afterScanTick=freshTick();
+    if(afterScanTick){r={id:selectedId,name:ASSETS.find(a=>a.id===selectedId)?.name||selectedId,price:Number(afterScanTick.price),livePrice:Number(afterScanTick.price),analysis:{fresh:true,score:selected?.analysis?.score||0,candleTime:selected?.analysis?.candleTime||0}};side=requested;}
+   }
   }
- }else{
-  if(selected&&selected.analysis?.fresh&&Number.isFinite(Number(selected.price))&&Number(selected.price)>0){
-   r=selected;side=requested;
+  if(requested==="AUTO"){
+   if(candidate&&eligible(candidate)&&["CALL","PUT"].includes(candidate.analysis.direction)){r=candidate;side=candidate.analysis.direction}
+  }else if(!r&&eligible(selected)){r=selected;side=requested}
+  if(!r){
+   statusEl.textContent=requested==="AUTO"?"No fresh AI CALL/PUT signal yet. Run Scan and wait for a fresh directional signal.":"Paper trade not opened: selected market feed is stale or unavailable. Check the feed and scan again.";
+   statusEl.scrollIntoView({behavior:"smooth",block:"nearest"});return;
   }
- }
- if(!r){
-  $("paperStatus").textContent=requested==="AUTO"
-   ?"No fresh qualified AI CALL/PUT signal. Choose a market and scan again, or select Practice CALL/PUT after fresh data loads."
-   :"Paper trade blocked: selected market data is stale or unavailable. Scan for fresh candles first.";
-  return;
- }
- const entry=Number(r.livePrice||r.price),stake=Math.max(1,Math.min(100000,+$("stake").value||10));
- if(!Number.isFinite(entry)||entry<=0){$("paperStatus").textContent="Cannot start: no valid live entry price.";return}
- const expirySeconds=60,payoutRate=Math.max(1,Math.min(100,+$("payout").value||85))/100,now=Date.now();
- const t={id:now.toString(36)+Math.random().toString(36).slice(2,6),time:clock(),timeDate:new Date().toLocaleDateString(),dayKey:new Date().toISOString().slice(0,10),asset:r.name,assetId:r.id,side,entry,entryCandleTime:Number(r.analysis.candleTime||0),expirySeconds,expiryAt:now+expirySeconds*1000,exit:null,stake,payoutRate,score:r.analysis.score,result:"PENDING",pnl:0,practiceMode:requested!=="AUTO"};
- trades.unshift(t);renderTrades();saveState();
- $("paperStatus").textContent=`Paper ${side} started on ${t.asset} at ${fmt(entry)}. Expires in 60 seconds; settlement requires a fresh exit quote.`;
+  const entry=Number(r.livePrice??r.price),stake=Math.max(1,Math.min(100000,+$("stake").value||10));
+  if(!Number.isFinite(entry)||entry<=0)throw Error("No valid entry quote is available.");
+  const expirySeconds=60,payoutRate=Math.max(1,Math.min(100,+$("payout").value||85))/100,now=Date.now();
+  const t={id:now.toString(36)+Math.random().toString(36).slice(2,6),time:clock(),timeDate:new Date().toLocaleDateString(),dayKey:new Date().toISOString().slice(0,10),asset:r.name,assetId:r.id,side,entry,entryCandleTime:Number(r.analysis.candleTime||0),expirySeconds,expiryAt:now+expirySeconds*1000,exit:null,stake,payoutRate,score:r.analysis.score,result:"PENDING",pnl:0,practiceMode:requested!=="AUTO"};
+  trades.unshift(t);renderTrades();saveState();
+  statusEl.textContent=`✓ PAPER ${side} OPENED · ${t.asset} · Entry ${fmt(entry)} · $${stake.toFixed(2)} stake · 01:00 expiry.`;
+  statusEl.scrollIntoView({behavior:"smooth",block:"nearest"});
+ }catch(err){
+  statusEl.textContent="Paper trade error: "+(err?.message||"Unknown error");statusEl.scrollIntoView({behavior:"smooth",block:"nearest"});
+ }finally{button.dataset.busy="0";button.disabled=false}
 }
 function manualSettle(id,result){
  let t=trades.find(x=>x.id===id);if(!t||t.result!=="PENDING")return;
@@ -711,7 +726,7 @@ $("mobileAsset").addEventListener("change",()=>{const id=$("mobileAsset").value;
 $("mobileInterval").addEventListener("change",()=>{$("interval").value=$("mobileInterval").value;$("interval").dispatchEvent(new Event("change"));});
 function syncMobileControls(){if($("mobileInterval"))$("mobileInterval").value=$("interval").value||"15000";updateChartOptions()}
 window.addEventListener("resize",()=>{setMobileScreen(activeMobileScreen);drawChart()});
-$("scanNow").onclick=scan;
+$("scanNow").onclick=()=>{scan().catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="Scan failed: "+(err?.message||"unknown error")})};
 $("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN";status("AUTO SCANNER ACTIVE",true);scan();cycle=setInterval(()=>{if(!busy)scan()},Math.max(15000,+$("interval").value))};
 $("pauseBtn").onclick=()=>{running=false;clearInterval(cycle);$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED")};
 $("saveKey").type="button";
@@ -736,7 +751,7 @@ $("saveKey").addEventListener("click",async(event)=>{
   button.textContent="Save API key & test connection";
  }
 });
-$("paperFromTop").onclick=addPaper;$("exportCsv").onclick=exportCSV;
+$("paperFromTop").addEventListener("click",event=>{event.preventDefault();addPaper()});$("paperSide").addEventListener("change",()=>{$("paperStatus").textContent=$("paperSide").value==="AUTO"?"AUTO mode opens only on a fresh AI CALL/PUT.":"Practice mode opens the selected direction only when the selected market has fresh data."});$("exportCsv").onclick=exportCSV;
 $("scanMode").addEventListener("change",()=>{saveState();if(latestScan)renderScanner()});
 $("clearSignals").onclick=()=>{if(confirm("Clear signal history?")){history=[];renderHistory();saveState()}};
 $("clearTrades").onclick=()=>{if(confirm("Delete all paper journal records?")){trades=[];renderTrades();saveState()}};
