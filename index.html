@@ -892,16 +892,35 @@ function lockedCandleDirection(r){
  if(!r||!candle)return r?.analysis?.direction||"WAIT";
  const raw=Number(candle.timeMs||0);
  const candleKey=`${r.id}|${raw>0?Math.floor(raw/60000):Math.floor(Date.now()/60000)}`;
- let lock=candleDirectionLocks.get(candleKey);
- if(!lock&&["CALL","PUT"].includes(r.analysis?.direction)){
-  lock={direction:r.analysis.direction,lockedAt:Date.now(),entry:Number(r.livePrice??candle.close)};
-  candleDirectionLocks.set(candleKey,lock);
-  if(candleDirectionLocks.size>500){
-   const keep=[...candleDirectionLocks.entries()].slice(-250);
-   candleDirectionLocks.clear();keep.forEach(([k,v])=>candleDirectionLocks.set(k,v));
-  }
+ const now=Date.now();
+ const price=Number(r.livePrice??candle.close);
+ const open=Number(candle.open);
+ const candidate=price>open?"CALL":price<open?"PUT":null;
+ let state=candleDirectionLocks.get(candleKey);
+ if(!state){
+  state={direction:null,firstSeen:now,pending:null,pendingSince:0,pendingTicks:0,lastSwitch:0};
+  candleDirectionLocks.set(candleKey,state);
  }
- return lock?.direction||"WAIT";
+ // Give each new 1-minute candle four seconds to establish its first direction.
+ if(!state.direction){
+  if(now-state.firstSeen<4000)return "WAIT";
+  state.direction=candidate||r.analysis?.direction||"WAIT";
+  state.lastSwitch=now;
+ }else if(candidate&&candidate!==state.direction){
+  // Require a sustained color reversal before switching, avoiding one-tick flicker.
+  if(state.pending!==candidate){state.pending=candidate;state.pendingSince=now;state.pendingTicks=1;}
+  else state.pendingTicks++;
+  if(now-state.pendingSince>=1800&&state.pendingTicks>=2&&now-state.lastSwitch>=2500){
+   state.direction=candidate;state.pending=null;state.pendingSince=0;state.pendingTicks=0;state.lastSwitch=now;
+  }
+ }else{
+  state.pending=null;state.pendingSince=0;state.pendingTicks=0;
+ }
+ if(candleDirectionLocks.size>500){
+  const keep=[...candleDirectionLocks.entries()].slice(-250);
+  candleDirectionLocks.clear();keep.forEach(([k,v])=>candleDirectionLocks.set(k,v));
+ }
+ return state.direction||"WAIT";
 }
 function candleDurationSeconds(r){
  const c=r?.candles?.at(-1),a=r?.analysis;
@@ -1115,12 +1134,14 @@ function addSignal(r){
  if(!r?.candles?.length||!["CALL","PUT"].includes(r.analysis?.direction))return;
  const live={...r,analysis:{...r.analysis}};
  const candleKey=signalCandleKey(live);
- const key=candleKey;
+ const side=live.analysis.direction;
+ const key=candleKey+"|"+side;
  if(history.some(x=>x.key===key))return;
- // One direction, one signal and at most one automatic paper entry per candle.
- if(autoPaperEnabled&&live.analysis.signalLevel==="CONFIRMED"&&live.analysis.fresh&&hasCurrentFeed(live.id,live.candles?.at(-1)))openPaperTrade(live,live.analysis.direction,true,key);
+ // Signal callouts may update on a confirmed candle-color reversal; paper entry remains one per candle.
+ const paperKey=candleKey+"|PAPER";
+ if(autoPaperEnabled&&!history.some(x=>x.key===paperKey)&&live.analysis.signalLevel==="CONFIRMED"&&live.analysis.fresh&&hasCurrentFeed(live.id,live.candles?.at(-1)))openPaperTrade(live,side,true,paperKey);
  announceSignal(live);
- history.unshift({key,time:clock(),asset:live.name,side:live.analysis.direction==="CALL"?"BUY":"SELL",entry:live.livePrice??live.price,score:live.analysis.score,age:Math.round(live.analysis.age)});
+ history.unshift({key,time:clock(),asset:live.name,side:side==="CALL"?"BUY":"SELL",entry:live.livePrice??live.price,score:live.analysis.score,age:Math.round(live.analysis.age)});
  history=history.slice(0,150);renderHistory();saveState();
 }async function scan(){
  if(busy)return;if(!watch.size){alert("Select at least one market in Watchlist Configuration.");return}
