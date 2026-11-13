@@ -923,8 +923,8 @@ function updateTop(rows){
  const s=r?.analysis||null;
  const candle=r?.candles?.at(-1);
  const fresh=!!(r&&s&&s.fresh&&r.candles?.length>=35&&candle&&hasCurrentFeed(r.id,candle));
- const lockedDirection=lockedCandleDirection(r);
- const candidate=["CALL","PUT"].includes(lockedDirection)?{...r,analysis:{...s,direction:lockedDirection}}:null;
+ const liveDirection=s?.direction;
+ const candidate=["CALL","PUT"].includes(liveDirection)?r:null;
  latestTop=candidate;
  const dir=candidate?.analysis.direction||"";
  const timerKey=candidate?`${candidate.id}|${dir}|${candidate.analysis.candleTime}`:"";
@@ -972,8 +972,8 @@ function updateTop(rows){
  }else $("analysisBreakdown").innerHTML="<div><span>Analysis</span><b>Waiting for market data</b></div>";
  if($("heroSelectedMarket"))$("heroSelectedMarket").textContent=r?.name||"Select a market";
  if($("heroLiveLabel"))$("heroLiveLabel").textContent=fresh?(liveTicks[r.id]?"Live tick updates · active":"Candle data · recent"):r?.candles?.length?"Latest candle analysis":"Waiting for scan";
- $("topExpiry").textContent=candidate?"Direction locked for this candle · next signal waits for the next candle":
-  "Waiting for the first colored tick of the next candle.";
+ $("topExpiry").textContent=candidate?"Live direction · callouts update when candle momentum changes":
+  "Waiting for a live directional candle.";
  if($("durationAdvice"))$("durationAdvice").textContent=candidate?`${candleDurationSuggestion(r)} · suggested`:"Waiting for candle";
 }
 
@@ -1088,7 +1088,8 @@ function signalCandleKey(r){
 }
 function announceSignal(r){
  const side=r.analysis.direction==="CALL"?"BUY":"SELL";
- const key=signalCandleKey(r);
+ const candleKey=signalCandleKey(r);
+ const key=`${candleKey}|${r.analysis.direction}`;
  if(announcedCandleKeys.has(key))return;
  announcedCandleKeys.add(key);
  if(announcedCandleKeys.size>500)announcedCandleKeys.clear();
@@ -1110,15 +1111,16 @@ $("alertToggle").addEventListener("click",()=>{
  if(calloutsEnabled&&"speechSynthesis" in window){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance("Signal callouts enabled"));}
 });
 function addSignal(r){
- if(!r?.candles?.length)return;
- const lockedDirection=lockedCandleDirection(r);
- if(!["CALL","PUT"].includes(lockedDirection))return;
- const locked={...r,analysis:{...r.analysis,direction:lockedDirection}};
- const key=signalCandleKey(locked);
+ if(!r?.candles?.length||!["CALL","PUT"].includes(r.analysis?.direction))return;
+ const live={...r,analysis:{...r.analysis}};
+ const candleKey=signalCandleKey(live);
+ const key=`${candleKey}|${live.analysis.direction}`;
  if(history.some(x=>x.key===key))return;
- if(autoPaperEnabled&&locked.analysis.signalLevel==="CONFIRMED"&&locked.analysis.fresh&&hasCurrentFeed(locked.id,locked.candles?.at(-1)))openPaperTrade(locked,lockedDirection,true,key);
- announceSignal(locked);
- history.unshift({key,time:clock(),asset:locked.name,side:lockedDirection==="CALL"?"BUY":"SELL",entry:locked.livePrice??locked.price,score:locked.analysis.score,age:Math.round(locked.analysis.age)});
+ // A direction reversal during the same candle can produce a new fast callout.
+ // Paper history remains deduplicated per direction per candle.
+ if(autoPaperEnabled&&live.analysis.signalLevel==="CONFIRMED"&&live.analysis.fresh&&hasCurrentFeed(live.id,live.candles?.at(-1)))openPaperTrade(live,live.analysis.direction,true,key);
+ announceSignal(live);
+ history.unshift({key,time:clock(),asset:live.name,side:live.analysis.direction==="CALL"?"BUY":"SELL",entry:live.livePrice??live.price,score:live.analysis.score,age:Math.round(live.analysis.age)});
  history=history.slice(0,150);renderHistory();saveState();
 }async function scan(){
  if(busy)return;if(!watch.size){alert("Select at least one market in Watchlist Configuration.");return}
