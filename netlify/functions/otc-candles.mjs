@@ -20,7 +20,7 @@ export default async (request) => {
 
   upstream.searchParams.set("venue", "otc");
   upstream.searchParams.set("symbol", symbol);
-  upstream.searchParams.set("tf", "30");
+  upstream.searchParams.set("tf", "60");
   upstream.searchParams.set("limit", "500");
 
   try {
