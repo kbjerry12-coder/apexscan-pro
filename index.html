@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="10.4-dual-source-live-visual-candle-check">
-<title>APEXSCAN PRO · V10.4 DUAL-SOURCE COMMAND CENTER</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="10.5-one-minute-candle-confirmation-lock">
+<title>APEXSCAN PRO · V10.5 CANDLE-CONFIRMATION COMMAND CENTER</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -426,10 +426,10 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 </header>
 <main class="wrap">
  <div class="top">
-  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V10.4 DUAL-SOURCE COMMAND CENTER</h1><p>OTCharts live feed + optional visual screen confirmation · BUY / SELL signals</p></div>
+  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V10.5 CANDLE-CONFIRMATION COMMAND CENTER</h1><p>OTCharts live feed · 1-minute candle confirmation · optional visual cross-check</p></div>
   <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
- <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Recent live ticks keep analysis current even while the current 30-second candle is still forming. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
+ <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Recent live ticks keep analysis current even while the current one-minute candle is still forming. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
  <section class="mobile-command" id="marketControls" aria-label="Market controls">
   <div class="market-tabs" role="group" aria-label="Market category">
    <button type="button" class="market-tab active" data-market-category="currencies">Currencies</button>
@@ -441,7 +441,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <option value="5000">5 sec</option><option value="10000">10 sec</option><option value="15000" selected>15 sec</option><option value="30000">30 sec</option>
    </select></label>
   </div>
-  <div class="mobile-market-meta"><span id="heroSelectedMarket">OTC market selected</span><span id="heroLiveLabel">30-second candle analysis</span></div>
+  <div class="mobile-market-meta"><span id="heroSelectedMarket">OTC market selected</span><span id="heroLiveLabel">one-minute candle analysis</span></div>
   <div class="category-note" id="categoryNote" aria-live="polite">OTC currency markets are selected by default.</div>
  </section>
  <section class="kpis">
@@ -468,11 +468,10 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
    <div class="panel" id="chartPanel">
     <div class="panel-head chart-head"><h2>LIVE OTC CANDLE CHART</h2><select id="chartAsset" style="max-width:170px;background:#091321;color:white;border:1px solid var(--line);padding:7px;border-radius:7px"></select></div>
     <div class="tf-row" role="group" aria-label="Chart timeframe">
-     <button type="button" class="tf-btn active" data-tf="0.5">30 SEC</button>
-     <button type="button" class="tf-btn" data-tf="1">1 MIN</button>
+     <button type="button" class="tf-btn active" data-tf="1">1 MIN</button>
      <button type="button" class="tf-btn" data-tf="5">5 MIN</button>
      <button type="button" class="tf-btn" data-tf="15">15 MIN</button>
-     <span class="tf-note" id="tfNote">30-second candles</span>
+     <span class="tf-note" id="tfNote">one-minute candles</span>
     </div>
     <div class="chart-stage">
      <div class="chartbox"><canvas id="chart"></canvas></div>
@@ -488,7 +487,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
       <div class="float-sub" id="floatRecord">0 settled · 0 pending</div>
      </div>
     </div>
-    <div class="chartfoot"><span id="chartCaption">Waiting for candles</span><span id="chartMeta">EMA 9 · EMA 21 · 30-second candles</span></div>
+    <div class="chartfoot"><span id="chartCaption">Waiting for candles</span><span id="chartMeta">EMA 9 · EMA 21 · one-minute candles</span></div>
     <div class="visual-scan-box" id="visualScanBox">
      <div class="visual-head"><div><b>DUAL-SOURCE VISUAL SCANNER</b><small>OTCharts feed + user-authorized screen capture</small></div><span class="visual-pill" id="visualState">SCREEN NOT SHARED</span></div>
      <p class="visual-help">On a supported desktop browser, share the Pocket Option chart window or browser tab (not your whole desktop if possible). A local pixel check compares visible green/red candle pressure with the OTCharts signal. Screen sharing requires your permission and can be stopped at any time.</p>
@@ -520,8 +519,8 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Technical engine is checking trend, momentum and candle structure</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>EMA 9 / 21</span><span>RSI 14</span><span>MACD</span><span>Candle pressure</span><span>Price action</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · New qualified signals open simulated trades automatically</span></div>
      <div id="paperLiveBoard" class="paper-live-board" aria-live="polite"><b>LIVE PAPER POSITIONS</b><span>No open paper trades yet · waiting for a qualified signal.</span></div>
      <div class="countdown-grid">
-      <div><small>BUY / SELL VALID FOR</small><b id="signalCountdown">--:--</b></div>
-      <div><small>30-SEC CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
+      <div><small>SIGNAL VALID UNTIL 1M CLOSE</small><b id="signalCountdown">--:--</b></div>
+      <div><small>1-MIN CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
      </div>
      <div class="trade-duration" style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;padding:10px;border:1px solid #31527a;border-radius:10px;background:#07182a">
       <div style="display:flex;flex-direction:column;gap:5px"><small style="font-size:9px;color:#9ed5ff;font-weight:900;letter-spacing:.08em">DUAL-HORIZON AI · FAST + LONGER HOLD</small><b id="durationAdvice" style="font-size:16px;color:#fff">AI evaluating market structure…</b><small style="font-size:10px;color:#9db1cc">FAST AI targets short moves; HOLD AI selects 5m · 15m · 30m · 1h · 2h · 4h only when enough historical candles support that horizon. Short history limits the maximum recommendation.</small></div>
@@ -558,7 +557,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <div class="checkgrid" id="watchChecks"></div>
     <div class="fields" style="margin-top:11px">
      <div class="field"><label>Auto scan interval</label><select id="interval"><option value="5000">5 seconds</option><option value="10000">10 seconds</option><option value="15000" selected>15 seconds</option><option value="30000">30 seconds</option></select></div>
-     <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. OTC analysis uses 30-second candles. AI selects a paper-trade hold from 5 seconds to 4 hours based on trend persistence, signal confluence and available history; longer holds require substantially more history.</div></div>
+     <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. OTC analysis uses one-minute candles. AI selects a paper-trade hold from 5 seconds to 4 hours based on trend persistence, signal confluence and available history; longer holds require substantially more history.</div></div>
      <div class="field"><label>Scanner mode</label><select id="scanMode"><option value="aggressive" selected>Aggressive · early setups</option><option value="balanced">Balanced · confirmed only</option></select></div>
      <div class="field"><label>Signal threshold</label><select id="threshold"><option value="15" selected>15 · Very sensitive</option><option value="30">30 · More sensitive</option><option value="70">70 · Active</option><option value="75">75 · Balanced</option><option value="80">80 · Selective</option><option value="85">85 · Strict</option></select></div>
      <div class="field"><label>Paper stake ($)</label><input id="stake" type="number" min="1" max="100000" value="10"></div>
@@ -604,7 +603,7 @@ const ASSETS=[
  {id:"OTC:USD/MYR",name:"USD/MYR OTC",kind:"otc",symbol:"USDMYR_otc",default:false},
  {id:"OTC:SAR/CNY",name:"SAR/CNY OTC",kind:"otc",symbol:"SARCNY_otc",default:false}
 ];
-let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=0.5,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
+let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6}),clock=()=>new Date().toLocaleTimeString();
 function status(t,ok=false){$("statusText").textContent=t;$("statusLed").style.background=ok?"var(--green)":"var(--amber)"}
 function saveState(){try{localStorage.setItem(STORE,JSON.stringify({watch:[...watch],history:history.slice(0,150),trades:trades.slice(0,250),threshold:$("threshold").value,mode:$("scanMode").value,interval:$("interval").value,stake:$("stake").value,payout:$("payout").value,chart:selectedChart,autoPaper:autoPaperEnabled}))}catch(e){}}
@@ -688,14 +687,24 @@ function calculateFullIndicatorSet(candles){
  const envMid=emaLast(close,20),envPct=atr/Math.max(Math.abs(envMid),1e-9)*100;
  const keltnerMid=emaLast(close,20),keltnerUpper=keltnerMid+2*atr,keltnerLower=keltnerMid-2*atr;
  const prevClose=prev?.close||last.close;
- const posDM=[],negDM=[],tr14=[];
- for(let i=Math.max(1,n-14);i<n;i++){const up=high[i]-high[i-1],dn=low[i-1]-low[i];posDM.push(up>dn&&up>0?up:0);negDM.push(dn>up&&dn>0?dn:0);tr14.push(tr[i])}
- const sumTR=tr14.reduce((a,b)=>a+b,0)||1,plusDI=100*posDM.reduce((a,b)=>a+b,0)/sumTR,minusDI=100*negDM.reduce((a,b)=>a+b,0)/sumTR;
- const dx=100*Math.abs(plusDI-minusDI)/Math.max(plusDI+minusDI,1),adx=dx;
- const vortexPlus=posDM.reduce((a,b)=>a+b,0)/sumTR,vortexMinus=negDM.reduce((a,b)=>a+b,0)/sumTR;
+ // Wilder-smoothed DMI/ADX across the full available one-minute history.
+ const posDM=[],negDM=[],trSeries=[];
+ for(let i=1;i<n;i++){const up=high[i]-high[i-1],dn=low[i-1]-low[i];posDM.push(up>dn&&up>0?up:0);negDM.push(dn>up&&dn>0?dn:0);trSeries.push(tr[i])}
+ const dmiPeriod=14,dxSeries=[];let plusDI=0,minusDI=0,adx=0;
+ if(posDM.length>=dmiPeriod){
+  let smTR=trSeries.slice(0,dmiPeriod).reduce((a,b)=>a+b,0),smPlus=posDM.slice(0,dmiPeriod).reduce((a,b)=>a+b,0),smMinus=negDM.slice(0,dmiPeriod).reduce((a,b)=>a+b,0);
+  for(let i=dmiPeriod-1;i<posDM.length;i++){
+   if(i>=dmiPeriod){smTR=smTR-smTR/dmiPeriod+trSeries[i];smPlus=smPlus-smPlus/dmiPeriod+posDM[i];smMinus=smMinus-smMinus/dmiPeriod+negDM[i];}
+   plusDI=100*smPlus/Math.max(smTR,1e-12);minusDI=100*smMinus/Math.max(smTR,1e-12);
+   dxSeries.push(100*Math.abs(plusDI-minusDI)/Math.max(plusDI+minusDI,1e-12));
+  }
+  if(dxSeries.length>=dmiPeriod){adx=dxSeries.slice(0,dmiPeriod).reduce((a,b)=>a+b,0)/dmiPeriod;for(let i=dmiPeriod;i<dxSeries.length;i++)adx=((adx*(dmiPeriod-1))+dxSeries[i])/dmiPeriod;}
+ }
+ const vortexTR=Math.max(trSeries.slice(-14).reduce((a,b)=>a+b,0),1e-12);
+ const vortexPlus=posDM.slice(-14).reduce((a,b)=>a+b,0)/vortexTR,vortexMinus=negDM.slice(-14).reduce((a,b)=>a+b,0)/vortexTR;
  const bull=last.close>last.open,bear=last.close<last.open;
  const indicators=[
-  ["ADX",adx>=25?(plusDI>minusDI?"Bull trend":"Bear trend"):"Weak / ranging"],
+  ["ADX",adx>=25?(plusDI>minusDI?"Strong bull trend":"Strong bear trend"):adx>=16?(plusDI>minusDI?"Moderate bull trend":"Moderate bear trend"):"Weak / ranging"],
   ["ATR",atr.toPrecision(5)+" · volatility"],
   ["Bollinger Bands",last.close>upper?"Above upper":last.close<lower?"Below lower":"Inside bands"],
   ["CCI",cci.toFixed(1)],
@@ -732,51 +741,52 @@ function calculateFullIndicatorSet(candles){
 }
 
 function analyze(candles,asset){
- if(candles.length<35)return {direction:"WAIT",score:0,reason:"Building candle history · 35 candles are used before directional analysis",fresh:false};
- const fullSet=calculateFullIndicatorSet(candles); const closes=candles.map(x=>x.close), highs=candles.map(x=>x.high), lows=candles.map(x=>x.low);
+ if(candles.length<35)return {direction:"WAIT",score:0,reason:"Building candle history · 35 one-minute candles are required before directional analysis",fresh:false};
+ const fullSet=calculateFullIndicatorSet(candles),closes=candles.map(x=>x.close),highs=candles.map(x=>x.high),lows=candles.map(x=>x.low);
  const e9=ema(closes,9),e21=ema(closes,21),e50=ema(closes,50),rv=rsi(closes,14),macdLine=ema(closes,12)-ema(closes,26);
  const macdSeries=closes.map((_,i)=>ema(closes.slice(0,i+1),12)-ema(closes.slice(0,i+1),26)).filter(Number.isFinite);
  const macdSignal=ema(macdSeries,9),hist=macdLine-(macdSignal??macdLine),last=candles.at(-1),prev=candles.at(-2);
  const tr=[];for(let i=1;i<candles.length;i++){let q=candles[i],p=candles[i-1];tr.push(Math.max(q.high-q.low,Math.abs(q.high-p.close),Math.abs(q.low-p.close)))}
  const atr=tr.slice(-14).reduce((a,b)=>a+b,0)/Math.min(14,tr.length),atrPct=last.close?atr/last.close*100:0;
- const range=last.high-last.low,body=Math.abs(last.close-last.open),bodyRatio=range?body/range:0,upperWick=range?last.high-Math.max(last.open,last.close):0,lowerWick=range?Math.min(last.open,last.close)-last.low:0;
+ const range=last.high-last.low,body=Math.abs(last.close-last.open),bodyRatio=range?body/range:0;
+ const upperWick=range?last.high-Math.max(last.open,last.close):0,lowerWick=range?Math.min(last.open,last.close)-last.low:0;
  const recent=closes.slice(-6),momentum=recent.at(-1)-recent[0],swingHigh=Math.max(...highs.slice(-20,-1)),swingLow=Math.min(...lows.slice(-20,-1));
  const trendUp=e9>e21&&e21>e50,trendDown=e9<e21&&e21<e50,macdUp=hist>0&&macdLine>0,macdDown=hist<0&&macdLine<0;
- let bull=0,bear=0,reasons=[],checks=[];
+ const adx=Number(fullSet.adx||0),plusDI=Number(fullSet.plusDI||0),minusDI=Number(fullSet.minusDI||0),dmiUp=adx>=16&&plusDI>minusDI*1.05,dmiDown=adx>=16&&minusDI>plusDI*1.05;
+ let bull=0,bear=0,reasons=[];
  const add=(up,down,weight,label)=>{if(up){bull+=weight;reasons.push(label+" bullish")}else if(down){bear+=weight;reasons.push(label+" bearish")}else reasons.push(label+" mixed")};
  add(trendUp,trendDown,22,"EMA 9/21/50 trend");
+ add(dmiUp,dmiDown,10,"ADX/DMI trend filter");
  add(rv>=53&&rv<=72,rv<=47&&rv>=28,14,"RSI momentum");
  add(macdUp,macdDown,16,"MACD histogram");
  add(momentum>0,momentum<0,10,"6-candle momentum");
  add(last.close>swingHigh,last.close<swingLow,12,"Swing breakout");
- const candleBull=last.close>last.open&&bodyRatio>=.48&&lowerWick>=upperWick*.8;
- const candleBear=last.close<last.open&&bodyRatio>=.48&&upperWick>=lowerWick*.8;
+ const candleBull=last.close>last.open&&bodyRatio>=.45&&lowerWick>=upperWick*.8;
+ const candleBear=last.close<last.open&&bodyRatio>=.45&&upperWick>=lowerWick*.8;
  add(candleBull,candleBear,10,"Candle pressure");
- // Penalize stretched entries and unusually quiet/noisy conditions rather than treating every RSI extreme as a reversal.
  const stretched=(rv>78&&trendUp)||(rv<22&&trendDown);if(stretched){bull*=.82;bear*=.82;reasons.push("momentum extended")}
- const volOK=atrPct>0&&atrPct<1.8; if(!volOK)reasons.push(atrPct>=1.8?"volatility spike":"very low volatility");
+ const volOK=atrPct>0&&atrPct<1.8;if(!volOK)reasons.push(atrPct>=1.8?"volatility spike":"very low volatility");
  const tick=liveTicks[asset.id],tickAge=tick?Math.max(0,(Date.now()-Number(tick.receivedAt||0))/1000):Infinity;
  const candleAge=last.timeMs?Math.max(0,(Date.now()-last.timeMs)/1000):Infinity;
- const fresh=tickAge<=30||candleAge<=150;
- const age=Math.min(tickAge,candleAge);
- // Candle-color-first signal logic: the latest forming candle determines direction.
- // Indicators remain supporting analysis and cannot override candle color.
- const directionBias=bull-bear;
- const score=Math.round(Math.max(bull,bear));
- const liveDelta=Number.isFinite(Number(tick?.change))?Number(tick.change):0;
- let direction;
- if(last.close>last.open) direction="CALL";
- else if(last.close<last.open) direction="PUT";
- else if(liveDelta>0) direction="CALL";
- else if(liveDelta<0) direction="PUT";
- else direction=prev.close>=prev.open?"CALL":"PUT";
- const signalLevel=(direction==="CALL"?(trendUp&&macdUp&&momentum>0):(trendDown&&macdDown&&momentum<0))?"CONFIRMED":"EARLY";
- reasons.unshift(direction==="CALL"?"latest candle is GREEN · CALL direction":"latest candle is RED · PUT direction");
- if(!fresh)reasons.push("latest candle direction shown; live quote may be delayed");
- const nextBias=direction; // Live candle color is the primary directional signal; no undefined edge threshold.
- const nextStrength=Math.min(95,Math.round(50+Math.abs(bull-bear)*.45));
- const breakdown={...Object.fromEntries(fullSet.indicators.map(([k,v])=>[k,v])),trend:trendUp?"Bullish aligned":trendDown?"Bearish aligned":"Mixed / transitional",momentum:rv.toFixed(1)+" RSI · "+(momentum>0?"rising":"falling"),volatility:atrPct.toFixed(3)+"% ATR / "+(volOK?"normal":"high or quiet"),price:Math.round(bodyRatio*100)+"% candle body",structure:last.close>swingHigh?"Upside break":last.close<swingLow?"Downside break":"Inside recent range",feed:tickAge<=30?Math.round(tickAge)+"s · live tick":fresh?Math.round(candleAge)+"s · candle":"no recent data"};
- return {direction,signalLevel,score,reason:reasons.join(" · "),fresh,age,rsi:rv,trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry:last.close,age,quality:bodyRatio,candleTime:last.time,atr,atrPct,macdHistogram:hist,bullScore:Math.round(bull),bearScore:Math.round(bear),nextBias,nextStrength,breakdown};
+ const fresh=tickAge<=20||candleAge<=90,age=Math.min(tickAge,candleAge);
+ const score=Math.round(Math.max(bull,bear)),bias=bull-bear;
+ const candleSide=last.close>last.open?"CALL":last.close<last.open?"PUT":"WAIT";
+ // A directional signal needs agreement between indicator confluence and the live candle.
+ // A green/red candle by itself is never enough to produce a BUY/SELL callout.
+ let direction="WAIT";
+ if(bias>=14&&candleSide==="CALL"&&fresh&&volOK&&adx>=14)direction="CALL";
+ else if(bias<=-14&&candleSide==="PUT"&&fresh&&volOK&&adx>=14)direction="PUT";
+ const bodyConfirmed=bodyRatio>=.45&&(direction==="CALL"?lowerWick>=upperWick*.8:upperWick>=lowerWick*.8);
+ const aligned=direction==="CALL"?(trendUp&&dmiUp&&macdUp&&momentum>0&&bodyConfirmed&&score>=60&&adx>=18):direction==="PUT"?(trendDown&&dmiDown&&macdDown&&momentum<0&&bodyConfirmed&&score>=60&&adx>=18):false;
+ const signalLevel=direction==="WAIT"?"WAIT":aligned?"CONFIRMED":"EARLY";
+ if(direction==="CALL")reasons.unshift("bullish indicator confluence + GREEN one-minute candle");
+ else if(direction==="PUT")reasons.unshift("bearish indicator confluence + RED one-minute candle");
+ else reasons.unshift("WAIT · candle colour and multi-indicator direction are not aligned");
+ if(adx<16)reasons.push("ADX weak · ranging conditions · wait for trend strength");
+ if(!fresh)reasons.push("feed is not current enough for a new signal");
+ const nextBias=direction,nextStrength=Math.min(95,Math.round(50+Math.abs(bias)*.45));
+ const breakdown={...Object.fromEntries(fullSet.indicators.map(([k,v])=>[k,v])),trend:trendUp?"Bullish aligned":trendDown?"Bearish aligned":"Mixed / transitional",adx:adx.toFixed(1),plusDI:plusDI.toFixed(1),minusDI:minusDI.toFixed(1),momentum:rv.toFixed(1)+" RSI · "+(momentum>0?"rising":"falling"),volatility:atrPct.toFixed(3)+"% ATR / "+(volOK?"normal":"high or quiet"),price:Math.round(bodyRatio*100)+"% candle body",structure:last.close>swingHigh?"Upside break":last.close<swingLow?"Downside break":"Inside recent range",feed:tickAge<=20?Math.round(tickAge)+"s · live tick":fresh?Math.round(candleAge)+"s · candle":"no recent data"};
+ return {direction,signalLevel,score,reason:reasons.join(" · "),fresh,age,rsi:rv,trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry:last.close,quality:bodyRatio,candleTime:last.time,candleTimeMs:Number(last.timeMs||0),atr,atrPct,adx,plusDI,minusDI,macdHistogram:hist,bullScore:Math.round(bull),bearScore:Math.round(bear),nextBias,nextStrength,breakdown};
 }
 async function regularData(symbol){
  if(!apiKey)throw Error("Twelve Data API key missing");
@@ -813,16 +823,15 @@ async function fetchAsset(asset){
 }
 
 function setChartTimeframe(minutes){
- chartTimeframe=[0.5,1,5,15].includes(minutes)?minutes:0.5;
+ chartTimeframe=[1,5,15].includes(minutes)?minutes:1;
  document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===chartTimeframe));
- const tfLabel=chartTimeframe===0.5?"30-second":chartTimeframe+"-minute";
+ const tfLabel=chartTimeframe+"-minute";
  $("tfNote").textContent=tfLabel+" candles";
  $("chartMeta").textContent=`EMA 9 · EMA 21 · ${tfLabel} candles`;
  drawChart();
 }
 function aggregateCandles(candles,minutes){
- if(minutes===0.5)return candles.slice(-100);
- if(minutes===1){minutes=1;}
+ if(minutes===1)return candles.slice(-100);
  const bucketMs=minutes*60000,map=new Map();
  candles.forEach(c=>{
   const key=Math.floor(c.timeMs/bucketMs)*bucketMs;
@@ -879,11 +888,11 @@ function drawChart(){
  ctx.fillStyle="#8ea4c2";ctx.font="9px system-ui";ctx.textAlign="left";
  [0,Math.floor(candles.length/2),candles.length-1].forEach(i=>{const d=new Date(candles[i].timeMs);ctx.fillText(d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}),left+i*step+step/2,h-5)});
  $("chartCaption").textContent=`${ASSETS.find(a=>a.id===id)?.name||id} · ${candles.length} candles · candle history · latest ${fmt(livePrice>0?livePrice:last.close)}`;
- $("chartMeta").textContent=`LIVE ticks · EMA 9 / 21 · ${chartTimeframe===0.5?"30-second":chartTimeframe+"-minute"} view`;
+ $("chartMeta").textContent=`LIVE ticks · EMA 9 / 21 · ${chartTimeframe+"-minute"} view`;
 }
 
 
-// V10.4 visual scan: browser-native screen share + local candle-colour sampling.
+// V10.5 visual scan: browser-native screen share + local chart-colour cross-check.
 let visualStream=null,visualTimer=null,visualScan={active:false,direction:"WAIT",green:0,red:0,confidence:0,updatedAt:0};
 function setVisualStatus(message,active=false){const el=$("visualState");if(el){el.textContent=message;el.classList.toggle("active",active)}}
 function updateVisualAgreement(){
@@ -891,7 +900,7 @@ function updateVisualAgreement(){
  const screen=visualScan.direction;
  const out=$("visualAgreement"),note=$("visualNote");
  if(!out)return;
- if(!visualScan.active||screen==="WAIT"||feed==="WAIT"){out.textContent="NOT CHECKED";if(note)note.textContent="Live feed remains the primary signal source. Share a chart window to add a visual check.";return;}
+ if(!visualScan.active||screen==="WAIT"||feed==="WAIT"){out.textContent="NOT CHECKED";if(note)note.textContent="Live feed + one-minute OHLC analysis drive the signal. Share only the Pocket Option browser window for a separate colour cross-check.";return;}
  const same=feed===screen;
  out.textContent=same?"AGREE":"CONFLICT";out.style.color=same?"var(--green)":"var(--red)";
  if(note)note.textContent=same?`Both sources currently lean ${feed}. The feed signal is still subject to normal market risk.`:`Feed says ${feed}; screen colour scan leans ${screen}. Treat this as a disagreement and avoid relying on this setup.`;
@@ -901,8 +910,8 @@ function scanSharedScreen(){
  const video=$("visualPreview"),canvas=$("visualCanvas");if(!video||!canvas||video.readyState<2||!video.videoWidth)return;
  const w=320,h=180;canvas.width=w;canvas.height=h;const ctx=canvas.getContext("2d",{willReadFrequently:true});
  try{ctx.drawImage(video,0,0,w,h);const data=ctx.getImageData(0,0,w,h).data;let green=0,red=0,total=0;
-  // Sample the central chart area. Share a chart-only window for the cleanest reading.
-  for(let y=Math.floor(h*.12);y<Math.floor(h*.9);y+=2){for(let x=Math.floor(w*.08);x<Math.floor(w*.92);x+=2){const i=(y*w+x)*4,r=data[i],g=data[i+1],b=data[i+2],max=Math.max(r,g,b),min=Math.min(r,g,b),sat=max?((max-min)/max):0;if(sat<.35||max<65)continue;total++;if(g>r*1.18&&g>b*1.08&&g-r>28)green++;else if(r>g*1.18&&r>b*1.08&&r-g>28)red++;}}
+  // Sample the central chart area. Share only the Pocket Option browser window; avoid sharing the full desktop with APEXSCAN visible beside it.
+  for(let y=Math.floor(h*.12);y<Math.floor(h*.82);y+=2){for(let x=Math.floor(w*.12);x<Math.floor(w*.55);x+=2){const i=(y*w+x)*4,r=data[i],g=data[i+1],b=data[i+2],max=Math.max(r,g,b),min=Math.min(r,g,b),sat=max?((max-min)/max):0;if(sat<.35||max<65)continue;total++;if(g>r*1.18&&g>b*1.08&&g-r>28)green++;else if(r>g*1.18&&r>b*1.08&&r-g>28)red++;}}
   const coloured=green+red,dominance=coloured?Math.max(green,red)/coloured:0;
   visualScan.green=coloured?Math.round(green/coloured*100):0;visualScan.red=coloured?Math.round(red/coloured*100):0;
   visualScan.direction=coloured>=12&&dominance>=.58?(green>red?"CALL":"PUT"):"WAIT";
@@ -921,7 +930,7 @@ async function startVisualScan(){
   $("startVisualScan").disabled=true;$("stopVisualScan").disabled=false;setVisualStatus("SCREEN SHARE ACTIVE",true);
   visualStream.getVideoTracks()[0].addEventListener("ended",stopVisualScan);
   scanSharedScreen();visualTimer=setInterval(scanSharedScreen,1200);
-  $("visualNote").textContent="Screen capture is active with your permission. Share the Pocket Option chart window/tab and keep the candle area visible. Local pixel colour sampling is a visual cross-check, not full semantic AI vision.";
+  $("visualNote").textContent="Screen capture is active. Share only the Pocket Option browser window and keep its chart visible. The screen check samples chart colours; OHLC + indicator confluence remains the actual signal engine, not full semantic AI vision.";
  }catch(e){setVisualStatus("SCREEN NOT SHARED");$("visualNote").textContent=e?.name==="NotAllowedError"?"Screen sharing was cancelled or denied. The OTCharts live-feed scanner continues to work.":"Screen capture could not start: "+(e?.message||"browser permission error");}
 }
 function stopVisualScan(){
@@ -1012,21 +1021,22 @@ function handleLiveTick(raw){
  const id=OTC_SYMBOLS[symbol];
  if(!id||!Number.isFinite(price)||price<=0)return;
  const previous=liveTicks[id]?.price ?? results[id]?.price ?? price;
- const receivedAt=Date.now(),candleStart=Math.floor(receivedAt/30000)*30000;
+ const receivedAt=Date.now(),candleStart=Math.floor(receivedAt/60000)*60000;
  liveTicks[id]={price,change:price-previous,time:tick.time||tick.timestamp||receivedAt,receivedAt};
  if(results[id]){
   const result=results[id];result.livePrice=price;result.liveChange=price-previous;result.liveUpdated=receivedAt;
   const candles=result.candles||(result.candles=[]),last=candles[candles.length-1];
-  if(last&&Math.floor(Number(last.timeMs||0)/30000)===Math.floor(candleStart/30000)){
-   last.high=Math.max(last.high,price);last.low=Math.min(last.low,price);last.close=price;
+  if(last&&Math.floor(Number(last.timeMs||0)/60000)===Math.floor(candleStart/60000)){
+   last.high=Math.max(last.high,price);last.low=Math.min(last.low,price);last.close=price;last.live=true;
   }else{
-   candles.push({time:new Date(candleStart).toISOString(),timeMs:candleStart,open:last?last.close:price,high:price,low:price,close:price,live:true});
-   if(candles.length>240)candles.splice(0,candles.length-240);
+   const priorClose=Number(last?.close??price);
+   candles.push({time:new Date(candleStart).toISOString(),timeMs:candleStart,open:priorClose,high:Math.max(priorClose,price),low:Math.min(priorClose,price),close:price,live:true});
+   if(candles.length>600)candles.splice(0,candles.length-600);
   }
   const asset=ASSETS.find(x=>x.id===id);
   if(asset&&candles.length>=35){
    result.analysis=analyze(candles,asset);
-   // Preserve V8.9's candle-colour-first direction, then latch it once per candle.
+   // Require score/candle confluence, then hold the confirmed side for this one-minute candle.
    result.analysis={...result.analysis,direction:lockedCandleDirection(result)};
    addSignal(result);
   }
@@ -1062,7 +1072,7 @@ function connectLiveStream(){
 function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
 function renderScanner(){
  let arr=[...watch].map(id=>results[id]).filter(Boolean),rows=[...arr].sort((a,b)=>b.analysis.score-a.analysis.score);
- $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.direction==="CALL"?"BUY":s.direction==="PUT"?"SELL":"—",cls=shownDirection==="BUY"?"call":shownDirection==="SELL"?"put":"wait",change=r.change,timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+30000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":s.trend==="DOWN"?"red":"muted"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">00:30</small>`:""}</td><td><span class="${s.signalLevel==="CONFIRMED"?"green":"blue"}">${s.signalLevel||"EARLY"}</span></td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
+ $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.direction==="CALL"?"BUY":s.direction==="PUT"?"SELL":"—",cls=shownDirection==="BUY"?"call":shownDirection==="SELL"?"put":"wait",change=r.change,timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Number(r.candles?.at(-1)?.timeMs||0)+60000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":s.trend==="DOWN"?"red":"muted"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">01:00</small>`:""}</td><td><span class="${s.signalLevel==="CONFIRMED"?"green":"blue"}">${s.signalLevel||"EARLY"}</span></td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
  document.querySelectorAll("#scannerBody tr[data-asset]").forEach(tr=>tr.addEventListener("click",()=>{selectedChart=tr.dataset.asset;$("chartAsset").value=selectedChart;updateChartOptions();drawChart()}));
  let fresh=arr.filter(r=>r.analysis.fresh&&hasCurrentFeed(r.id,r.candles?.at(-1))).length,signals=arr.filter(r=>["CALL","PUT"].includes(r.analysis.direction));
  $("kScanned").textContent=arr.length+" / "+watch.size;$("kSignals").textContent=signals.length;$("freshCount").textContent=arr.length;$("staleCount").textContent="—";
@@ -1074,39 +1084,37 @@ function renderScanner(){
 }
 const candleDirectionLocks=new Map();
 function lockedCandleDirection(r){
- const candle=r?.candles?.at(-1);
- if(!r||!candle)return r?.analysis?.direction||"WAIT";
- const raw=Number(candle.timeMs||0);
- const candleKey=`${r.id}|${raw>0?Math.floor(raw/30000):Math.floor(Date.now()/30000)}`;
- const now=Date.now();
- const price=Number(r.livePrice??candle.close);
- const open=Number(candle.open);
- const candidate=price>open?"CALL":price<open?"PUT":null;
+ const candle=r?.candles?.at(-1);if(!r||!candle||!r.analysis?.fresh)return "WAIT";
+ const now=Date.now(),raw=Number(candle.timeMs||0),candleStart=raw>0?Math.floor(raw/60000)*60000:Math.floor(now/60000)*60000;
+ const candleKey=`${r.id}|${candleStart}`,tick=liveTicks[r.id],tickStamp=Number(tick?.receivedAt||0);
+ const price=Number(r.livePrice??tick?.price??candle.close),open=Number(candle.open),pip=String(r.id).includes("JPY")?.01:.0001;
+ const atr=Number(r.analysis?.atr||0),minMove=Math.max(pip*.25,atr*.06);
+ const priceSide=price>open+minMove?"CALL":price<open-minMove?"PUT":"WAIT";
  let state=candleDirectionLocks.get(candleKey);
- if(!state){
-  state={direction:null,firstSeen:now,pending:null,pendingSince:0,pendingTicks:0,lastSwitch:0};
-  candleDirectionLocks.set(candleKey,state);
+ if(!state){state={direction:null,invalidated:false,lastTickStamp:0,candidate:null,candidateTicks:0,candidateSince:0,oppositeTicks:0};candleDirectionLocks.set(candleKey,state)}
+ if(state.invalidated)return "WAIT";
+ if(state.direction){
+  if(priceSide!=="WAIT"&&priceSide!==state.direction){
+   if(tickStamp&&tickStamp!==state.lastTickStamp){state.oppositeTicks++;state.lastTickStamp=tickStamp;}
+   if(state.oppositeTicks>=3){state.invalidated=true;return "WAIT";}
+  }else if(priceSide===state.direction){state.oppositeTicks=0;if(tickStamp)state.lastTickStamp=tickStamp;}
+  return state.direction;
  }
- // Give each new 30-second candle four seconds to establish its first direction.
- if(!state.direction){
-  if(now-state.firstSeen<4000)return "WAIT";
-  state.direction=candidate||r.analysis?.direction||"WAIT";
-  state.lastSwitch=now;
- }else if(candidate&&candidate!==state.direction){
-  // Require a sustained color reversal before switching, avoiding one-tick flicker.
-  if(state.pending!==candidate){state.pending=candidate;state.pendingSince=now;state.pendingTicks=1;}
-  else state.pendingTicks++;
-  if(now-state.pendingSince>=1800&&state.pendingTicks>=2&&now-state.lastSwitch>=2500){
-   state.direction=candidate;state.pending=null;state.pendingSince=0;state.pendingTicks=0;state.lastSwitch=now;
-  }
- }else{
-  state.pending=null;state.pendingSince=0;state.pendingTicks=0;
+ // Let the new one-minute candle settle for 8 seconds. Then require 3 fresh,
+ // consecutive stream updates in the same direction over at least 2 seconds.
+ const elapsed=now-candleStart,proposed=r.analysis?.direction||"WAIT";
+ if(elapsed<8000||!tickStamp||now-tickStamp>10000||!['CALL','PUT'].includes(proposed)||proposed!==priceSide){
+  if(tickStamp&&tickStamp!==state.lastTickStamp){state.candidate=null;state.candidateTicks=0;state.candidateSince=0;state.lastTickStamp=tickStamp;}
+  return "WAIT";
  }
- if(candleDirectionLocks.size>500){
-  const keep=[...candleDirectionLocks.entries()].slice(-250);
-  candleDirectionLocks.clear();keep.forEach(([k,v])=>candleDirectionLocks.set(k,v));
+ if(tickStamp!==state.lastTickStamp){
+  if(state.candidate===proposed){state.candidateTicks++;}
+  else{state.candidate=proposed;state.candidateTicks=1;state.candidateSince=now;}
+  state.lastTickStamp=tickStamp;
  }
- return state.direction||"WAIT";
+ if(state.candidateTicks>=3&&now-state.candidateSince>=2000){state.direction=proposed;return state.direction;}
+ if(candleDirectionLocks.size>700){const keep=[...candleDirectionLocks.entries()].slice(-350);candleDirectionLocks.clear();keep.forEach(([k,v])=>candleDirectionLocks.set(k,v));}
+ return "WAIT";
 }
 const AI_HOLD_OPTIONS=[5,15,30,60,180,300,900,1800,3600,7200,14400];
 function formatHold(seconds){const n=Number(seconds)||30;if(n<60)return `${n}s`;if(n<3600)return `${n/60}m`;return `${n/3600}h`;}
@@ -1129,16 +1137,16 @@ function candleDurationSeconds(r){
  const c6=aligned(6),c12=aligned(12),c24=aligned(24),c48=aligned(48);
  const trend=(side===1&&a.trend==="UP")||(side===-1&&a.trend==="DOWN");
  const strong=trend&&Number(a.score)>=72&&a.signalLevel==="CONFIRMED"&&c12>=.68&&c24>=.62;
- // These source candles are 30-second bars. Require enough actual history for each horizon.
+ // Source candles are one-minute bars. Require enough actual history for each hold horizon.
  // Never advertise a multi-hour hold from a short sample.
  const bars=c.length;
  const options=[
-  [14400,bars>=480&&strong&&c48>=.78],
-  [7200,bars>=240&&strong&&c48>=.76],
-  [3600,bars>=120&&strong&&c48>=.74],
-  [1800,bars>=60&&strong&&c24>=.72],
-  [900,bars>=30&&strong&&c24>=.68],
-  [300,bars>=20&&trend&&Number(a.score)>=65&&c24>=.64],
+  [14400,bars>=240&&strong&&c48>=.78],
+  [7200,bars>=120&&strong&&c48>=.76],
+  [3600,bars>=60&&strong&&c48>=.74],
+  [1800,bars>=30&&strong&&c24>=.72],
+  [900,bars>=15&&strong&&c24>=.68],
+  [300,bars>=10&&trend&&Number(a.score)>=65&&c24>=.64],
   [180,bars>=12&&trend&&Number(a.score)>=60&&c12>=.64],
   [60,c12>=.58],
   [30,c6>=.55],
@@ -1165,7 +1173,7 @@ function updateTop(rows){
  const timerKey=candidate?`${candidate.id}|${dir}|${candidate.analysis.candleTime}`:"";
  if(timerKey&&timerKey!==signalTimerKey){
   signalTimerKey=timerKey;
-  signalExpiries[timerKey]=signalExpiries[timerKey]||Date.now()+30000;
+  signalExpiries[timerKey]=signalExpiries[timerKey]||Number(candle?.timeMs||0)+60000;
   signalExpiryAt=signalExpiries[timerKey];
  }
  if(!timerKey){signalTimerKey="";signalExpiryAt=0;}
@@ -1194,7 +1202,7 @@ function updateTop(rows){
  $("signalStatusLine").textContent=!r?"DATA NOT LOADED":
   !r.candles?.length?"FEED ERROR · ENTRY AND RSI UNAVAILABLE":
   candidate?`${dir==="CALL"?"BUY":"SELL"} ${s.signalLevel==="EARLY"?"BIAS":"SETUP"} · PAPER TRADE ${autoPaperEnabled?"ENABLED":"PAUSED"}`:
-  "LIVE CANDLES RECEIVED · TECHNICAL ANALYSIS RUNNING";
+  "LIVE 1M CANDLES · WAITING FOR CONFIRMED DIRECTION";
  $("topAsset").textContent=r?.name||"—";
  const entry=Number(r?.livePrice??r?.price??s?.entry);
  $("topEntry").textContent=Number.isFinite(entry)&&entry>0?fmt(entry):"—";
@@ -1253,8 +1261,8 @@ function ageForCandle(c){const t=Number(c?.timeMs||0);return t?Math.max(0,(Date.
 function hasCurrentFeed(assetId,candle){
  const tick=liveTicks[assetId],tickAge=tick?Date.now()-Number(tick.receivedAt||0):Infinity;
  // A recent provider tick is stronger freshness evidence than the timestamp of the
- // last completed 30-second candle. Fall back to the candle timestamp for history-only.
- return (Number.isFinite(tickAge)&&tickAge>=0&&tickAge<=30000)||ageForCandle(candle)<=150;
+ // last completed one-minute candle. Fall back to the candle timestamp for history-only.
+ return (Number.isFinite(tickAge)&&tickAge>=0&&tickAge<=20000)||ageForCandle(candle)<=90;
 }
 function updateCountdowns(){
  const now=Date.now();
@@ -1266,7 +1274,7 @@ function updateCountdowns(){
  const selected=results[$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart];
  const candle=selected?.candles?.at(-1);
  if(candle&&ageForCandle(candle)<150){
-  const left=Math.max(1,Math.ceil((30000-(now%30000))/1000));
+  const left=Math.max(0,Math.ceil((60000-(now%60000))/1000));
   $("candleCountdown").textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
  }else $("candleCountdown").textContent="--:--";
  document.querySelectorAll(".row-countdown").forEach(el=>{
@@ -1316,9 +1324,9 @@ const announcedCandleKeys=new Set();
 function signalCandleKey(r){
  const candle=r?.candles?.at(-1);
  const rawTime=Number(candle?.timeMs||0);
- // Normalize every forming 30-second candle to one stable key, even if
+ // Normalize every forming one-minute candle to one stable key, even if
  // the provider refreshes its timestamp or sends many ticks per second.
- const minute=rawTime>0?Math.floor(rawTime/30000):Math.floor(Date.now()/30000);
+ const minute=rawTime>0?Math.floor(rawTime/60000):Math.floor(Date.now()/60000);
  return `${r.id}|${minute}`;
 }
 function announceSignal(r){
@@ -1349,9 +1357,9 @@ function addSignal(r){
  const side=live.analysis.direction;
  const key=candleKey+"|"+side;
  if(history.some(x=>x.key===key))return;
- // Signal callouts may update on a confirmed candle-color reversal; paper entry remains one per candle.
+ // One directional callout per one-minute candle; the lock does not flip to the opposite side intrabar.
  const paperKey=candleKey+"|PAPER";
- if(autoPaperEnabled&&!history.some(x=>x.key===paperKey)&&live.analysis.signalLevel==="CONFIRMED"&&live.analysis.fresh&&hasCurrentFeed(live.id,live.candles?.at(-1))&&(!visualScan.active||visualScan.direction===side))openPaperTrade(live,side,true,paperKey);
+ if(autoPaperEnabled&&!history.some(x=>x.key===paperKey)&&live.analysis.signalLevel==="CONFIRMED"&&live.analysis.fresh&&hasCurrentFeed(live.id,live.candles?.at(-1)))openPaperTrade(live,side,true,paperKey);
  announceSignal(live);
  history.unshift({key,time:clock(),asset:live.name,side:side==="CALL"?"BUY":"SELL",entry:live.livePrice??live.price,score:live.analysis.score,age:Math.round(live.analysis.age)});
  history=history.slice(0,150);renderHistory();saveState();
