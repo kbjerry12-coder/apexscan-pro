@@ -572,7 +572,22 @@ const $=id=>document.getElementById(id), STORE="apexscan_pro_dashboard_v6", LEGA
 const ASSETS=[
  {id:"OTC:EUR/USD",name:"EUR/USD OTC",kind:"otc",symbol:"EURUSD_otc",default:true},
  {id:"OTC:GBP/USD",name:"GBP/USD OTC",kind:"otc",symbol:"GBPUSD_otc",default:true},
- {id:"OTC:USD/JPY",name:"USD/JPY OTC",kind:"otc",symbol:"USDJPY_otc",default:true}
+ {id:"OTC:USD/JPY",name:"USD/JPY OTC",kind:"otc",symbol:"USDJPY_otc",default:true},
+ {id:"OTC:AUD/CAD",name:"AUD/CAD OTC",kind:"otc",symbol:"AUDCAD_otc",default:false},
+ {id:"OTC:AUD/CHF",name:"AUD/CHF OTC",kind:"otc",symbol:"AUDCHF_otc",default:false},
+ {id:"OTC:CHF/JPY",name:"CHF/JPY OTC",kind:"otc",symbol:"CHFJPY_otc",default:false},
+ {id:"OTC:EUR/CHF",name:"EUR/CHF OTC",kind:"otc",symbol:"EURCHF_otc",default:false},
+ {id:"OTC:EUR/NZD",name:"EUR/NZD OTC",kind:"otc",symbol:"EURNZD_otc",default:false},
+ {id:"OTC:GBP/AUD",name:"GBP/AUD OTC",kind:"otc",symbol:"GBPAUD_otc",default:false},
+ {id:"OTC:UAH/USD",name:"UAH/USD OTC",kind:"otc",symbol:"UAHUSD_otc",default:false},
+ {id:"OTC:USD/ARS",name:"USD/ARS OTC",kind:"otc",symbol:"USDARS_otc",default:false},
+ {id:"OTC:USD/BDT",name:"USD/BDT OTC",kind:"otc",symbol:"USDBDT_otc",default:false},
+ {id:"OTC:USD/CLP",name:"USD/CLP OTC",kind:"otc",symbol:"USDCLP_otc",default:false},
+ {id:"OTC:USD/PKR",name:"USD/PKR OTC",kind:"otc",symbol:"USDPKR_otc",default:false},
+ {id:"OTC:USD/THB",name:"USD/THB OTC",kind:"otc",symbol:"USDTHB_otc",default:false},
+ {id:"OTC:KES/USD",name:"KES/USD OTC",kind:"otc",symbol:"KESUSD_otc",default:false},
+ {id:"OTC:USD/MYR",name:"USD/MYR OTC",kind:"otc",symbol:"USDMYR_otc",default:false},
+ {id:"OTC:SAR/CNY",name:"SAR/CNY OTC",kind:"otc",symbol:"SARCNY_otc",default:false}
 ];
 let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=0.5,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6}),clock=()=>new Date().toLocaleTimeString();
@@ -855,7 +870,7 @@ function drawChart(){
 
 // One browser EventSource owns the single OTCharts stream for all three OTC pairs.
 let liveStream=null,liveStreamState="CONNECTING",liveTicks={};
-const OTC_SYMBOLS={EURUSD_otc:"OTC:EUR/USD",GBPUSD_otc:"OTC:GBP/USD",USDJPY_otc:"OTC:USD/JPY"};
+const OTC_SYMBOLS={EURUSD_otc:"OTC:EUR/USD",GBPUSD_otc:"OTC:GBP/USD",USDJPY_otc:"OTC:USD/JPY",AUDCAD_otc:"OTC:AUD/CAD",AUDCHF_otc:"OTC:AUD/CHF",CHFJPY_otc:"OTC:CHF/JPY",EURCHF_otc:"OTC:EUR/CHF",EURNZD_otc:"OTC:EUR/NZD",GBPAUD_otc:"OTC:GBP/AUD",UAHUSD_otc:"OTC:UAH/USD",USDARS_otc:"OTC:USD/ARS",USDBDT_otc:"OTC:USD/BDT",USDCLP_otc:"OTC:USD/CLP",USDPKR_otc:"OTC:USD/PKR",USDTHB_otc:"OTC:USD/THB",KESUSD_otc:"OTC:KES/USD",USDMYR_otc:"OTC:USD/MYR",SARCNY_otc:"OTC:SAR/CNY"};
 function setLiveStreamState(message,ok=false){
  liveStreamState=message;
  const el=$("liveStreamStatus");
