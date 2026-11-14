@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="11.1-chatgpt-primary-visual-layout-selected-pair">
-<title>APEXSCAN PRO · V11.1 CHATGPT PRIMARY SCANNER</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="11.2-chatgpt-primary-otc-dropdown-fix">
+<title>APEXSCAN PRO · V11.2 CHATGPT PRIMARY SCANNER</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -519,8 +519,8 @@ header{background:#030914f2;border-bottom:1px solid #12344b}
 </header>
 <main class="wrap">
  <div class="top">
-  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V11.1 CHATGPT PRIMARY SCANNER</h1><p>ChatGPT primary analysis · selected pair only · once per new 1-minute candle</p></div>
-  <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN SELECTED PAIR</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
+  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V11.2 CHATGPT PRIMARY SCANNER</h1><p>ChatGPT primary analysis · all OTC pairs · once per new 1-minute candle</p></div>
+  <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN ALL OTC PAIRS</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
  <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. No cooldown between one-minute signals: evaluate each new candle immediately and confirm direction from fresh live ticks. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
  <section class="mobile-command" id="marketControls" aria-label="Market controls">
@@ -529,7 +529,7 @@ header{background:#030914f2;border-bottom:1px solid #12344b}
    
   </div>
   <div class="mobile-control-row">
-   <label class="mobile-control"><span>MARKET PAIR</span><select id="mobileAsset" aria-label="Market pair"><option value="">Select a market</option></select></label>
+   <label class="mobile-control"><span>MARKET PAIR</span><select id="mobileAsset" aria-label="Market pair"><option value="OTC:EUR/USD" selected>EUR/USD OTC</option><option value="OTC:GBP/USD">GBP/USD OTC</option><option value="OTC:USD/JPY">USD/JPY OTC</option><option value="OTC:AUD/CAD">AUD/CAD OTC</option><option value="OTC:AUD/CHF">AUD/CHF OTC</option><option value="OTC:CHF/JPY">CHF/JPY OTC</option><option value="OTC:EUR/CHF">EUR/CHF OTC</option><option value="OTC:EUR/NZD">EUR/NZD OTC</option><option value="OTC:GBP/AUD">GBP/AUD OTC</option><option value="OTC:UAH/USD">UAH/USD OTC</option><option value="OTC:USD/ARS">USD/ARS OTC</option><option value="OTC:USD/BDT">USD/BDT OTC</option><option value="OTC:USD/CLP">USD/CLP OTC</option><option value="OTC:USD/PKR">USD/PKR OTC</option><option value="OTC:USD/THB">USD/THB OTC</option><option value="OTC:KES/USD">KES/USD OTC</option><option value="OTC:USD/MYR">USD/MYR OTC</option><option value="OTC:SAR/CNY">SAR/CNY OTC</option></select></label>
    <label class="mobile-control"><span>SCAN CYCLE</span><select id="mobileInterval" aria-label="Scan cycle">
     <option value="5000">5 sec</option><option value="10000">10 sec</option><option value="15000" selected>15 sec</option><option value="30000">30 sec</option>
    </select></label>
@@ -559,7 +559,7 @@ header{background:#030914f2;border-bottom:1px solid #12344b}
     <div class="chartfoot"><span id="scanFoot">ChatGPT is primary · selected pair only · one analysis per new 1-minute candle.</span><span id="lastUpdated">—</span></div>
    </div>
    <div class="panel" id="chartPanel">
-    <div class="panel-head chart-head"><h2>LIVE OTC CANDLE CHART</h2><select id="chartAsset" style="max-width:170px;background:#091321;color:white;border:1px solid var(--line);padding:7px;border-radius:7px"></select></div>
+    <div class="panel-head chart-head"><h2>LIVE OTC CANDLE CHART</h2><select id="chartAsset" style="max-width:170px;background:#091321;color:white;border:1px solid var(--line);padding:7px;border-radius:7px"><option value="OTC:EUR/USD" selected>EUR/USD OTC</option><option value="OTC:GBP/USD">GBP/USD OTC</option><option value="OTC:USD/JPY">USD/JPY OTC</option><option value="OTC:AUD/CAD">AUD/CAD OTC</option><option value="OTC:AUD/CHF">AUD/CHF OTC</option><option value="OTC:CHF/JPY">CHF/JPY OTC</option><option value="OTC:EUR/CHF">EUR/CHF OTC</option><option value="OTC:EUR/NZD">EUR/NZD OTC</option><option value="OTC:GBP/AUD">GBP/AUD OTC</option><option value="OTC:UAH/USD">UAH/USD OTC</option><option value="OTC:USD/ARS">USD/ARS OTC</option><option value="OTC:USD/BDT">USD/BDT OTC</option><option value="OTC:USD/CLP">USD/CLP OTC</option><option value="OTC:USD/PKR">USD/PKR OTC</option><option value="OTC:USD/THB">USD/THB OTC</option><option value="OTC:KES/USD">KES/USD OTC</option><option value="OTC:USD/MYR">USD/MYR OTC</option><option value="OTC:SAR/CNY">SAR/CNY OTC</option></select></div>
     <div class="tf-row" role="group" aria-label="Chart timeframe">
      <button type="button" class="tf-btn active" data-tf="1">1 MIN</button>
      <button type="button" class="tf-btn" data-tf="5">5 MIN</button>
@@ -1501,7 +1501,7 @@ function addSignal(r){
  if(busy)return;if(!( $("mobileAsset")?.value||selectedChart)){alert("Select one market pair first.");return}
  busy=true;status("SCANNING",true);$("scanNow").disabled=true;$("progressText").textContent="Starting scan…";$("scanProgress").style.width="0%";
  const selectedId=$("mobileAsset")?.value||selectedChart;
-  let ids=[selectedId].filter(id=>ASSETS.some(a=>a.id===id)),done=0,errors=0,errorDetails=[];
+  let ids=ASSETS.filter(a=>a.kind==="otc").map(a=>a.id),done=0,errors=0,errorDetails=[];
  for(const id of ids){
   let a=ASSETS.find(x=>x.id===id);
   try{
@@ -1525,7 +1525,7 @@ function addSignal(r){
     results[id]={id,name:a.name,price:NaN,change:null,candles:[],analysis:{direction:"WAIT",score:0,reason:e.message,fresh:false,age:Infinity},lastError:e.message};
    }
   }
-  done++;$("scanProgress").style.width=(done/ids.length*100)+"%";$("progressText").textContent=`Scanned selected pair ${done} of ${ids.length} · ${errors} errors`;
+  done++;$("scanProgress").style.width=(done/ids.length*100)+"%";$("progressText").textContent=`Scanned all OTC pairs ${done} of ${ids.length} · ${errors} errors`;
   renderScanner();
   // Avoid bursting the provider and stay within low-tier rate limits.
   if(done<ids.length)await new Promise(resolve=>setTimeout(resolve,900));
@@ -1533,7 +1533,7 @@ function addSignal(r){
  latestScan=Date.now();renderScanner();try{drawChart()}catch(chartError){console.error("Chart render:",chartError)}updateVisualAgreement();settleExpiredTrades();$("scanNow").disabled=false;busy=false;
  let fresh=ids.filter(id=>results[id]?.analysis.fresh).length;status(fresh?"SCAN COMPLETE · DATA RECEIVED":"SCAN COMPLETE · CHECK DATA",fresh>0);
  $("connectionStatus").textContent=`Regular feed: ${apiKey?"API key saved; per-symbol requests":"not configured"}\nOTC history: ${errorDetails.length?"ERROR · "+errorDetails.join(" | "):"last request completed"}\nOTC live stream: ${liveStreamState}\nLast scan: ${clock()}`;
- $("progressText").textContent=`Complete · selected pair ${fresh?"fresh":"not fresh"} · ${errors} errors`;saveState();maybeAutoChatGPT();
+ $("progressText").textContent=`Complete · ${fresh} fresh OTC pairs · ${errors} errors`;saveState();maybeAutoChatGPT();
 }
 function openPaperTrade(r,side,isAutomatic=true,signalKey=""){
  if(!r||!r.analysis?.fresh||!hasCurrentFeed(r.id,r.candles?.at(-1))||!["CALL","PUT"].includes(side)){
@@ -1605,7 +1605,7 @@ $("mobileInterval").addEventListener("change",()=>{$("interval").value=$("mobile
 function syncMobileControls(){if($("mobileInterval"))$("mobileInterval").value=$("interval").value||"15000";updateChartOptions()}
 window.addEventListener("resize",()=>{setMobileScreen(activeMobileScreen);drawChart()});
 $("scanNow").onclick=()=>{scan().catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="Scan failed: "+(err?.message||"unknown error")})};
-$("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN SELECTED PAIR";status("AUTO SCAN SELECTED PAIRNER ACTIVE",true);scan();cycle=setInterval(()=>{if(!busy)scan()},Math.max(5000,+$("interval").value))};
+$("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN ALL OTC PAIRS";status("AUTO SCAN ALL OTC PAIRSNER ACTIVE",true);scan();cycle=setInterval(()=>{if(!busy)scan()},Math.max(5000,+$("interval").value))};
 $("pauseBtn").onclick=()=>{running=false;clearInterval(cycle);$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED")};
 $("saveKey").type="button";
 $("saveKey").addEventListener("click",async(event)=>{
@@ -1649,7 +1649,7 @@ $("threshold").onchange=()=>{$("thresholdText").textContent=$("threshold").value
 $("interval").onchange=()=>{if(running){clearInterval(cycle);cycle=setInterval(()=>{if(!busy)scan()},Math.max(5000,+$("interval").value||15000))}$("cycleText").textContent=((+$("interval").value||15000)/1000)+" sec";saveState()};
 ["stake","payout"].forEach(id=>$(id).addEventListener("change",saveState));
 // Independent ChatGPT analyst. The API key remains server-side in Netlify.
-const chatgptState={busy:false,lastAutoKey:"",lastResult:null,analyzedKeys:new Set()};
+const chatgptState={busy:false,queueBusy:false,lastAutoKey:"",lastResult:null,analyzedKeys:new Set()};
 const AI_DAILY_LIMIT=100;
 function aiUsageKey(){return "apex_chatgpt_usage_"+new Date().toISOString().slice(0,10)}
 function aiGetUsage(){try{return Math.max(0,Number(localStorage.getItem(aiUsageKey())||0))}catch(e){return 0}}
@@ -1671,7 +1671,7 @@ async function runChatGPTAnalysis(r,source="manual"){
   let data={};try{data=await response.json()}catch(e){}
   if(!response.ok)throw new Error(data.error||`AI function returned HTTP ${response.status}`);
   const direction=aiDirectionLabel(data.direction);if(!["BUY","SELL","WAIT"].includes(direction))throw new Error("AI response did not contain a valid direction.");
-  chatgptState.lastResult={...data,direction,market:r.name,apexDirection:aiDirectionLabel(r.analysis?.direction),at:Date.now()};
+  chatgptState.lastResult={...data,direction,market:r.name,apexDirection:aiDirectionLabel(r.analysis?.direction),at:Date.now()};chatgptState.analyzedKeys.add(candleKey);
   aiPaintDirection($("apexAiDirection"),chatgptState.lastResult.apexDirection);$("apexAiScore").textContent=`Score ${Number(r.analysis?.score||0)} / 100`;
   aiPaintDirection($("chatgptDirection"),direction);$("chatgptStrength").textContent=`${String(data.strength||"LOW").toUpperCase()} strength · suggested hold ${data.holdMinutes||15} min`;
   const verdict=aiCompare(chatgptState.lastResult.apexDirection,direction);$("chatgptVerdict").className="ai-verdict "+verdict.kind;$("chatgptVerdict").textContent=verdict.label;
@@ -1680,9 +1680,26 @@ async function runChatGPTAnalysis(r,source="manual"){
  }catch(e){$("chatgptStatus").textContent="CONNECTION ERROR";$("chatgptVerdict").className="ai-verdict wait";$("chatgptVerdict").textContent="CHATGPT ANALYSIS UNAVAILABLE";$("chatgptReason").textContent=e?.message||"Could not reach the Netlify OpenAI function."}
  finally{chatgptState.busy=false;$("chatgptAnalyze").disabled=false}
 }
-$("chatgptAnalyze").addEventListener("click",()=>{const id=$("mobileAsset")?.value||selectedChart;const r=results[id]||results[selectedChart];runChatGPTAnalysis(r,"manual")});
+$("chatgptAnalyze").textContent="ANALYZE ALL OTC PAIRS";
+$("chatgptAnalyze").addEventListener("click",()=>analyzeAllPairsWithChatGPT("manual"));
 aiSetUsage(aiGetUsage());
-function maybeAutoChatGPT(){if(!$("chatgptAuto")?.checked||chatgptState.busy)return;const id=$("mobileAsset")?.value||selectedChart;const r=results[id];if(!r||!r.candles?.length||r.candles.length<35||!r.analysis?.fresh)return;const candle=r.candles.at(-1);const k=`${r.id}|${Math.floor(Number(candle.timeMs||0)/60000)}`;if(!chatgptState.analyzedKeys.has(k))runChatGPTAnalysis(r,"auto")}
+async function analyzeAllPairsWithChatGPT(source="auto"){
+ if(chatgptState.busy||chatgptState.queueBusy)return;
+ chatgptState.queueBusy=true;
+ const pairs=ASSETS.filter(a=>a.kind==="otc").map(a=>results[a.id]).filter(r=>r&&Array.isArray(r.candles)&&r.candles.length>=35&&r.analysis?.fresh);
+ if(!pairs.length){$("chatgptStatus").textContent="WAITING FOR MARKET DATA";$("chatgptReason").textContent="Run the full OTC scan first. ChatGPT needs fresh candle history for each pair.";chatgptState.queueBusy=false;return}
+ let completed=0,skipped=0;
+ for(const r of pairs){
+  const candle=r.candles.at(-1),key=`${r.id}|${Math.floor(Number(candle.timeMs||0)/60000)}`;
+  if(chatgptState.analyzedKeys.has(key)){skipped++;continue;}
+  await runChatGPTAnalysis(r,source);
+  if(chatgptState.analyzedKeys.has(key))completed++;
+  if(chatgptState.busy)break;
+ }
+ $("chatgptReason").textContent=`Full-market review finished · ${completed} analyzed · ${skipped} already checked · ${pairs.length} fresh pairs available. The panel shows the latest pair reviewed.`;
+ chatgptState.queueBusy=false;
+}
+function maybeAutoChatGPT(){if(!$("chatgptAuto")?.checked||chatgptState.busy||chatgptState.queueBusy)return;analyzeAllPairsWithChatGPT("auto")}
 
 
 (function buildReferenceDashboard(){
@@ -1710,7 +1727,7 @@ function maybeAutoChatGPT(){if(!$("chatgptAuto")?.checked||chatgptState.busy)ret
  }
  addEventListener("resize",responsive);responsive();
  const apexHead=get("signalPanel")?.querySelector(".panel-head h2");if(apexHead)apexHead.textContent="APEX TECHNICAL · CONFIRMATION";
- const head=document.querySelector(".top h1");if(head)head.textContent="APEXSCAN PRO · V11.1 CHATGPT PRIMARY SCANNER";
+ const head=document.querySelector(".top h1");if(head)head.textContent="APEXSCAN PRO · V11.2 CHATGPT PRIMARY SCANNER";
  const sub=document.querySelector(".top p");if(sub)sub.textContent="ChatGPT decides · selected OTC pair only · one analysis per new 1-minute candle";
 })();
 
