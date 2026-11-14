@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="9.0-dual-horizon-ai-fast-hold">
-<title>APEXSCAN PRO · V9 DUAL-HORIZON AI</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="10.0-dual-horizon-fast-hold-no-copilot">
+<title>APEXSCAN PRO · V10 OTC COMMAND CENTER</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -369,6 +369,47 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
  .paper-live-board .paper-position{font-size:10px}
 }
 
+
+/* V10 · Screenshot-inspired signal-first command center */
+:root{--v10-red:#f05f79;--v10-blue:#55a9ff}
+.main-grid{display:flex!important;flex-direction:column!important;gap:10px!important;align-items:stretch!important}
+.main-grid>section,.main-grid>aside{display:contents!important}
+#signalPanel{order:0!important;width:100%;margin:0!important}
+#chartPanel{order:1!important;width:100%;margin:0!important}
+#scannerPanel{order:2!important;width:100%;margin:0!important}
+#signalHistoryPanel{order:3!important;width:100%}
+#journalPanel{order:4!important;width:100%}
+#dataPanel{order:5!important;width:100%}
+#watchPanel{order:6!important;width:100%}
+#enginePanel{order:7!important;width:100%}
+.kpis{display:none!important}
+#signalPanel{padding:10px!important;border:0!important;background:transparent!important;box-shadow:none!important}
+#signalPanel>.panel-head{margin:0 0 7px;padding:0 3px 7px!important}
+#signalPanel .signal-card{min-height:0!important;padding:15px!important;border-radius:18px!important;border:1px solid #ed6c83!important;background:linear-gradient(150deg,#9d3d55 0%,#5b293e 40%,#142235 100%)!important;box-shadow:0 10px 30px #0005,inset 0 1px #ffffff20!important}
+#signalPanel .signal-top{flex-direction:row!important;align-items:center!important;justify-content:space-between!important}
+#signalPanel .signal-dir{font-size:clamp(35px,7vw,58px)!important;line-height:1!important;letter-spacing:-.04em!important;color:#fff!important;text-align:left!important}
+#signalPanel .signal-card.call .signal-dir{color:#9fffe0!important}
+#signalPanel .signal-card.put .signal-dir{color:#ffd1d8!important}
+#signalPanel .signal-stats div{background:#071421aa!important;border:1px solid #ffffff20!important}
+#signalPanel #signalCallout{background:#102b3caa!important;border-color:#71b7d8!important;color:#f5fbff!important}
+#signalPanel .indicator-chips{justify-content:flex-start!important}
+#chartPanel{padding:12px!important}
+#chartPanel .chartbox{height:min(54vh,560px)!important;min-height:300px!important}
+#scannerPanel{padding:12px!important}
+#scannerPanel .scanner-strip{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+#scannerPanel .scanner-strip .mini:nth-child(2){display:none!important}
+#scannerPanel .scan-table-wrap{max-height:260px!important}
+#scannerPanel table{min-width:0!important;width:100%!important}
+#scannerPanel th:nth-child(4),#scannerPanel td:nth-child(4),#scannerPanel th:nth-child(5),#scannerPanel td:nth-child(5),#scannerPanel th:last-child,#scannerPanel td:last-child{display:none!important}
+#scannerPanel th,#scannerPanel td{padding:10px 7px!important}
+@media(max-width:700px){
+ .main-grid{display:flex!important;flex-direction:column!important}
+ #signalPanel .signal-dir{font-size:42px!important}
+ #signalPanel .signal-card{padding:13px 11px!important}
+ #chartPanel .chartbox{height:390px!important;min-height:320px!important}
+ #scannerPanel .scan-table-wrap{max-height:235px!important}
+}
+
 </style>
 </head>
 <body>
@@ -378,7 +419,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 </header>
 <main class="wrap">
  <div class="top">
-  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V9 DUAL-HORIZON AI SCANNER</h1><p>OTCharts live OTC feed · BUY / SELL signals · scan manually or automatically</p></div>
+  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V10 OTC COMMAND CENTER</h1><p>OTCharts live OTC feed · BUY / SELL signals · scan manually or automatically</p></div>
   <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
  <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Recent live ticks keep analysis current even while the current 30-second candle is still forming. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
@@ -1033,6 +1074,7 @@ function candleDurationSuggestion(r){
  return `HOLD AI · ${formatHold(candleDurationSeconds(r))}`;
 }
 
+
 function updateTop(rows){
  const selectedId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
  const r=rows.find(item=>item.id===selectedId)||results[selectedId]||null;
@@ -1065,7 +1107,7 @@ function updateTop(rows){
     `SCANNING · ${r.name} · LOOKING FOR BUY / SELL MOMENTUM`;
   }
  }
- $("topDirection").textContent=candidate?(dir==="CALL"?"BUY":"SELL"):"SCANNING";
+ $("topDirection").textContent=candidate?(dir==="CALL"?"LONG":"SHORT"):"SCANNING";
  $("topDirection").style.color=candidate?(dir==="CALL"?"var(--green)":"var(--red)"):"";
  $("topScore").textContent=candidate?(s.signalLevel==="EARLY"?"EARLY BIAS · ":"CONFIRMED · ")+s.score+" / 100":
   !r?"NO PAIR":!r.candles?.length?"NO DATA":`BUILDING ANALYSIS · ${s.score??0}/100`;
