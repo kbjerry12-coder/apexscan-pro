@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="10.6-no-macd-10-second-confirmation-lock">
-<title>APEXSCAN PRO · V10.6 CANDLE-CONFIRMATION COMMAND CENTER</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="10.8-no-macd-10-second-confirmation-lock">
+<title>APEXSCAN PRO · V10.8 UT BOT INTEGRATED COMMAND CENTER</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -426,10 +426,10 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 </header>
 <main class="wrap">
  <div class="top">
-  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V10.6 CANDLE-CONFIRMATION COMMAND CENTER</h1><p>OTCharts live feed · 1-minute candle confirmation · optional visual cross-check</p></div>
+  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V10.8 UT BOT INTEGRATED COMMAND CENTER</h1><p>OTCharts live feed · 1-minute candle confirmation · optional visual cross-check</p></div>
   <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
- <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. New one-minute candle: wait 10 seconds (until 00:50 remains), then confirm direction from fresh live ticks. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
+ <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. No cooldown between one-minute signals: evaluate each new candle immediately and confirm direction from fresh live ticks. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
  <section class="mobile-command" id="marketControls" aria-label="Market controls">
   <div class="market-tabs" role="group" aria-label="Market category">
    <button type="button" class="market-tab active" data-market-category="currencies">Currencies</button>
@@ -487,7 +487,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
       <div class="float-sub" id="floatRecord">0 settled · 0 pending</div>
      </div>
     </div>
-    <div class="chartfoot"><span id="chartCaption">Waiting for candles</span><span id="chartMeta">EMA 9 · EMA 21 · one-minute candles</span></div>
+    <div class="chartfoot"><span id="chartCaption">Waiting for candles</span><span id="chartMeta">EMA 9 · EMA 21 · UT Bot ATR 10 · one-minute candles</span></div>
     <div class="visual-scan-box" id="visualScanBox">
      <div class="visual-head"><div><b>DUAL-SOURCE VISUAL SCANNER</b><small>OTCharts feed + user-authorized screen capture</small></div><span class="visual-pill" id="visualState">SCREEN NOT SHARED</span></div>
      <p class="visual-help">On a supported desktop browser, share the Pocket Option chart window or browser tab (not your whole desktop if possible). A local pixel check compares visible green/red candle pressure with the OTCharts signal. Screen sharing requires your permission and can be stopped at any time.</p>
@@ -516,7 +516,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
    <div class="panel" id="signalPanel">
     <div class="panel-head"><h2>LIVE OTC SIGNAL</h2><div class="signal-tools"><span class="pill">BUY / SELL ONLY</span><button type="button" id="alertToggle" class="small" aria-pressed="false">🔔 Enable callouts</button></div></div>
     <div id="signalCallout" class="signal-callout" role="status" aria-live="assertive">Select an OTC pair and scan to generate a directional BUY or SELL bias</div>
-    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Signal check opens at 00:50 remaining · candle direction + trend confirmation</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>EMA 9 / 21</span><span>RSI 14</span><span>ADX / DMI</span><span>Candle pressure</span><span>Price action</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · New qualified signals open simulated trades automatically</span></div>
+    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Next signal evaluates immediately · 3 fresh live ticks confirm direction</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>EMA 9 / 21</span><span>RSI 14</span><span>ADX / DMI</span><span>Candle pressure</span><span>Price action</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · New qualified signals open simulated trades automatically</span></div>
      <div id="paperLiveBoard" class="paper-live-board" aria-live="polite"><b>LIVE PAPER POSITIONS</b><span>No open paper trades yet · waiting for a qualified signal.</span></div>
      <div class="countdown-grid">
       <div><small>SIGNAL VALID UNTIL 1M CLOSE</small><b id="signalCountdown">--:--</b></div>
@@ -702,6 +702,34 @@ function calculateFullIndicatorSet(candles){
  }
  const vortexTR=Math.max(trSeries.slice(-14).reduce((a,b)=>a+b,0),1e-12);
  const vortexPlus=posDM.slice(-14).reduce((a,b)=>a+b,0)/vortexTR,vortexMinus=negDM.slice(-14).reduce((a,b)=>a+b,0)/vortexTR;
+
+ // UT Bot Alerts integration (Pine v4 defaults: key=1, ATR period=10, regular candles).
+ // EMA(src, 1) equals src, so the original crossover tests reduce to close/stop crossings.
+ const utPeriod=10,utKey=1,utStops=[],utAtrValues=[];
+ let utAtr=0,utTrend="NEUTRAL",utBuy=false,utSell=false;
+ for(let i=0;i<n;i++){
+  const prevCloseValue=i?close[i-1]:close[i];
+  const trueRange=i?Math.max(high[i]-low[i],Math.abs(high[i]-prevCloseValue),Math.abs(low[i]-prevCloseValue)):high[i]-low[i];
+  utAtrValues.push(trueRange);
+  if(i===utPeriod-1)utAtr=utAtrValues.slice(0,utPeriod).reduce((a,b)=>a+b,0)/utPeriod;
+  else if(i>=utPeriod)utAtr=((utAtr*(utPeriod-1))+trueRange)/utPeriod;
+  const priorStop=i?utStops[i-1]:0;
+  const loss=utKey*utAtr;
+  let stop;
+  if(i<utPeriod-1) stop=close[i]+loss;
+  else if(close[i]>priorStop&&prevCloseValue>priorStop)stop=Math.max(priorStop,close[i]-loss);
+  else if(close[i]<priorStop&&prevCloseValue<priorStop)stop=Math.min(priorStop,close[i]+loss);
+  else if(close[i]>priorStop)stop=close[i]-loss;
+  else stop=close[i]+loss;
+  utStops.push(stop);
+  if(i===n-1&&i>0){
+   const priorSrc=close[i-1],priorTrail=utStops[i-1];
+   utBuy=priorSrc<=priorTrail&&close[i]>stop;
+   utSell=priorSrc>=priorTrail&&close[i]<stop;
+   utTrend=close[i]>stop?"CALL":close[i]<stop?"PUT":"NEUTRAL";
+  }
+ }
+ const utStop=utStops.at(-1);
  const bull=last.close>last.open,bear=last.close<last.open;
  const indicators=[
   ["ADX",adx>=25?(plusDI>minusDI?"Strong bull trend":"Strong bear trend"):adx>=16?(plusDI>minusDI?"Moderate bull trend":"Moderate bear trend"):"Weak / ranging"],
@@ -723,6 +751,7 @@ function calculateFullIndicatorSet(candles){
   ["Rate of Change",roc.toFixed(3)+"%"],
   ["Schaff Trend Cycle","Trend-cycle proxy "+(emaLast(close,10)>emaLast(close,20)?"up":"down")],
   ["Stochastic",stoch.toFixed(1)],
+  ["UT Bot Alerts",utBuy?"BUY trigger":utSell?"SELL trigger":utTrend==="CALL"?"Bullish above ATR stop":utTrend==="PUT"?"Bearish below ATR stop":"Neutral"],
   ["SuperTrend",last.close>emaLast(close,10)+2*atr?"Bullish":last.close<emaLast(close,10)-2*atr?"Bearish":"Neutral"],
   ["Vortex",vortexPlus>vortexMinus?"VI+ leading":"VI− leading"],
   ["Williams %R",williams.toFixed(1)],
@@ -737,7 +766,7 @@ function calculateFullIndicatorSet(candles){
   ["ZigZag",Math.abs(last.close-prevClose)>atr?"Swing extension":"No confirmed swing extension"],
   ["Volume","Unavailable · provider supplies OHLC only"]
  ];
- return {indicators,plusDI,minusDI,adx,atr,upper,lower,cci,williams,stoch,ao,roc};
+ return {indicators,plusDI,minusDI,adx,atr,upper,lower,cci,williams,stoch,ao,roc,utTrend,utBuy,utSell,utStop,utAtr};
 }
 
 function analyze(candles,asset){
@@ -761,12 +790,13 @@ function analyze(candles,asset){
  const candleBull=last.close>last.open&&bodyRatio>=.45&&lowerWick>=upperWick*.8;
  const candleBear=last.close<last.open&&bodyRatio>=.45&&upperWick>=lowerWick*.8;
  add(candleBull,candleBear,14,"Candle pressure");
+ add(fullSet.utTrend==="CALL",fullSet.utTrend==="PUT",12,"UT Bot Alerts ATR trailing-stop direction");
  const stretched=(rv>78&&trendUp)||(rv<22&&trendDown);if(stretched){bull*=.82;bear*=.82;reasons.push("momentum extended")}
  const volOK=atrPct>0&&atrPct<1.8;if(!volOK)reasons.push(atrPct>=1.8?"volatility spike":"very low volatility");
  const tick=liveTicks[asset.id],tickAge=tick?Math.max(0,(Date.now()-Number(tick.receivedAt||0))/1000):Infinity;
  const candleAge=last.timeMs?Math.max(0,(Date.now()-last.timeMs)/1000):Infinity;
  const fresh=tickAge<=20||candleAge<=90,age=Math.min(tickAge,candleAge);
- const score=Math.round(Math.max(bull,bear)),bias=bull-bear;
+ const score=Math.min(100,Math.round(Math.max(bull,bear))),bias=bull-bear;
  const candleSide=last.close>last.open?"CALL":last.close<last.open?"PUT":"WAIT";
  // A directional signal needs agreement between indicator confluence and the live candle.
  // A green/red candle by itself is never enough to produce a BUY/SELL callout.
@@ -782,7 +812,7 @@ function analyze(candles,asset){
  if(adx<16)reasons.push("ADX weak · ranging conditions · wait for trend strength");
  if(!fresh)reasons.push("feed is not current enough for a new signal");
  const nextBias=direction,nextStrength=Math.min(95,Math.round(50+Math.abs(bias)*.45));
- const breakdown={...Object.fromEntries(fullSet.indicators.map(([k,v])=>[k,v])),trend:trendUp?"Bullish aligned":trendDown?"Bearish aligned":"Mixed / transitional",adx:adx.toFixed(1),plusDI:plusDI.toFixed(1),minusDI:minusDI.toFixed(1),momentum:rv.toFixed(1)+" RSI · "+(momentum>0?"rising":"falling"),volatility:atrPct.toFixed(3)+"% ATR / "+(volOK?"normal":"high or quiet"),price:Math.round(bodyRatio*100)+"% candle body",structure:last.close>swingHigh?"Upside break":last.close<swingLow?"Downside break":"Inside recent range",feed:tickAge<=20?Math.round(tickAge)+"s · live tick":fresh?Math.round(candleAge)+"s · candle":"no recent data"};
+ const breakdown={...Object.fromEntries(fullSet.indicators.map(([k,v])=>[k,v])), "UT Bot ATR stop":Number.isFinite(fullSet.utStop)?fullSet.utStop.toPrecision(7):"—",trend:trendUp?"Bullish aligned":trendDown?"Bearish aligned":"Mixed / transitional",adx:adx.toFixed(1),plusDI:plusDI.toFixed(1),minusDI:minusDI.toFixed(1),momentum:rv.toFixed(1)+" RSI · "+(momentum>0?"rising":"falling"),volatility:atrPct.toFixed(3)+"% ATR / "+(volOK?"normal":"high or quiet"),price:Math.round(bodyRatio*100)+"% candle body",structure:last.close>swingHigh?"Upside break":last.close<swingLow?"Downside break":"Inside recent range",feed:tickAge<=20?Math.round(tickAge)+"s · live tick":fresh?Math.round(candleAge)+"s · candle":"no recent data"};
  return {direction,signalLevel,score,reason:reasons.join(" · "),fresh,age,rsi:rv,trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry:last.close,quality:bodyRatio,candleTime:last.time,candleTimeMs:Number(last.timeMs||0),atr,atrPct,adx,plusDI,minusDI,bullScore:Math.round(bull),bearScore:Math.round(bear),nextBias,nextStrength,breakdown};
 }
 async function regularData(symbol){
@@ -1097,11 +1127,10 @@ function lockedCandleDirection(r){
   }else if(priceSide===state.direction){state.oppositeTicks=0;if(tickStamp)state.lastTickStamp=tickStamp;}
   return state.direction;
  }
- // Wait until the new one-minute candle has 50 seconds remaining (10 seconds elapsed).
- // Then require 3 fresh,
- // consecutive stream updates in the same direction over at least 2 seconds.
- const elapsed=now-candleStart,proposed=r.analysis?.direction||"WAIT";
- if(elapsed<10000||!tickStamp||now-tickStamp>10000||!['CALL','PUT'].includes(proposed)||proposed!==priceSide){
+ // No post-expiry or candle-start cooldown: evaluate the new candle immediately.
+ // Require only 3 fresh consecutive stream updates in the same direction over at least 2 seconds.
+ const proposed=r.analysis?.direction||"WAIT";
+ if(!tickStamp||now-tickStamp>10000||!['CALL','PUT'].includes(proposed)||proposed!==priceSide){
   if(tickStamp&&tickStamp!==state.lastTickStamp){state.candidate=null;state.candidateTicks=0;state.candidateSince=0;state.lastTickStamp=tickStamp;}
   return "WAIT";
  }
@@ -1206,7 +1235,7 @@ function updateTop(rows){
  $("topEntry").textContent=Number.isFinite(entry)&&entry>0?fmt(entry):"—";
  $("topRsi").textContent=Number.isFinite(Number(s?.rsi))?Number(s.rsi).toFixed(1):"—";
  $("indicatorChips").innerHTML=s&&r?.candles?.length>=35
-  ?`<span>EMA trend · ${s.trend||"—"}</span><span>RSI 14 · ${Number.isFinite(s.rsi)?s.rsi.toFixed(1):"—"}</span><span>ADX / DMI · ${Number.isFinite(s.adx)?s.adx.toFixed(1):"—"}</span><span>Candle quality · ${Math.round((s.quality||0)*100)}%</span><span>Quote · ${fresh?"Live":"Delayed"}</span>`
+  ?`<span>EMA trend · ${s.trend||"—"}</span><span>RSI 14 · ${Number.isFinite(s.rsi)?s.rsi.toFixed(1):"—"}</span><span>ADX / DMI · ${Number.isFinite(s.adx)?s.adx.toFixed(1):"—"}</span><span>UT Bot · ${s.breakdown?.["UT Bot Alerts"]||"—"}</span><span>Candle quality · ${Math.round((s.quality||0)*100)}%</span><span>Quote · ${fresh?"Live":"Delayed"}</span>`
   :'<span>EMA 9 / 21 · waiting</span><span>RSI 14 · waiting</span><span>ADX / DMI · waiting</span><span>Candle pressure · waiting</span><span>Feed freshness · waiting</span>';
  if(s?.breakdown){
   $("analysisBreakdown").innerHTML=Object.entries(s.breakdown).map(([k,v])=>`<div><span>${({trend:"Trend structure",momentum:"Momentum",volatility:"Volatility",price:"Price action",structure:"Market structure",feed:"Feed integrity"})[k]||k}</span><b>${v||"—"}</b></div>`).join("");
