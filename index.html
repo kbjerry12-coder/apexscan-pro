@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="11.2-dual-ai-reference-dashboard">
-<title>APEXSCAN PRO · V11.2 DUAL AI TRADING TERMINAL</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="11.1-exact-reference-dashboard">
+<title>APEXSCAN PRO · V11.1 AI TRADING TERMINAL</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -508,24 +508,6 @@ header .brand{font-size:19px;letter-spacing:.07em;white-space:nowrap}header .bra
 .footer{margin-top:12px}
 @media(max-width:1100px){.apex-layout{grid-template-columns:minmax(240px,.9fr) minmax(310px,1.1fr)}.apex-right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;align-items:start}.apex-right #aiInsightPanel{grid-column:1/-1}}
 @media(max-width:760px){header{padding:9px 11px;flex-wrap:wrap}header .brand{font-size:15px}#apexTopNav{order:3;flex-basis:100%;justify-content:space-between;overflow:auto}#apexTopNav button{font-size:10px;padding:7px 8px}.headright{margin-left:auto}.wrap{padding:8px 9px 20px}.apex-layout{display:flex;flex-direction:column;gap:9px;margin:0 0 10px}.apex-col{width:100%;gap:9px}.apex-left{order:0}.apex-center{order:1}.apex-right{order:2;display:flex}#marketControls{padding:10px!important}#marketControls .market-tabs{grid-template-columns:1fr 1fr}#signalPanel{width:100%}#signalPanel .signal-dir{width:100px;height:100px;font-size:27px!important}#aiInsightPanel{width:100%}#apexBelow{display:flex;flex-direction:column;gap:9px}#apexBelow>.panel{width:100%}#chartPanel .chartbox{height:350px!important;min-height:300px!important}#chartPanel .performance-float{display:grid;grid-template-columns:1fr 1fr;text-align:center}#scannerPanel .scan-table-wrap{max-height:280px!important}#scannerPanel table{min-width:540px!important}#dataPanel,#enginePanel,#watchPanel{width:100%}}
-
-
-/* V11.2 · independent OpenAI second opinion */
-#openAiAnalystPanel{background:linear-gradient(160deg,#101a2c,#090f1b)!important;border:1px solid #4a3a78!important;border-radius:17px!important;padding:14px!important;box-shadow:0 12px 32px #0007!important}
-.openai-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
-.openai-head b{font-size:14px;color:#f4f0ff}
-.openai-mark{font-size:9px;padding:4px 8px;border-radius:20px;background:#2b1b4b;color:#d7c4ff;border:1px solid #6844a4}
-.openai-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:9px 0}
-.openai-controls button{font-size:10px;padding:9px 11px}
-.openai-auto{display:flex;align-items:center;gap:7px;font-size:10px;color:#b6c4d9}
-.openai-auto input{accent-color:#a77bff;width:17px;height:17px}
-.openai-status{font-size:10px;color:#9aacc6;line-height:1.5;margin:8px 0}
-.openai-result{padding:11px;border:1px solid #35415a;border-radius:11px;background:#080f1b;margin-top:9px}
-.openai-result .oa-direction{font-size:25px;font-weight:1000;letter-spacing:.04em}
-.openai-result.buy{border-color:#167b5b}.openai-result.sell{border-color:#9a3e56}.openai-result.wait{border-color:#475a77}
-.openai-comparison{font-size:11px;font-weight:900;padding:8px;border-radius:8px;background:#151c2b;margin-top:8px}
-.openai-reason{font-size:10px;color:#b4c2d6;line-height:1.5;margin-top:7px}
-.openai-meta{font-size:9px;color:#8195b3;margin-top:7px}
 
 </style>
 </head>
@@ -1680,17 +1662,11 @@ loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").t
  <div class="ai-indicator"><small>ADX / DMI</small><b id="aiAdx" class="neutral">—</b></div>
  <div class="ai-indicator"><small>MACD</small><b id="aiMacd" class="neutral">Waiting</b></div></div>
  <div class="tiny" style="margin-top:10px">Indicator readings are calculated from available OHLC candles. Analysis score is not a win-rate forecast.</div>`;
- const openai=document.createElement('section');openai.className='panel';openai.id='openAiAnalystPanel';
- openai.innerHTML=`<div class="openai-head"><b>Independent AI Analyst</b><span class="openai-mark" id="openAiBadge">API READY</span></div>
- <div class="tiny">A separate OpenAI model reviews recent OHLC candles and indicators. It does not copy APEX's signal.</div>
- <div class="openai-controls"><button type="button" class="primary" id="openAiAnalyze">Analyze selected pair</button><label class="openai-auto"><input type="checkbox" id="openAiAuto" checked> Auto-analyze qualified setups (70+)</label></div>
- <div class="openai-status" id="openAiStatus">Waiting for market data. Automatic reviews run once per pair per candle when APEX score is at least 70.</div>
- <div class="openai-result wait" id="openAiResult"><div class="tiny">OPENAI SECOND OPINION</div><div class="oa-direction" id="openAiDirection">WAITING</div><div class="openai-comparison" id="openAiComparison">Not compared yet</div><div class="openai-reason" id="openAiReason">Run a manual analysis or wait for an eligible automatic review.</div><div class="openai-meta" id="openAiMeta">AI analysis is advisory and may be wrong.</div></div>`;
  const upload=document.createElement('section');upload.className='panel';upload.id='apexUploadPanel';
  upload.innerHTML='<div class="ai-upload"><label for="aiChartUpload">Upload &amp; Analyze Chart</label><input id="aiChartUpload" type="file" accept="image/png,image/jpeg,image/webp"><img id="aiChartPreview" alt="Uploaded chart preview"><p>Upload a chart screenshot for visual reference. The preview does not independently interpret or predict the market.</p></div>';
  left.append($('marketControls'),marketList,trend);
  center.append($('signalPanel'),upload);
- right.append(ai,openai);
+ right.append(ai);
  const top=$('.notice');
  if(top)top.insertAdjacentElement('afterend',layout);else main.insertAdjacentElement('beforebegin',layout);
  const below=document.createElement('div');below.className='apex-below';below.id='apexBelow';layout.insertAdjacentElement('afterend',below);
@@ -1710,64 +1686,6 @@ loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").t
  const updateAI=()=>{const r=results[selectedChart]||latestTop,s=r?.analysis;const score=Number.isFinite(s?.score)?Math.max(0,Math.min(100,s.score)):null;const dir=s?.direction==='CALL'?'BUY':s?.direction==='PUT'?'SELL':'SCANNING';$('aiDirection').textContent=dir;$('aiDirection').style.color=dir==='BUY'?'#39ed82':dir==='SELL'?'#ff8298':'#d4d8e5';$('aiScore').textContent=score===null?'Analysis score building · not a win probability':`Analysis score · ${score}/100 · not a win probability`;$('aiMeter').style.width=(score??0)+'%';$('aiVolatility').textContent=Number.isFinite(s?.atrPct)?s.atrPct.toFixed(3)+'% ATR':'—';$('aiEma').textContent=s?.trend==='UP'?'BULLISH':s?.trend==='DOWN'?'BEARISH':s?.trend||'Waiting';$('aiRsi').textContent=Number.isFinite(s?.rsi)?s.rsi.toFixed(1):'—';$('aiAdx').textContent=Number.isFinite(s?.adx)?s.adx.toFixed(1):'—';let macd='Waiting';if(r?.candles?.length>=35){const c=r.candles.map(x=>+x.close),m=c.map((_,i)=>ema(c.slice(0,i+1),12)-ema(c.slice(0,i+1),26)).filter(Number.isFinite),sig=ema(m,9);macd=m.length?((m.at(-1)>=sig)?'ABOVE SIGNAL':'BELOW SIGNAL'):'Waiting';}$('aiMacd').textContent=macd;$('aiMacd').className=/ABOVE/.test(macd)?'':'down';$('aiLiveBadge').textContent=score===null?'BUILDING ANALYSIS':score>=70?'70+ SCORE':'LIVE ANALYSIS';['aiEma','aiRsi','aiAdx'].forEach(id=>{const el=$(id);el.classList.remove('neutral','down');if(/BEAR|DOWN|SELL/i.test(el.textContent))el.classList.add('down');else if(el.textContent==='—'||/WAIT/i.test(el.textContent))el.classList.add('neutral')});};
  const observer=new MutationObserver(()=>{renderMarketList();updateTrend();updateAI()});['topDirection','topScore','topRsi','indicatorChips','scannerBody'].forEach(id=>{if($(id))observer.observe($(id),{subtree:true,childList:true,characterData:true})});
  $('aiChartUpload').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;if(!/^image\/(png|jpeg|webp)$/.test(file.type)){alert('Choose a PNG, JPG, or WEBP chart image.');e.target.value='';return;}const reader=new FileReader();reader.onload=()=>{$('aiChartPreview').src=reader.result;$('aiChartPreview').style.display='block'};reader.readAsDataURL(file);});
-
- const OA_DAILY_LIMIT=100,OA_USAGE_KEY="apex_openai_usage_v1",OA_AUTO_KEY="apex_openai_auto_v1";
- function oaUsage(){try{const x=JSON.parse(localStorage.getItem(OA_USAGE_KEY)||"{}");return x.day===new Date().toISOString().slice(0,10)?x:{day:new Date().toISOString().slice(0,10),count:0}}catch(e){return {day:new Date().toISOString().slice(0,10),count:0}}}
- function oaSetUsage(x){try{localStorage.setItem(OA_USAGE_KEY,JSON.stringify(x))}catch(e){}}
- function oaStatus(t){const el=$("openAiStatus");if(el)el.textContent=t}
- function oaDirection(d){return d==="BUY"||d==="SELL"?d:"WAIT"}
- function oaRender(data,apex,assetName){
-  const dir=oaDirection(data.direction),tile=$("openAiResult");
-  tile.className="openai-result "+dir.toLowerCase();
-  $("openAiDirection").textContent=dir;
-  $("openAiDirection").style.color=dir==="BUY"?"#54efa8":dir==="SELL"?"#ff8298":"#c7d5e9";
-  let a=oaDirection(apex),comparison=(dir==="WAIT"||a==="WAIT")?"NO CLEAR AGREEMENT":dir===a?"AGREEMENT · BOTH "+dir:"DISAGREEMENT · APEX "+a+" / OPENAI "+dir;
-  $("openAiComparison").textContent=comparison;
-  $("openAiReason").textContent=(data.reason||"No explanation returned.")+(data.risks?" Risk: "+data.risks:"");
-  $("openAiMeta").textContent=`${assetName} · Suggested review horizon: ${[1,5,15,30,60,240].includes(Number(data.holdMinutes))?data.holdMinutes:15} min · Strength: ${["LOW","MEDIUM","HIGH"].includes(String(data.strength).toUpperCase())?String(data.strength).toUpperCase():"UNSPECIFIED"} · Not a probability or guarantee.`;
-  $("openAiBadge").textContent=comparison.startsWith("AGREEMENT")?"AGREEMENT":comparison.startsWith("DISAGREEMENT")?"CONFLICT":"SECOND OPINION";
- }
- async function runOpenAI(assetId,automatic=false){
-  const r=results[assetId],asset=ASSETS.find(x=>x.id===assetId);
-  if(!r||!asset||!Array.isArray(r.candles)||r.candles.length<35){oaStatus("Not enough verified candles for an independent review yet.");return}
-  if(automatic&&(!r.analysis?.fresh||Number(r.analysis?.score)<70||r.analysis?.direction==="WAIT"))return;
-  const candle=r.candles.at(-1),candleKey=assetId+"|"+String(candle?.timeMs||candle?.time||"");
-  let usage=oaUsage();
-  if(usage.count>=OA_DAILY_LIMIT){oaStatus("Daily safety limit reached (100 analyses). Manual and automatic reviews pause until the next UTC day.");return}
-  if(automatic){
-   let seen={};try{seen=JSON.parse(localStorage.getItem(OA_AUTO_KEY)||"{}")}catch(e){}
-   if(seen[candleKey])return;
-   seen[candleKey]=Date.now();try{localStorage.setItem(OA_AUTO_KEY,JSON.stringify(seen))}catch(e){}
-  }
-  usage.count++;oaSetUsage(usage);
-  const button=$("openAiAnalyze");if(button)button.disabled=true;
-  oaStatus(`${automatic?"Automatic":"Manual"} independent review running · ${usage.count}/${OA_DAILY_LIMIT} daily analyses used.`);
-  try{
-   const payload={market:asset.name,apex:{direction:r.analysis.direction==="CALL"?"BUY":r.analysis.direction==="PUT"?"SELL":"WAIT",score:r.analysis.score,trend:r.analysis.trend,rsi:r.analysis.rsi,adx:r.analysis.adx,atrPct:r.analysis.atrPct,reason:r.analysis.reason},candles:r.candles.slice(-45).map(c=>({time:c.time,open:c.open,high:c.high,low:c.low,close:c.close})),livePrice:Number(r.livePrice||r.price),automatic};
-   const response=await fetch("/.netlify/functions/openai-analysis",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-   const raw=await response.text();let data;try{data=JSON.parse(raw)}catch(e){throw new Error("AI function returned an unreadable response: "+raw.slice(0,160))}
-   if(!response.ok)throw new Error(data.error||"OpenAI analysis failed (HTTP "+response.status+")");
-   oaRender(data,payload.apex.direction,asset.name);
-   oaStatus(`Review complete · ${usage.count}/${OA_DAILY_LIMIT} daily analyses used · ${automatic?"Automatic":"Manual"} · ${clock()}`);
-  }catch(e){oaStatus("OpenAI review error: "+(e.message||"Unknown error")+". Check the Netlify function deployment and OPENAI_API_KEY.");}
-  finally{if(button)button.disabled=false}
- }
- $("openAiAnalyze").addEventListener("click",()=>runOpenAI($("mobileAsset")?.value||selectedChart,false));
- $("openAiAuto").checked=(()=>{try{return localStorage.getItem("apex_openai_auto_v1_enabled")!=="false"}catch(e){return true}})();
- $("openAiAuto").addEventListener("change",()=>{try{localStorage.setItem("apex_openai_auto_v1_enabled",String($("openAiAuto").checked))}catch(e){};oaStatus($("openAiAuto").checked?"Automatic independent review enabled for fresh APEX scores of 70+.":"Automatic reviews paused; manual analysis remains available.")});
- // Add once-per-candle automatic checks after each scan completes; a browser-side daily cap is a convenience, not a billing limit.
- const originalScan=window.scan;
- // scan() is a top-level declaration; wrap the button and interval completion through a light observer on the progress text.
- let lastAutoScanStamp=0;
- const scanObserver=new MutationObserver(()=>{
-  const stamp=latestScan;
-  if(!stamp||stamp===lastAutoScanStamp||busy)return;
-  lastAutoScanStamp=stamp;
-  if(!$("openAiAuto").checked)return;
-  [...watch].forEach(id=>{const rr=results[id];if(rr&&rr.analysis?.fresh&&rr.analysis.score>=70&&rr.analysis.direction!=="WAIT")runOpenAI(id,true)});
- });
- const progressNode=$("progressText");if(progressNode)scanObserver.observe(progressNode,{childList:true,subtree:true,characterData:true});
-
  renderMarketList();updateTrend();updateAI();setInterval(()=>{renderMarketList();updateTrend();updateAI()},1500);
 })();
 </script>
