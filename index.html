@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="10.9-no-macd-10-second-confirmation-lock">
-<title>APEXSCAN PRO · V10.9 UT BOT INTEGRATED COMMAND CENTER</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="11.1-chatgpt-primary-visual-layout-selected-pair">
+<title>APEXSCAN PRO · V11.1 CHATGPT PRIMARY SCANNER</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -437,6 +437,80 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 @media(max-width:700px){#chatgptPanel{width:100%}.ai-dual-cell b{font-size:17px}}
 
 </style>
+
+<style id="v111-reference-layout">
+:root{--green:#00e676;--blue:#12cfff;--amber:#ffd54f}
+body{background:radial-gradient(ellipse at 48% -20%,#07334b 0,transparent 45%),#030914}
+header{background:#030914f2;border-bottom:1px solid #12344b}
+.wrap{max-width:1600px;padding:12px 16px 28px}
+.top{align-items:center;margin-bottom:12px}
+.top h1{font-size:clamp(20px,2.5vw,32px);letter-spacing:-.03em}
+.top p,.notice{display:none}
+.main-grid{display:grid;grid-template-columns:minmax(245px, .9fr) minmax(430px,1.8fr) minmax(245px,.95fr);gap:12px;align-items:start}
+.main-grid>section,.main-grid>aside{display:contents}
+#marketControls{grid-column:1;grid-row:1}
+#chatgptPanel{grid-column:1;grid-row:2}
+#signalPanel{grid-column:2;grid-row:1}
+#chartPanel{grid-column:2;grid-row:2}
+#scannerPanel{grid-column:3;grid-row:1}
+#signalHistoryPanel{grid-column:1/3;grid-row:3}
+#enginePanel{grid-column:3;grid-row:2}
+#journalPanel{grid-column:1/4;grid-row:4}
+#dataPanel,#watchPanel,#visualScanBox,#autoPaperControls,#paperLiveBoard{display:none!important}
+.panel,.mobile-command,.kpi{background:linear-gradient(155deg,#0c1b2b,#07111f);border:1px solid #17415a;box-shadow:0 8px 24px #0007;border-radius:15px}
+.panel-head{border-bottom:1px solid #17364c}
+#marketControls{padding:14px;border:1px solid #174b69;background:#0a1828;border-radius:14px}
+#chatgptPanel{border:1px solid #00c98b;box-shadow:0 0 22px #00d58a22;padding:14px}
+#chatgptPanel .panel-head h2{color:#e9fff6}
+#chatgptPanel .ai-dual-grid{grid-template-columns:1fr}
+#chatgptPanel .ai-dual-cell:first-child{display:none}
+#chatgptPanel .ai-dual-cell:last-child{border:0;background:transparent}
+#chatgptPanel #chatgptDirection{font-size:36px;color:#00e676}
+#chatgptPanel .ai-verdict{font-size:16px;color:#d9fff0}
+#chatgptPanel .ai-actions button{width:100%;background:linear-gradient(100deg,#00a86b,#087dba)}
+#signalPanel{border:1px solid #00d58a;box-shadow:0 0 24px #00e67620;padding:14px}
+#signalPanel .panel-head h2{color:#eafff6}
+#topSignal{border:0;background:transparent;padding:6px 2px}
+#topDirection{font-size:clamp(34px,4vw,58px);color:#00e676;text-shadow:0 0 18px #00e67655}
+#topScore{font-size:16px}
+#topReason{font-size:15px;line-height:1.5}
+#scannerPanel{padding:12px}
+#scannerPanel .scan-table-wrap{max-height:250px;overflow:auto}
+#scannerPanel table{font-size:11px}
+#chartPanel{padding:12px}
+#chartPanel .chart-stage{min-height:280px}
+#signalHistoryPanel{padding:12px}
+#enginePanel{padding:12px}
+.kpis{display:none}
+@media(max-width:1050px){
+ .main-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.5fr)}
+ #marketControls{grid-column:1;grid-row:1}
+ #chatgptPanel{grid-column:1;grid-row:2}
+ #signalPanel{grid-column:2;grid-row:1}
+ #chartPanel{grid-column:2;grid-row:2}
+ #scannerPanel{grid-column:1/3;grid-row:3}
+ #signalHistoryPanel{grid-column:1/3;grid-row:4}
+ #enginePanel{grid-column:1/3;grid-row:5}
+}
+@media(max-width:680px){
+ .wrap{padding:8px}
+ .top{display:flex;flex-wrap:wrap}
+ .top .actions{width:100%;display:flex}
+ .top .actions button{flex:1;font-size:11px}
+ .main-grid{display:flex;flex-direction:column}
+ .main-grid>*{width:100%;min-width:0}
+ #marketControls{order:0;width:100%}
+ #signalPanel{order:1}
+ #chatgptPanel{order:2}
+ #chartPanel{order:3}
+ #scannerPanel{order:4}
+ #signalHistoryPanel{order:5}
+ #enginePanel{order:6}
+ #journalPanel{order:7}
+ #chartPanel .chart-stage{min-height:230px}
+}
+</style>
+
 </head>
 <body>
 <header>
@@ -445,8 +519,8 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 </header>
 <main class="wrap">
  <div class="top">
-  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V10.8 UT BOT INTEGRATED COMMAND CENTER</h1><p>OTCharts live feed · 1-minute candle confirmation · optional visual cross-check</p></div>
-  <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
+  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V11.1 CHATGPT PRIMARY SCANNER</h1><p>ChatGPT primary analysis · selected pair only · once per new 1-minute candle</p></div>
+  <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN SELECTED PAIR</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
  <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. No cooldown between one-minute signals: evaluate each new candle immediately and confirm direction from fresh live ticks. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
  <section class="mobile-command" id="marketControls" aria-label="Market controls">
@@ -478,11 +552,11 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <div class="scanner-strip">
      <div class="mini"><label>Scan cycle</label><b id="cycleText">60 sec</b></div>
      <div class="mini"><label>Signal threshold</label><b id="thresholdText">30 / 100</b></div>
-     <div class="mini"><label>Markets analyzed</label><b id="freshCount">0</b></div>
+     <div class="mini"><label>Selected pair scans</label><b id="freshCount">0</b></div>
      <div class="mini"><label>Early setups</label><b id="staleCount">0</b></div>
     </div>
     <div class="scan-table-wrap"><table><thead><tr><th>Market</th><th>Price</th><th>Change</th><th>Trend</th><th>RSI</th><th>Score</th><th>Signal</th><th>Setup</th></tr></thead><tbody id="scannerBody"><tr><td colspan="8" class="empty">Connect a data provider, choose markets, then scan.</td></tr></tbody></table></div>
-    <div class="chartfoot"><span id="scanFoot">Signals are generated from closed candle history.</span><span id="lastUpdated">—</span></div>
+    <div class="chartfoot"><span id="scanFoot">ChatGPT is primary · selected pair only · one analysis per new 1-minute candle.</span><span id="lastUpdated">—</span></div>
    </div>
    <div class="panel" id="chartPanel">
     <div class="panel-head chart-head"><h2>LIVE OTC CANDLE CHART</h2><select id="chartAsset" style="max-width:170px;background:#091321;color:white;border:1px solid var(--line);padding:7px;border-radius:7px"></select></div>
@@ -563,14 +637,14 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
    <div class="panel" id="chatgptPanel">
     <div class="panel-head"><h2>CHATGPT · INDEPENDENT ANALYST</h2><span class="pill" id="chatgptStatus">NOT ANALYZED</span></div>
     <div class="ai-dual-grid">
-     <div class="ai-dual-cell"><small>APEX TECHNICAL ENGINE</small><b id="apexAiDirection">WAIT</b><span id="apexAiScore">Score —</span></div>
+     <div class="ai-dual-cell"><small>APEX SECONDARY CONFIRMATION</small><b id="apexAiDirection">WAIT</b><span id="apexAiScore">Score —</span></div>
      <div class="ai-dual-cell"><small>CHATGPT SECOND OPINION</small><b id="chatgptDirection">WAIT</b><span id="chatgptStrength">Awaiting analysis</span></div>
     </div>
     <div class="ai-verdict" id="chatgptVerdict">Run a scan, then request an independent analysis of the selected pair.</div>
-    <p class="tiny" id="chatgptReason">ChatGPT evaluates recent OHLC candles independently. It does not place trades.</p>
+    <p class="tiny" id="chatgptReason">ChatGPT is the primary decision-maker. APEX is secondary confirmation only. ChatGPT evaluates the selected pair from recent OHLC candles; it does not place trades.</p>
     <p class="tiny" id="chatgptRisk"></p>
     <div class="ai-actions"><button type="button" class="primary" id="chatgptAnalyze">✦ ANALYZE SELECTED PAIR</button></div>
-    <label class="ai-auto-toggle"><input type="checkbox" id="chatgptAuto" checked> AUTO ANALYZE NEW APEX SETUPS (SCORE 70+)</label>
+    <label class="ai-auto-toggle"><input type="checkbox" id="chatgptAuto" checked> AUTO ANALYZE ONCE PER NEW 1-MINUTE CANDLE</label>
     <div class="ai-usage" id="chatgptUsage">Daily browser limit: 0 / 100 analyses · Manual + automatic</div>
     <div class="tiny">Comparison rules: matching BUY/SELL = AGREEMENT; opposite directions = DISAGREEMENT; either side WAIT = NO CLEAR AGREEMENT. Suggested hold: 1m, 5m, 15m, 30m, 1h or 4h. AI opinions are not guaranteed predictions.</div>
    </div>
@@ -579,7 +653,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <div class="fields">
      <div class="field wide"><label>Twelve Data API key · regular markets</label><input id="apiKey" type="password" placeholder="Paste Twelve Data API key"></div>
      <div class="field wide"><label>OTC candle history</label><input value="Netlify Function · /.netlify/functions/otc-candles" disabled></div>
-     <div class="field wide"><label>OTC live stream · all 3 pairs on one connection</label><div class="tiny" id="liveStreamStatus">Stream: connecting when dashboard loads…</div></div>
+     <div class="field wide"><label>OTC live stream · selected pair</label><div class="tiny" id="liveStreamStatus">Stream: connecting when dashboard loads…</div></div>
      <div class="field wide"><button id="saveKey" class="primary">Save API key & test connection</button></div>
      <div class="field wide"><div class="tiny" id="connectionStatus">Regular feed: not tested<br>OTC feed: function will be tested when selected</div></div>
     </div>
@@ -1424,9 +1498,10 @@ function addSignal(r){
  history.unshift({key,time:clock(),asset:live.name,side:side==="CALL"?"BUY":"SELL",entry:live.livePrice??live.price,score:live.analysis.score,age:Math.round(live.analysis.age)});
  history=history.slice(0,150);renderHistory();saveState();
 }async function scan(){
- if(busy)return;if(!watch.size){alert("Select at least one market in Watchlist Configuration.");return}
+ if(busy)return;if(!( $("mobileAsset")?.value||selectedChart)){alert("Select one market pair first.");return}
  busy=true;status("SCANNING",true);$("scanNow").disabled=true;$("progressText").textContent="Starting scan…";$("scanProgress").style.width="0%";
- let ids=[...watch],done=0,errors=0,errorDetails=[];
+ const selectedId=$("mobileAsset")?.value||selectedChart;
+  let ids=[selectedId].filter(id=>ASSETS.some(a=>a.id===id)),done=0,errors=0,errorDetails=[];
  for(const id of ids){
   let a=ASSETS.find(x=>x.id===id);
   try{
@@ -1450,15 +1525,15 @@ function addSignal(r){
     results[id]={id,name:a.name,price:NaN,change:null,candles:[],analysis:{direction:"WAIT",score:0,reason:e.message,fresh:false,age:Infinity},lastError:e.message};
    }
   }
-  done++;$("scanProgress").style.width=(done/ids.length*100)+"%";$("progressText").textContent=`Scanned ${done} of ${ids.length} · ${errors} errors`;
+  done++;$("scanProgress").style.width=(done/ids.length*100)+"%";$("progressText").textContent=`Scanned selected pair ${done} of ${ids.length} · ${errors} errors`;
   renderScanner();
   // Avoid bursting the provider and stay within low-tier rate limits.
   if(done<ids.length)await new Promise(resolve=>setTimeout(resolve,900));
  }
  latestScan=Date.now();renderScanner();try{drawChart()}catch(chartError){console.error("Chart render:",chartError)}updateVisualAgreement();settleExpiredTrades();$("scanNow").disabled=false;busy=false;
- let fresh=[...watch].filter(id=>results[id]?.analysis.fresh).length;status(fresh?"SCAN COMPLETE · DATA RECEIVED":"SCAN COMPLETE · CHECK DATA",fresh>0);
+ let fresh=ids.filter(id=>results[id]?.analysis.fresh).length;status(fresh?"SCAN COMPLETE · DATA RECEIVED":"SCAN COMPLETE · CHECK DATA",fresh>0);
  $("connectionStatus").textContent=`Regular feed: ${apiKey?"API key saved; per-symbol requests":"not configured"}\nOTC history: ${errorDetails.length?"ERROR · "+errorDetails.join(" | "):"last request completed"}\nOTC live stream: ${liveStreamState}\nLast scan: ${clock()}`;
- $("progressText").textContent=`Complete · ${fresh} fresh markets · ${errors} errors`;saveState();maybeAutoChatGPT();
+ $("progressText").textContent=`Complete · selected pair ${fresh?"fresh":"not fresh"} · ${errors} errors`;saveState();maybeAutoChatGPT();
 }
 function openPaperTrade(r,side,isAutomatic=true,signalKey=""){
  if(!r||!r.analysis?.fresh||!hasCurrentFeed(r.id,r.candles?.at(-1))||!["CALL","PUT"].includes(side)){
@@ -1518,7 +1593,7 @@ function setMarketCategory(category){
 function setMobileScreen(screen){
  activeMobileScreen=screen;
  const panels=["signalPanel","scannerPanel","chartPanel","signalHistoryPanel","journalPanel","dataPanel","watchPanel","enginePanel"];
- const visible={scanner:["signalPanel","chartPanel","scannerPanel"],chart:["signalPanel","chartPanel"],history:["signalHistoryPanel","journalPanel"],setup:["dataPanel","watchPanel","enginePanel"]};
+ const visible={scanner:["signalPanel","chartPanel","scannerPanel"],chart:["chatgptPanel","chartPanel","signalHistoryPanel"],history:["signalHistoryPanel","journalPanel"],setup:["dataPanel","watchPanel","enginePanel"]};
  const mobile=window.matchMedia("(max-width: 700px)").matches;
  panels.forEach(id=>{let el=$(id);if(el)el.classList.toggle("mobile-hidden",mobile&&!visible[screen].includes(id));});
  document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.screen===screen));
@@ -1530,7 +1605,7 @@ $("mobileInterval").addEventListener("change",()=>{$("interval").value=$("mobile
 function syncMobileControls(){if($("mobileInterval"))$("mobileInterval").value=$("interval").value||"15000";updateChartOptions()}
 window.addEventListener("resize",()=>{setMobileScreen(activeMobileScreen);drawChart()});
 $("scanNow").onclick=()=>{scan().catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="Scan failed: "+(err?.message||"unknown error")})};
-$("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN";status("AUTO SCANNER ACTIVE",true);scan();cycle=setInterval(()=>{if(!busy)scan()},Math.max(5000,+$("interval").value))};
+$("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN SELECTED PAIR";status("AUTO SCAN SELECTED PAIRNER ACTIVE",true);scan();cycle=setInterval(()=>{if(!busy)scan()},Math.max(5000,+$("interval").value))};
 $("pauseBtn").onclick=()=>{running=false;clearInterval(cycle);$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED")};
 $("saveKey").type="button";
 $("saveKey").addEventListener("click",async(event)=>{
@@ -1574,7 +1649,7 @@ $("threshold").onchange=()=>{$("thresholdText").textContent=$("threshold").value
 $("interval").onchange=()=>{if(running){clearInterval(cycle);cycle=setInterval(()=>{if(!busy)scan()},Math.max(5000,+$("interval").value||15000))}$("cycleText").textContent=((+$("interval").value||15000)/1000)+" sec";saveState()};
 ["stake","payout"].forEach(id=>$(id).addEventListener("change",saveState));
 // Independent ChatGPT analyst. The API key remains server-side in Netlify.
-const chatgptState={busy:false,lastAutoKey:"",lastResult:null};
+const chatgptState={busy:false,lastAutoKey:"",lastResult:null,analyzedKeys:new Set()};
 const AI_DAILY_LIMIT=100;
 function aiUsageKey(){return "apex_chatgpt_usage_"+new Date().toISOString().slice(0,10)}
 function aiGetUsage(){try{return Math.max(0,Number(localStorage.getItem(aiUsageKey())||0))}catch(e){return 0}}
@@ -1607,7 +1682,37 @@ async function runChatGPTAnalysis(r,source="manual"){
 }
 $("chatgptAnalyze").addEventListener("click",()=>{const id=$("mobileAsset")?.value||selectedChart;const r=results[id]||results[selectedChart];runChatGPTAnalysis(r,"manual")});
 aiSetUsage(aiGetUsage());
-function maybeAutoChatGPT(){if(!$("chatgptAuto")?.checked||chatgptState.busy)return;const candidates=[...watch].map(id=>results[id]).filter(r=>r&&r.analysis&&r.analysis.score>=70&&["CALL","PUT"].includes(r.analysis.direction)&&r.candles?.length>=35&&r.analysis.fresh);if(!candidates.length)return;candidates.sort((a,b)=>(b.analysis.score||0)-(a.analysis.score||0));const r=candidates[0];const k=`${r.id}|${Math.floor(Number(r.candles.at(-1)?.timeMs||0)/60000)}`;if(k!==chatgptState.lastAutoKey)runChatGPTAnalysis(r,"auto")}
+function maybeAutoChatGPT(){if(!$("chatgptAuto")?.checked||chatgptState.busy)return;const id=$("mobileAsset")?.value||selectedChart;const r=results[id];if(!r||!r.candles?.length||r.candles.length<35||!r.analysis?.fresh)return;const candle=r.candles.at(-1);const k=`${r.id}|${Math.floor(Number(candle.timeMs||0)/60000)}`;if(!chatgptState.analyzedKeys.has(k))runChatGPTAnalysis(r,"auto")}
+
+
+(function buildReferenceDashboard(){
+ const main=document.querySelector("main.wrap"),grid=document.querySelector(".main-grid");
+ if(!main||!grid)return;
+ const nodes=["marketControls","chatgptPanel","signalPanel","chartPanel","scannerPanel","signalHistoryPanel","enginePanel","journalPanel"];
+ const shell=document.createElement("div");shell.className="main-grid";
+ const left=document.createElement("section"),center=document.createElement("section"),right=document.createElement("aside");
+ left.className="layout-left";center.className="layout-center";right.className="layout-right";
+ const get=id=>document.getElementById(id);
+ [ "marketControls","chatgptPanel" ].forEach(id=>{if(get(id))left.append(get(id))});
+ [ "signalPanel","chartPanel" ].forEach(id=>{if(get(id))center.append(get(id))});
+ [ "scannerPanel","enginePanel" ].forEach(id=>{if(get(id))right.append(get(id))});
+ const journal=get("journalPanel");
+ if(journal)main.append(journal);
+ shell.append(left,center,right);
+ grid.replaceWith(shell);
+ shell.style.cssText="display:grid;grid-template-columns:minmax(245px,.9fr) minmax(430px,1.8fr) minmax(245px,.95fr);gap:12px;align-items:start";
+ left.style.cssText="display:flex;flex-direction:column;gap:12px;min-width:0";
+ center.style.cssText="display:flex;flex-direction:column;gap:12px;min-width:0";
+ right.style.cssText="display:flex;flex-direction:column;gap:12px;min-width:0";
+ function responsive(){
+  if(innerWidth<=680){shell.style.display="flex";shell.style.flexDirection="column";left.style.display=center.style.display=right.style.display="contents";for(const n of nodes){const e=get(n);if(e){e.style.width="100%";}}}
+  else{shell.style.display="grid";shell.style.gridTemplateColumns=innerWidth<=1050?"minmax(0,1fr) minmax(0,1.5fr)":"minmax(245px,.9fr) minmax(430px,1.8fr) minmax(245px,.95fr)";left.style.display=center.style.display=right.style.display="flex";}
+ }
+ addEventListener("resize",responsive);responsive();
+ const apexHead=get("signalPanel")?.querySelector(".panel-head h2");if(apexHead)apexHead.textContent="APEX TECHNICAL · CONFIRMATION";
+ const head=document.querySelector(".top h1");if(head)head.textContent="APEXSCAN PRO · V11.1 CHATGPT PRIMARY SCANNER";
+ const sub=document.querySelector(".top p");if(sub)sub.textContent="ChatGPT decides · selected OTC pair only · one analysis per new 1-minute candle";
+})();
 
 setInterval(()=>{$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();updateCountdowns();settleExpiredTrades()},1000);
 loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · New qualified signals open simulated trades automatically":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();setTimeout(()=>{if(!busy)scan()},250);
