@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="10.8-no-macd-10-second-confirmation-lock">
-<title>APEXSCAN PRO · V10.8 UT BOT INTEGRATED COMMAND CENTER</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="10.9-no-macd-10-second-confirmation-lock">
+<title>APEXSCAN PRO · V10.9 UT BOT INTEGRATED COMMAND CENTER</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -417,6 +417,25 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 .visual-pill.active{color:#8affdc;border-color:#1a9b78;background:#0c3029}.visual-help,.visual-foot{font-size:9px;line-height:1.5;color:#91a9c8;margin:9px 0}.visual-actions{display:flex;gap:7px;flex-wrap:wrap}.visual-actions button{font-size:9px;padding:8px 10px}.visual-scan-box video{display:block;width:100%;max-height:220px;object-fit:contain;background:#050b13;border:1px solid #223d5a;border-radius:9px;margin-top:10px}.visual-scan-box video:not([src]){min-height:0}.visual-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:9px}.visual-metrics div{min-width:0;padding:8px;background:#071321;border:1px solid #1d3855;border-radius:8px}.visual-metrics small{display:block;color:#8ea6c5;font-size:8px;letter-spacing:.07em}.visual-metrics b{display:block;font-size:11px;margin-top:3px;overflow-wrap:anywhere}.visual-foot{margin-bottom:0}
 @media(max-width:700px){.visual-scan-box{padding:10px}.visual-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.visual-head{align-items:flex-start}.visual-head b{font-size:9px}.visual-help{font-size:9px}}
 
+
+/* V10.9 · ChatGPT independent second analyst; preserve V10.8 layout */
+#chatgptPanel{border-color:#57418c;background:linear-gradient(155deg,#17162d,#0b1424)}
+.ai-dual-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.ai-dual-cell{padding:10px;border:1px solid #34476a;border-radius:9px;background:#091426;min-width:0}
+.ai-dual-cell small{display:block;color:#94a9c8;font-size:8px;font-weight:900;letter-spacing:.08em}
+.ai-dual-cell b{display:block;font-size:19px;margin:5px 0;color:#eaf2ff}
+.ai-dual-cell span{font-size:9px;color:#9aafd0}
+#chatgptDirection.buy,#apexAiDirection.buy{color:#38efb1}#chatgptDirection.sell,#apexAiDirection.sell{color:#ff6688}
+.ai-verdict{padding:10px;border:1px solid #40577a;border-radius:9px;background:#101d32;text-align:center;font-weight:1000;font-size:12px;letter-spacing:.05em;margin:8px 0}
+.ai-verdict.agree{border-color:#1d9d77;background:#0b3029;color:#76f3c6}
+.ai-verdict.disagree{border-color:#b94b66;background:#351a2a;color:#ff9eaf}
+.ai-verdict.wait{color:#ffd078}
+.ai-actions button{width:100%;min-height:43px}
+.ai-auto-toggle{display:flex;gap:8px;align-items:center;margin:11px 0;padding:9px;border:1px solid #344b70;border-radius:9px;background:#0a192b;color:#b9d9ff;font-size:10px;font-weight:900}
+.ai-auto-toggle input{width:18px;height:18px;accent-color:#35dcae}
+.ai-usage{font-size:9px;color:#9bb3d3;margin:7px 0}
+@media(max-width:700px){#chatgptPanel{width:100%}.ai-dual-cell b{font-size:17px}}
+
 </style>
 </head>
 <body>
@@ -540,6 +559,20 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
      </div>
      <p class="tiny" id="topExpiry" style="margin:10px 0 0">Directional bias · re-evaluated each scan</p><button id="scanNow" type="button" class="primary" style="width:100%;margin-top:9px;min-height:44px">↻ SCAN MARKET NOW</button></div>
     <p class="tiny" style="margin:9px 0 0">A score is a technical confluence rating, not a probability of winning. BUY/SELL shows the stronger current directional bias; EARLY setups are less confirmed.</p>
+   </div>
+   <div class="panel" id="chatgptPanel">
+    <div class="panel-head"><h2>CHATGPT · INDEPENDENT ANALYST</h2><span class="pill" id="chatgptStatus">NOT ANALYZED</span></div>
+    <div class="ai-dual-grid">
+     <div class="ai-dual-cell"><small>APEX TECHNICAL ENGINE</small><b id="apexAiDirection">WAIT</b><span id="apexAiScore">Score —</span></div>
+     <div class="ai-dual-cell"><small>CHATGPT SECOND OPINION</small><b id="chatgptDirection">WAIT</b><span id="chatgptStrength">Awaiting analysis</span></div>
+    </div>
+    <div class="ai-verdict" id="chatgptVerdict">Run a scan, then request an independent analysis of the selected pair.</div>
+    <p class="tiny" id="chatgptReason">ChatGPT evaluates recent OHLC candles independently. It does not place trades.</p>
+    <p class="tiny" id="chatgptRisk"></p>
+    <div class="ai-actions"><button type="button" class="primary" id="chatgptAnalyze">✦ ANALYZE SELECTED PAIR</button></div>
+    <label class="ai-auto-toggle"><input type="checkbox" id="chatgptAuto" checked> AUTO ANALYZE NEW APEX SETUPS (SCORE 70+)</label>
+    <div class="ai-usage" id="chatgptUsage">Daily browser limit: 0 / 100 analyses · Manual + automatic</div>
+    <div class="tiny">Comparison rules: matching BUY/SELL = AGREEMENT; opposite directions = DISAGREEMENT; either side WAIT = NO CLEAR AGREEMENT. Suggested hold: 1m, 5m, 15m, 30m, 1h or 4h. AI opinions are not guaranteed predictions.</div>
    </div>
    <div class="panel" id="dataPanel">
     <div class="panel-head"><h2>DATA CONNECTIONS</h2><span class="pill">PROVIDER SETUP</span></div>
@@ -1425,7 +1458,7 @@ function addSignal(r){
  latestScan=Date.now();renderScanner();try{drawChart()}catch(chartError){console.error("Chart render:",chartError)}updateVisualAgreement();settleExpiredTrades();$("scanNow").disabled=false;busy=false;
  let fresh=[...watch].filter(id=>results[id]?.analysis.fresh).length;status(fresh?"SCAN COMPLETE · DATA RECEIVED":"SCAN COMPLETE · CHECK DATA",fresh>0);
  $("connectionStatus").textContent=`Regular feed: ${apiKey?"API key saved; per-symbol requests":"not configured"}\nOTC history: ${errorDetails.length?"ERROR · "+errorDetails.join(" | "):"last request completed"}\nOTC live stream: ${liveStreamState}\nLast scan: ${clock()}`;
- $("progressText").textContent=`Complete · ${fresh} fresh markets · ${errors} errors`;saveState();
+ $("progressText").textContent=`Complete · ${fresh} fresh markets · ${errors} errors`;saveState();maybeAutoChatGPT();
 }
 function openPaperTrade(r,side,isAutomatic=true,signalKey=""){
  if(!r||!r.analysis?.fresh||!hasCurrentFeed(r.id,r.candles?.at(-1))||!["CALL","PUT"].includes(side)){
@@ -1540,6 +1573,42 @@ document.querySelectorAll(".tf-btn").forEach(b=>b.addEventListener("click",()=>s
 $("threshold").onchange=()=>{$("thresholdText").textContent=$("threshold").value+" / 100";if(latestScan)scan();saveState()};
 $("interval").onchange=()=>{if(running){clearInterval(cycle);cycle=setInterval(()=>{if(!busy)scan()},Math.max(5000,+$("interval").value||15000))}$("cycleText").textContent=((+$("interval").value||15000)/1000)+" sec";saveState()};
 ["stake","payout"].forEach(id=>$(id).addEventListener("change",saveState));
+// Independent ChatGPT analyst. The API key remains server-side in Netlify.
+const chatgptState={busy:false,lastAutoKey:"",lastResult:null};
+const AI_DAILY_LIMIT=100;
+function aiUsageKey(){return "apex_chatgpt_usage_"+new Date().toISOString().slice(0,10)}
+function aiGetUsage(){try{return Math.max(0,Number(localStorage.getItem(aiUsageKey())||0))}catch(e){return 0}}
+function aiSetUsage(n){try{localStorage.setItem(aiUsageKey(),String(n))}catch(e){};const el=$("chatgptUsage");if(el)el.textContent=`Daily browser limit: ${n} / ${AI_DAILY_LIMIT} analyses · Manual + automatic`}
+function aiDirectionLabel(d){return d==="BUY"||d==="CALL"?"BUY":d==="SELL"||d==="PUT"?"SELL":"WAIT"}
+function aiPaintDirection(el,d){if(!el)return;el.textContent=aiDirectionLabel(d);el.className=aiDirectionLabel(d).toLowerCase()}
+function aiCompare(apex,chat){const a=aiDirectionLabel(apex),b=aiDirectionLabel(chat);if(a==="WAIT"||b==="WAIT")return {label:"NO CLEAR AGREEMENT",kind:"wait"};if(a===b)return {label:"AGREEMENT · BOTH "+a,kind:"agree"};return {label:"DISAGREEMENT · APEX "+a+" / CHATGPT "+b,kind:"disagree"}}
+function aiRenderPending(r){$("chatgptStatus").textContent="ANALYZING";$("chatgptVerdict").className="ai-verdict wait";$("chatgptVerdict").textContent="CHATGPT IS REVIEWING THE CANDLES…";$("chatgptReason").textContent=`${r.name} · independent review in progress`;$("chatgptRisk").textContent=""}
+async function runChatGPTAnalysis(r,source="manual"){
+ if(chatgptState.busy)return;
+ if(!r||!Array.isArray(r.candles)||r.candles.length<35){$("chatgptStatus").textContent="NEED CANDLES";$("chatgptReason").textContent="Scan this pair first. At least 35 one-minute candles are required.";return}
+ const usage=aiGetUsage();if(usage>=AI_DAILY_LIMIT){$("chatgptStatus").textContent="DAILY LIMIT";$("chatgptReason").textContent="The browser-side daily analysis limit of 100 has been reached. It resets at 00:00 UTC.";return}
+ const candle=r.candles.at(-1),candleKey=`${r.id}|${Math.floor(Number(candle.timeMs||0)/60000)}`;
+ if(source==="auto"&&chatgptState.lastAutoKey===candleKey)return;
+ chatgptState.busy=true;if(source==="auto")chatgptState.lastAutoKey=candleKey;
+ $("chatgptAnalyze").disabled=true;aiRenderPending(r);
+ try{
+  const response=await fetch("/.netlify/functions/openai-analysis",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({market:r.name,livePrice:Number(r.livePrice??r.price),candles:r.candles.slice(-45).map(c=>({time:c.time,open:c.open,high:c.high,low:c.low,close:c.close})),apex:{direction:aiDirectionLabel(r.analysis?.direction),score:Number(r.analysis?.score||0),trend:r.analysis?.trend||"UNKNOWN",rsi:Number(r.analysis?.rsi),adx:Number(r.analysis?.adx),reason:r.analysis?.reason||""}})});
+  let data={};try{data=await response.json()}catch(e){}
+  if(!response.ok)throw new Error(data.error||`AI function returned HTTP ${response.status}`);
+  const direction=aiDirectionLabel(data.direction);if(!["BUY","SELL","WAIT"].includes(direction))throw new Error("AI response did not contain a valid direction.");
+  chatgptState.lastResult={...data,direction,market:r.name,apexDirection:aiDirectionLabel(r.analysis?.direction),at:Date.now()};
+  aiPaintDirection($("apexAiDirection"),chatgptState.lastResult.apexDirection);$("apexAiScore").textContent=`Score ${Number(r.analysis?.score||0)} / 100`;
+  aiPaintDirection($("chatgptDirection"),direction);$("chatgptStrength").textContent=`${String(data.strength||"LOW").toUpperCase()} strength · suggested hold ${data.holdMinutes||15} min`;
+  const verdict=aiCompare(chatgptState.lastResult.apexDirection,direction);$("chatgptVerdict").className="ai-verdict "+verdict.kind;$("chatgptVerdict").textContent=verdict.label;
+  $("chatgptReason").textContent=`${r.name}: ${String(data.reason||"No explanation returned.")}`;$("chatgptRisk").textContent=`Risk note: ${String(data.risks||"Market conditions can change quickly.")}`;
+  $("chatgptStatus").textContent="ANALYSIS COMPLETE";aiSetUsage(usage+1);
+ }catch(e){$("chatgptStatus").textContent="CONNECTION ERROR";$("chatgptVerdict").className="ai-verdict wait";$("chatgptVerdict").textContent="CHATGPT ANALYSIS UNAVAILABLE";$("chatgptReason").textContent=e?.message||"Could not reach the Netlify OpenAI function."}
+ finally{chatgptState.busy=false;$("chatgptAnalyze").disabled=false}
+}
+$("chatgptAnalyze").addEventListener("click",()=>{const id=$("mobileAsset")?.value||selectedChart;const r=results[id]||results[selectedChart];runChatGPTAnalysis(r,"manual")});
+aiSetUsage(aiGetUsage());
+function maybeAutoChatGPT(){if(!$("chatgptAuto")?.checked||chatgptState.busy)return;const candidates=[...watch].map(id=>results[id]).filter(r=>r&&r.analysis&&r.analysis.score>=70&&["CALL","PUT"].includes(r.analysis.direction)&&r.candles?.length>=35&&r.analysis.fresh);if(!candidates.length)return;candidates.sort((a,b)=>(b.analysis.score||0)-(a.analysis.score||0));const r=candidates[0];const k=`${r.id}|${Math.floor(Number(r.candles.at(-1)?.timeMs||0)/60000)}`;if(k!==chatgptState.lastAutoKey)runChatGPTAnalysis(r,"auto")}
+
 setInterval(()=>{$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();updateCountdowns();settleExpiredTrades()},1000);
 loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · New qualified signals open simulated trades automatically":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();setTimeout(()=>{if(!busy)scan()},250);
 </script>
