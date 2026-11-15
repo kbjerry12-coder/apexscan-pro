@@ -1155,7 +1155,10 @@ function handleLiveTick(raw){
  const id=OTC_SYMBOLS[symbol];
  if(!id||!Number.isFinite(price)||price<=0)return;
  const previous=liveTicks[id]?.price ?? results[id]?.price ?? price;
- const receivedAt=Date.now(),candleStart=Math.floor(receivedAt/60000)*60000;
+ const receivedAt=Date.now();
+ const feedTime=Number(tick.time??tick.timestamp??0);
+ const feedMs=feedTime>0?(feedTime<1e12?feedTime*1000:feedTime):receivedAt;
+ const candleStart=Math.floor(feedMs/60000)*60000;
  liveTicks[id]={price,change:price-previous,time:tick.time||tick.timestamp||receivedAt,receivedAt};
  if(results[id]){
   const result=results[id];result.livePrice=price;result.liveChange=price-previous;result.liveUpdated=receivedAt;
@@ -1184,24 +1187,37 @@ function handleLiveTick(raw){
 }
 function connectLiveStream(){
  if(liveStream||typeof EventSource==="undefined")return;
- if(![...watch].some(id=>ASSETS.find(a=>a.id===id)?.kind==="otc")){
-  setLiveStreamState("OFF · no OTC markets selected");return;
- }
- setLiveStreamState("connecting to one shared connection…");
- const selectedId=$("mobileAsset")?.value||selectedChart;
- const selectedAsset=ASSETS.find(a=>a.id===selectedId&&a.kind==="otc")||ASSETS.find(a=>a.id===selectedChart);
- const streamSymbol=selectedAsset?.symbol||"EURUSD_otc";
- liveStream=new EventSource("/.netlify/functions/otc-stream?symbol="+encodeURIComponent(streamSymbol));
+ const selectedId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
+ const ids=[...new Set([selectedId,...watch])].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc"));
+ if(!ids.length){setLiveStreamState("OFF · no OTC markets selected");return;}
+ const assets=ids.slice(0,5).map(id=>ASSETS.find(a=>a.id===id)).filter(Boolean);
+ const symbols=assets.map(a=>a.symbol);
+ if(ids.length>5)setLiveStreamState("STREAMING FIRST 5 PAIRS · Lite plan limit");
+ else setLiveStreamState("CONNECTING · "+symbols.length+" selected pair(s)");
+ const url="/.netlify/functions/otc-stream?symbol="+encodeURIComponent(symbols.join(","));
+ liveStream=new EventSource(url);
  liveStream.addEventListener("connected",e=>{
-  let detail="connected";try{const j=JSON.parse(e.data);detail=j.message||j.status||"connected"}catch(err){}
-  setLiveStreamState("CONNECTED · waiting for ticks",true);
+  let names=symbols.join(", ");
+  try{const d=JSON.parse(e.data);if(Array.isArray(d.symbols))names=d.symbols.join(", ")}catch(err){}
+  setLiveStreamState("CONNECTED · "+names,true);
  });
  liveStream.addEventListener("tick",handleLiveTick);
- liveStream.addEventListener("dropped",e=>setLiveStreamState("provider dropped a symbol; reconnecting"));
- liveStream.addEventListener("closed",e=>setLiveStreamState("provider closed stream; reconnecting"));
+ liveStream.addEventListener("dropped",e=>{
+  let detail="provider dropped a pair";
+  try{const d=JSON.parse(e.data);detail="not streaming: "+(d.dropped||[]).join(", ")}catch(err){}
+  setLiveStreamState(detail);
+ });
+ liveStream.addEventListener("closed",e=>{
+  let detail="pair closed by broker";
+  try{const d=JSON.parse(e.data);detail="broker closed: "+(d.closed||[]).join(", ")}catch(err){}
+  setLiveStreamState(detail);
+ });
+ liveStream.addEventListener("replaced",()=>setLiveStreamState("STREAM REPLACED · another connection used this account"));
  liveStream.onmessage=handleLiveTick;
- liveStream.onopen=()=>setLiveStreamState("OPEN · awaiting first tick",true);
- liveStream.onerror=()=>setLiveStreamState("RECONNECTING · browser will retry automatically");
+ liveStream.onopen=()=>setLiveStreamState("OPEN · waiting for first ticks",true);
+ liveStream.onerror=()=>{
+  setLiveStreamState("RECONNECTING · check Netlify stream function");
+ };
 }
 function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
 function renderScanner(){
@@ -1497,44 +1513,71 @@ function addSignal(r){
  announceSignal(live);
  history.unshift({key,time:clock(),asset:live.name,side:side==="CALL"?"BUY":"SELL",entry:live.livePrice??live.price,score:live.analysis.score,age:Math.round(live.analysis.age)});
  history=history.slice(0,150);renderHistory();saveState();
-}async function scan(){
- if(busy)return;if(!( $("mobileAsset")?.value||selectedChart)){alert("Select one market pair first.");return}
- busy=true;status("SCANNING",true);$("scanNow").disabled=true;$("progressText").textContent="Starting scan…";$("scanProgress").style.width="0%";
- const selectedId=$("mobileAsset")?.value||selectedChart;
-  let ids=[...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")),done=0,errors=0,errorDetails=[];
- if(!ids.length){status("SELECT OTC PAIRS");$("progressText").textContent="Choose at least one OTC pair in the watchlist.";busy=false;$("scanNow").disabled=false;return;}
- for(const id of ids){
-  let a=ASSETS.find(x=>x.id===id);
-  try{
-   if(a.kind==="regular"&&!apiKey)throw Error("Twelve Data API key required for this regular-market symbol; OTC scanning continues.");
-   let data=await fetchAsset(a);let old=results[id],price=data.at(-1).close,analysis=analyze(data,a);
-   let prior=old?.price??null,change=prior===null?null:price-prior;
-   results[id]={id,name:a.name,price,change,candles:data,analysis,scannedAt:Date.now()};
-   if(liveTicks[id]){results[id].livePrice=liveTicks[id].price;results[id].liveChange=liveTicks[id].change;}
-   results[id].analysis={...results[id].analysis,direction:lockedCandleDirection(results[id])};
-   if(results[id].analysis.direction!=="WAIT")addSignal(results[id]);
-   if(selectedChart===id||!selectedChart){try{drawChart()}catch(chartError){console.error(chartError)}}
-  }catch(e){
-   errors++;errorDetails.push(a.name+": "+(e.message||"Unknown data error"));
-   const previous=results[id];
-   if(previous?.candles?.length>=35){
-    // Keep the last verified history/chart; analyze() will naturally mark it stale as its timestamp ages.
-    const retained=previous.candles;
-    results[id]={...previous,analysis:analyze(retained,a),lastError:e.message,scannedAt:Date.now()};
+}async function scan(forceHistory=false){
+ if(busy)return;
+ const selectedId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
+ if(!selectedId){status("SELECT MARKET");$("progressText").textContent="Choose an OTC pair first.";return;}
+ busy=true;$("scanNow").disabled=true;status("SCANNING",true);
+ $("progressText").textContent=forceHistory?"Loading OTC candle history…":"Analyzing latest live prices…";
+ $("scanProgress").style.width="0%";
+ let errors=[],done=0,ids=[];
+ try{
+  ids=[...new Set([selectedId,...watch])].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")).slice(0,5);
+  if(!ids.length)throw new Error("No valid OTC pairs selected.");
+  for(const id of ids){
+   const asset=ASSETS.find(a=>a.id===id);
+   try{
+    let data=results[id]?.candles;
+    // Fetch historical candles once per pair, or only when explicitly requested.
+    if(forceHistory||!Array.isArray(data)||data.length<35){
+     data=await fetchAsset(asset);
+    }
+    if(!Array.isArray(data)||data.length<35)throw new Error("OTCharts returned fewer than 35 usable candles.");
+    const previous=results[id],price=Number(previous?.livePrice??data.at(-1).close);
+    if(!Number.isFinite(price)||price<=0)throw new Error("Feed returned an invalid latest price.");
+    const analysis=analyze(data,asset);
+    results[id]={...previous,id,name:asset.name,price,change:Number.isFinite(previous?.price)?price-previous.price:null,candles:data,analysis,scannedAt:Date.now()};
+    if(liveTicks[id]){
+     results[id].livePrice=liveTicks[id].price;
+     results[id].liveChange=liveTicks[id].change;
+     results[id].liveUpdated=liveTicks[id].receivedAt;
+    }
     results[id].analysis={...results[id].analysis,direction:lockedCandleDirection(results[id])};
-   }else{
-    results[id]={id,name:a.name,price:NaN,change:null,candles:[],analysis:{direction:"WAIT",score:0,reason:e.message,fresh:false,age:Infinity},lastError:e.message};
+    if(results[id].analysis.direction!=="WAIT")addSignal(results[id]);
+    delete results[id].lastError;
+   }catch(pairError){
+    const message=pairError?.message||String(pairError);
+    errors.push(asset.name+": "+message);
+    if(results[id]){
+     results[id].lastError=message;
+     results[id].analysis={...results[id].analysis,direction:"WAIT",fresh:false,reason:"Feed error: "+message};
+    }else{
+     results[id]={id,name:asset.name,price:NaN,change:null,candles:[],analysis:{direction:"WAIT",score:0,reason:message,fresh:false,age:Infinity},lastError:message};
+    }
    }
+   done++;$("scanProgress").style.width=(done/ids.length*100)+"%";
+   $("progressText").textContent=`Prepared ${done}/${ids.length} OTC pairs · ${errors.length} history errors`;
+   try{renderScanner()}catch(renderError){console.error("Scanner render:",renderError)}
+   if(done<ids.length)await new Promise(resolve=>setTimeout(resolve,350));
   }
-  done++;$("scanProgress").style.width=(done/ids.length*100)+"%";$("progressText").textContent=`Scanned selected OTC pairs ${done} of ${ids.length} · ${errors} errors`;
-  renderScanner();
-  // Avoid bursting the provider and stay within low-tier rate limits.
-  if(done<ids.length)await new Promise(resolve=>setTimeout(resolve,900));
- }
- latestScan=Date.now();renderScanner();try{drawChart()}catch(chartError){console.error("Chart render:",chartError)}updateVisualAgreement();settleExpiredTrades();$("scanNow").disabled=false;busy=false;
- let fresh=ids.filter(id=>results[id]?.analysis.fresh).length;status(fresh?"SCAN COMPLETE · DATA RECEIVED":"SCAN COMPLETE · CHECK DATA",fresh>0);
- $("connectionStatus").textContent=`Regular feed: ${apiKey?"API key saved; per-symbol requests":"not configured"}\nOTC history: ${errorDetails.length?"ERROR · "+errorDetails.join(" | "):"last request completed"}\nOTC live stream: ${liveStreamState}\nLast scan: ${clock()}`;
- $("progressText").textContent=`Complete · ${fresh} fresh OTC pairs · ${errors} errors`;saveState();maybeAutoChatGPT();
+  latestScan=Date.now();
+  try{renderScanner();drawChart();updateVisualAgreement();settleExpiredTrades()}catch(uiError){console.error("Dashboard refresh:",uiError)}
+  const fresh=ids.filter(id=>results[id]?.analysis?.fresh).length;
+  status(fresh?"DATA READY · STREAMING":"CHECK FEED",fresh>0);
+  $("connectionStatus").textContent=
+   `OTC history: ${errors.length?errors.join(" | "):"loaded · "+ids.length+" pair(s)"}\n`+
+   `OTC stream: ${liveStreamState}\n`+
+   `History mode: ${forceHistory?"refreshed":"cached · no repeated candle polling"}\nLast analysis: ${clock()}`;
+  $("progressText").textContent=errors.length?`History error(s): ${errors.join(" · ")}`:
+   `Ready · ${fresh} fresh pair(s) · live stream supplies new prices`;
+  saveState();
+  try{maybeAutoChatGPT()}catch(aiError){console.error("Auto analysis:",aiError)}
+ }catch(scanError){
+  const message=scanError?.message||String(scanError);
+  console.error("APEXSCAN scan failed:",scanError);status("SCAN ERROR");
+  $("progressText").textContent="SCAN ERROR: "+message;
+  $("connectionStatus").textContent="OTC scan failed: "+message+"\nCheck /.netlify/functions/otc-candles and OTCHARTS_API_KEY.";
+ }finally{busy=false;$("scanNow").disabled=false;}
 }
 function openPaperTrade(r,side,isAutomatic=true,signalKey=""){
  if(!r||!r.analysis?.fresh||!hasCurrentFeed(r.id,r.candles?.at(-1))||!["CALL","PUT"].includes(side)){
@@ -1601,12 +1644,12 @@ function setMobileScreen(screen){
 }
 document.querySelectorAll(".market-tab").forEach(b=>b.addEventListener("click",()=>setMarketCategory(b.dataset.marketCategory)));
 document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>setMobileScreen(b.dataset.screen)));
-$("mobileAsset").addEventListener("change",()=>{const id=$("mobileAsset").value;$("chartAsset").value=id;selectedChart=id;watch.add(id);renderWatch();drawChart();updateMobileMarketLabel();stopLiveStream();connectLiveStream();saveState();if(!busy)scan()});
+$("mobileAsset").addEventListener("change",()=>{const id=$("mobileAsset").value;$("chartAsset").value=id;selectedChart=id;watch.add(id);renderWatch();drawChart();updateMobileMarketLabel();stopLiveStream();connectLiveStream();saveState();if(!busy)scan(true)});
 $("mobileInterval").addEventListener("change",()=>{$("interval").value=$("mobileInterval").value;$("interval").dispatchEvent(new Event("change"));});
 function syncMobileControls(){if($("mobileInterval"))$("mobileInterval").value=$("interval").value||"15000";updateChartOptions()}
 window.addEventListener("resize",()=>{setMobileScreen(activeMobileScreen);drawChart()});
-$("scanNow").onclick=()=>{scan().catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="Scan failed: "+(err?.message||"unknown error")})};
-$("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN WATCHLIST";status("AUTO SCAN ACTIVE",true);scan().catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="Scan failed: "+(err?.message||"unknown error")});cycle=setInterval(()=>{if(!busy)scan().catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="Scan failed: "+(err?.message||"unknown error")})},Math.max(5000,+$("interval").value))};
+$("scanNow").onclick=()=>{scan(true).catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="SCAN ERROR: "+(err?.message||"unknown error");$("connectionStatus").textContent="Scan failed: "+(err?.message||"unknown error")})};
+$("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN WATCHLIST";status("AUTO SCAN ACTIVE",true);scan(true).catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="SCAN ERROR: "+(err?.message||"unknown error");$("connectionStatus").textContent="Scan failed: "+(err?.message||"unknown error")});cycle=setInterval(()=>{if(!busy)scan().catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="SCAN ERROR: "+(err?.message||"unknown error");$("connectionStatus").textContent="Scan failed: "+(err?.message||"unknown error")})},Math.max(5000,+$("interval").value))};
 $("pauseBtn").onclick=()=>{running=false;clearInterval(cycle);$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED")};
 $("saveKey").type="button";
 $("saveKey").addEventListener("click",async(event)=>{
@@ -1737,6 +1780,6 @@ function maybeAutoChatGPT(){if(!$("chatgptAuto")?.checked||chatgptState.busy||ch
 })();
 
 setInterval(()=>{$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();updateCountdowns();settleExpiredTrades()},1000);
-loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · New qualified signals open simulated trades automatically":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();setTimeout(()=>{if(!busy)scan().catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="Scan failed: "+(err?.message||"unknown error")})},250);
+loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · New qualified signals open simulated trades automatically":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();setTimeout(()=>{if(!busy)scan().catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="SCAN ERROR: "+(err?.message||"unknown error");$("connectionStatus").textContent="Scan failed: "+(err?.message||"unknown error")})},250);
 </script>
 </body></html>
