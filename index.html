@@ -638,6 +638,8 @@ function updateMobileMarketLabel(){
  const a=ASSETS.find(x=>x.id===$("mobileAsset")?.value);
  const el=$("mobileMarketLabel");
  if(el&&a)el.textContent=a.name+(a.kind==="otc"?" · OTC":"");
+ const hero=$("heroSelectedMarket");
+ if(hero)hero.textContent=a?a.name+(a.kind==="otc"?" · OTC":" · LIVE FEED"):"Select a market";
 }
 function renderWatch(){
  let box=$("watchChecks");box.innerHTML="";
@@ -883,8 +885,22 @@ function setLiveStreamState(message,ok=false){
 }
 let poQuoteCapturedAt=0,poQuoteValue=null,poQuotePair=null;
 function selectedOTCPair(){
- const id=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
- return ASSETS.find(a=>a.id===id&&a.kind==="otc")||null;
+ // Resolve the selected market from either mobile or chart controls.
+ const mobile=$("mobileAsset"),chart=$("chartAsset");
+ const candidates=[mobile?.value,chart?.value,selectedChart];
+ let pair=null;
+ for(const id of candidates){
+  pair=ASSETS.find(a=>a.id===id&&a.kind==="otc");
+  if(pair)break;
+ }
+ // Recover safely if Safari restores an empty/stale select value.
+ if(!pair)pair=ASSETS.find(a=>a.id==="OTC:EUR/USD"&&a.kind==="otc")||ASSETS.find(a=>a.kind==="otc")||null;
+ if(pair){
+  selectedChart=pair.id;
+  if(mobile && [...mobile.options].some(o=>o.value===pair.id))mobile.value=pair.id;
+  if(chart && [...chart.options].some(o=>o.value===pair.id))chart.value=pair.id;
+ }
+ return pair;
 }
 function renderPOComparison(){
  const resultEl=$("poCompareResult"),pairLabel=$("poComparePair");
@@ -1446,10 +1462,17 @@ function renderAIForecast(data,pair){
 }
 function updateTicketCountdown(){const left=Math.max(0,manualSignalExpiresAt-Date.now());if($("ticketValid"))$("ticketValid").textContent=left?`00:${String(Math.ceil(left/1000)).padStart(2,"0")}`:"EXPIRED";if($("ticketCountdownBar"))$("ticketCountdownBar").style.width=`${left/60000*100}%`;if(!left&&manualSignalExpiresAt){$("ticketBadge").textContent="EXPIRED · RESCAN";$("ticketDirection").className="ticket-direction wait";$("ticketCallout").textContent="RESCAN CHARTS";$("ticketArrow").textContent="↻";clearInterval(manualSignalTimer);}}
 async function runManualChatGPTScan(){
- if(aiRequestBusy)return;const selected=selectedAIResult();if(!selected){setAIStatus("Select an OTC pair first.");return;}
- const {pair}=selected;aiRequestBusy=true;const seq=++aiRequestSequence;$("startBtn").disabled=true;$("scanNow").disabled=true;$("ticketPair").textContent=pair.name;$("ticketDirection").className="ticket-direction wait";$("ticketArrow").textContent="…";$("ticketCallout").textContent="ANALYZING";$("ticketBadge").textContent="CHATGPT WORKING";setAIStatus(`Fetching fresh ${pair.name} candles and sending them to ChatGPT…`);
+ if(aiRequestBusy)return;
+ const selected=selectedAIResult();
+ if(!selected){
+  status("PAIR SELECTION ERROR",false);
+  setAIStatus("No OTC pair is available. Reload the page and choose a market.");
+  return;
+ }
+ const {pair}=selected;let candlesLoaded=false;status("CONNECTING TO OTCHARTS",false);aiRequestBusy=true;const seq=++aiRequestSequence;$("startBtn").disabled=true;$("scanNow").disabled=true;$("ticketPair").textContent=pair.name;$("ticketDirection").className="ticket-direction wait";$("ticketArrow").textContent="…";$("ticketCallout").textContent="ANALYZING";$("ticketBadge").textContent="CHATGPT WORKING";setAIStatus(`Fetching fresh ${pair.name} candles and sending them to ChatGPT…`);
  try{
   const candles=await fetchAsset(pair);if(candles.length<35)throw Error(`Only ${candles.length} candles received; at least 35 are required.`);
+  candlesLoaded=true;status("OTC DATA CONNECTED",true);
   const candle=candles.at(-1),age=Date.now()-Number(candle.timeMs||0);if(!Number.isFinite(age)||age<0||age>180000)throw Error("The latest candle is stale (older than 3 minutes). No signal was issued.");
   const technical=analyze(candles,pair);const previous=results[pair.id];const tick=liveTicks[pair.id];
   results[pair.id]={id:pair.id,name:pair.name,price:candle.close,livePrice:tick?.price??candle.close,candles,analysis:technical,scannedAt:Date.now()};
@@ -1457,10 +1480,10 @@ async function runManualChatGPTScan(){
   const payload={pair:pair.name,symbol:pair.symbol,timeframe:"60-second (1-minute) candles; candle timestamps should be 60 seconds apart",livePrice:Number(tick?.price??candle.close),liveTickAgeSeconds:tick?Math.max(0,Math.round((Date.now()-tick.receivedAt)/1000)):null,liveTickTimestamp:tick?.receivedAt?new Date(tick.receivedAt).toISOString():null,liveTickFresh:!!tick&&Date.now()-tick.receivedAt<=20000,candleIntervalSeconds:60,candleTimestamp:candle.time,technical:{direction:technical.direction||"WAIT",score:Number(technical.score)||0,trend:technical.trend||"MIXED",rsi:Number.isFinite(Number(technical.rsi))?Number(technical.rsi):null,signalLevel:technical.signalLevel||"EARLY",reason:String(technical.reason||"")},candles:candles.slice(-60).map(c=>({time:c.time,open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close),volume:c.volume===null||c.volume===undefined?null:Number(c.volume)}))};
   const response=await fetch("/.netlify/functions/openai-analysis",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),cache:"no-store"});const raw=await response.text();let body={};try{body=JSON.parse(raw)}catch(e){}if(!response.ok)throw Error(body.error||`AI function returned HTTP ${response.status}`);if(seq!==aiRequestSequence||selectedOTCPair()?.id!==pair.id)return;
   renderAIForecast(body,pair);setAIStatus(`CHATGPT ANALYSIS COMPLETE · ${pair.name} · ${body.data_candles||candles.length} candles · ${clock()}`,true);
- }catch(error){if(seq===aiRequestSequence){setAIStatus("SCAN FAILED · "+(error?.message||"Unknown error"));$("ticketBadge").textContent="SCAN ERROR";$("ticketCallout").textContent="NO SIGNAL";$("ticketCaption").textContent=error?.message||"Unable to analyze this chart.";}}
+ }catch(error){if(seq===aiRequestSequence){if(!candlesLoaded)status("DATA CONNECTION ERROR",false);setAIStatus("SCAN FAILED · "+(error?.message||"Unknown error"));$("ticketBadge").textContent="SCAN ERROR";$("ticketCallout").textContent="NO SIGNAL";$("ticketCaption").textContent=error?.message||"Unable to analyze this chart.";}}
  finally{aiRequestBusy=false;$("startBtn").disabled=false;$("scanNow").disabled=false;}
 }
 setInterval(()=>{$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();updateCountdowns();settleExpiredTrades()},1000);
-loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · New qualified signals open simulated trades automatically":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();setAIStatus("Ready · select an OTC pair and tap SCAN CHARTS.");$("ticketPair").textContent=selectedOTCPair()?.name||"Select OTC market";
+loadState();status("READY · TAP SCAN",false);$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · New qualified signals open simulated trades automatically":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();setAIStatus("Ready · select an OTC pair and tap SCAN CHARTS.");$("ticketPair").textContent=selectedOTCPair()?.name||"Select OTC market";
 </script>
 </body></html>
