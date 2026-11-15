@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="7.0-chatgpt-picture-scanner-learning-engine">
-<title>APEXSCAN PRO · V7.0 AI INTELLIGENCE</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="9.0-intelligent-1m-pattern-confluence-engine">
+<title>APEXSCAN PRO · V9.0 INTELLIGENT ENGINE</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -412,6 +412,19 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 .chat-shell{display:flex;flex-direction:column;gap:9px}.chat-log{height:280px;max-height:42vh;overflow:auto;display:flex;flex-direction:column;gap:9px;padding:10px;background:#071321;border:1px solid #203a58;border-radius:11px}.chat-msg{max-width:94%;padding:10px 11px;border-radius:11px;font-size:11px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}.chat-msg.user{align-self:flex-end;background:linear-gradient(120deg,#123e5a,#26345d);border:1px solid #37658a}.chat-msg.assistant{align-self:flex-start;background:#101f33;border:1px solid #294461}.chat-msg .chat-signal{display:inline-block;margin-bottom:6px;padding:4px 8px;border-radius:6px;font-weight:900;letter-spacing:.08em}.chat-signal.call{background:#103b31;color:#45edb6}.chat-signal.put{background:#421e2c;color:#ff7896}.chat-signal.wait{background:#3a301c;color:#ffd078}.chat-compose{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}.chat-compose textarea{width:100%;min-height:54px;max-height:120px;resize:vertical;padding:10px;background:#081525;color:var(--text);border:1px solid #294665;border-radius:9px;outline:none;font:inherit;font-size:11px}.chat-compose textarea:focus{border-color:#66b7ff}.chat-quick{display:flex;gap:6px;flex-wrap:wrap}.chat-quick button{font-size:9px;padding:6px 8px}.chat-note{font-size:9px;color:var(--muted);line-height:1.45}.chat-send{min-width:66px;align-self:stretch}.chat-status{font-size:10px;color:var(--amber);min-height:14px}
 @media(max-width:900px){.chat-log{height:240px;max-height:38vh}.chat-compose textarea{font-size:16px}}
 </style>
+<style id="apex-v9-engine-style">
+#apexIntelligentEngine{margin:10px 0;padding:11px;border:1px solid #365d9b;border-radius:12px;background:linear-gradient(145deg,#10254c,#08152c)}
+.apex-engine-head{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.apex-engine-head b{font-size:10px;letter-spacing:.12em;color:#b9d8ff}
+#apexPhase{font-size:9px;color:#6ee5c5;font-weight:900}
+.apex-engine-grid{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:8px}
+.apex-engine-signal{font-size:23px;font-weight:1000;color:#ffd078}.apex-engine-signal.buy{color:#48e7b4}.apex-engine-signal.sell{color:#ff7892}
+#apexEngineScore{font-size:19px;font-weight:1000;text-align:right;color:#d7e8ff}
+.apex-engine-meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:9px;color:#9bb6d8}
+#apexEnginePatterns{font-size:10px;line-height:1.5;color:#d2e3fb;margin-top:7px;overflow-wrap:anywhere}
+#apexEngineReason{font-size:10px;line-height:1.45;color:#a9c6e8;margin:7px 0 0}
+@media(max-width:700px){#apexIntelligentEngine{padding:9px}.apex-engine-signal{font-size:21px}}
+</style>
 </head>
 <body>
 <header>
@@ -506,7 +519,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
      <div id="paperLiveBoard" class="paper-live-board" aria-live="polite"><b>LIVE PAPER POSITIONS</b><span>No open paper trades yet · waiting for the next directional signal.</span></div>
      <div class="countdown-grid">
       <div><small>BUY / SELL VALID FOR</small><b id="signalCountdown">--:--</b></div>
-      <div><small>1-MIN CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
+      <div><small>1-MIN UTC CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
      </div>
      <div class="trade-duration" style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;padding:10px;border:1px solid #31527a;border-radius:10px;background:#07182a">
       <div style="display:flex;flex-direction:column;gap:5px"><small style="font-size:9px;color:#9ed5ff;font-weight:900;letter-spacing:.08em">AI-SELECTED TRADE HOLD · NO MANUAL DURATION</small><b id="durationAdvice" style="font-size:16px;color:#fff">AI evaluating market structure…</b><small style="font-size:10px;color:#9db1cc">AI chooses from 1m · 3m · 5m · 15m · 30m · 1h · 4h; holds shorter than one full candle are disabled., based on available trend history and live conditions.</small></div>
@@ -1058,6 +1071,10 @@ function handleLiveTick(raw){
  );
  const price=Number(tick.price??tick.last??tick.close??tick.p??tick.value);
  if(!id||!Number.isFinite(price)||price<=0)return;
+ // Refine UTC clock from provider timestamp when the feed supplies one.
+ const providerStamp=tick.timestamp??tick.time??tick.ts;
+ let providerMs=typeof providerStamp==="string"&&!/^\\d{10,13}$/.test(providerStamp)?Date.parse(providerStamp):Number(providerStamp);
+ if(Number.isFinite(providerMs)&&providerMs>0){if(providerMs<1e12)providerMs*=1000;const delta=providerMs-Date.now();if(Math.abs(delta)<120000)apexServerClockOffsetMs=apexServerClockOffsetMs*.8+delta*.2;}
  const previous=liveTicks[id]?.price ?? results[id]?.price ?? price;
  const receivedAt=Date.now(),candleStart=Math.floor(receivedAt/60000)*60000;
  liveTicks[id]={price,change:price-previous,time:tick.time||tick.timestamp||receivedAt,receivedAt};
@@ -1619,25 +1636,8 @@ async function runLiveAIAnalysis(force=false){
   // Ignore an answer for a pair that is no longer selected.
   if(selectedOTCPair()?.id!==pair.id)return;
   renderAIForecast(body,pair);
-  const aiDirection=String(body.direction||"WAIT").toUpperCase();
-  const current=results[pair.id];
-  if(current && ["CALL","PUT","WAIT"].includes(aiDirection)){
-   const evidence=Number(body.evidence_score);
-   current.analysis={
-    ...current.analysis,
-    direction:aiDirection,
-    score:Number.isFinite(evidence)?Math.max(0,Math.min(100,evidence)):current.analysis.score,
-    reason:String(body.reason||"ChatGPT analyzed the selected OTC candles."),
-    signalLevel:"EARLY",
-    aiHoldSeconds:Number(body.hold_seconds)||30,
-    aiPattern:String(body.pattern||""),
-    aiTrend:String(body.trend||""),
-    aiRiskFlags:Array.isArray(body.risk_flags)?body.risk_flags:[]
-   };
-   renderScanner();
-   if(["CALL","PUT"].includes(aiDirection))addSignal(current);
-  }
-  setAIStatus(`CHATGPT SCAN COMPLETE · ${pair.name} · ${aiDirection} · updated ${clock()}`,true);
+  // ChatGPT forecast is informational only; it cannot override the deterministic 3-confluence engine or create a trade signal.
+  setAIStatus(`CHATGPT FORECAST COMPLETE · ${pair.name} · updated ${clock()}`,true);
  }catch(error){
   if(seq===aiRequestSequence)setAIStatus("AI error · "+(error?.message||"Request failed")+". The technical scanner continues normally.");
  }finally{aiRequestBusy=false;if(aiLiveEnabled&&selectedOTCPair()?.id!==pair.id)setTimeout(()=>runLiveAIAnalysis(),250);}
@@ -1728,5 +1728,207 @@ async function apexChatSend(textOverride){
 apexChatSendEl.addEventListener("click",()=>apexChatSend());
 apexChatInputEl.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();apexChatSend()}});
 document.querySelectorAll("[data-chat-prompt]").forEach(btn=>btn.addEventListener("click",()=>apexChatSend(btn.dataset.chatPrompt)));
+
+
+/* APEXSCAN PRO · Intelligent 1-minute engine V9
+   Pattern rules are deterministic heuristics, not predictive guarantees. */
+const APEX_ENGINE_VERSION = "9.0";
+let apexServerClockOffsetMs = 0, apexPhaseMinuteKey = "", apexPhase50Key = "", apexBoundaryKey = "";
+function apexServerNow(){ return Date.now()+apexServerClockOffsetMs; }
+function apexCandleCountdown(){
+  const now=apexServerNow(), next=(Math.floor(now/60000)+1)*60000;
+  return Math.max(0,Math.min(59,Math.ceil((next-now)/1000)));
+}
+function apexCandleShape(c){
+  const o=+c.open,h=+c.high,l=+c.low,cl=+c.close;
+  const range=Math.max(h-l,1e-12),body=Math.abs(cl-o),upper=h-Math.max(o,cl),lower=Math.min(o,cl)-l;
+  return {o,h,l,c:cl,range,body,bodyPct:body/range,upperPct:upper/range,lowerPct:lower/range,bull:cl>o,bear:cl<o};
+}
+function detectApexPatterns(input){
+  const a=(input||[]).filter(c=>[c.open,c.high,c.low,c.close].every(v=>Number.isFinite(Number(v)))).slice(-30);
+  const found=[], dirs={};
+  const add=(name,dir)=>{if(!found.includes(name)){found.push(name);dirs[name]=dir}};
+  if(a.length<3)return {patterns:found,directions:dirs,swings:[],macro:[]};
+  const s=a.map(apexCandleShape), n=s.length, x=s[n-1],p=s[n-2],q=s[n-3];
+  const small=z=>z.bodyPct<=.12, long=z=>z.bodyPct>=.78;
+  // Single-candle patterns, evaluated only on completed OHLC bars.
+  if(x.bull&&p.bear&&x.o<=p.c&&x.c>=p.o&&x.body>=p.body*.9)add("Bullish Engulfing","CALL");
+  if(x.bear&&p.bull&&x.o>=p.c&&x.c<=p.o&&x.body>=p.body*.9)add("Bearish Engulfing","PUT");
+  if(x.lowerPct>=.58&&x.bodyPct<=.34&&x.upperPct<=.18)add(x.bull?"Hammer":"Hanging Man",x.bull?"CALL":"PUT");
+  if(x.upperPct>=.58&&x.bodyPct<=.34&&x.lowerPct<=.18)add(x.bull?"Inverted Hammer":"Shooting Star",x.bull?"CALL":"PUT");
+  if(small(x)&&x.lowerPct>=.65&&x.upperPct<=.12)add("Dragonfly Doji","CALL");
+  if(small(x)&&x.upperPct>=.65&&x.lowerPct<=.12)add("Gravestone Doji","PUT");
+  if(long(x))add("Marubozu",x.bull?"CALL":"PUT");
+  if(x.bodyPct<=.3&&x.upperPct>=.2&&x.lowerPct>=.2)add("Spinning Top","WAIT");
+  // Three-candle formations.
+  if(q.bear&&q.bodyPct>.45&&p.bodyPct<.25&&x.bull&&x.c>(q.o+q.c)/2&&x.c<q.o)add("Morning Star","CALL");
+  if(q.bull&&q.bodyPct>.45&&p.bodyPct<.25&&x.bear&&x.c<(q.o+q.c)/2&&x.c>q.o)add("Evening Star","PUT");
+  const trio=s.slice(-3);
+  if(trio.every(z=>z.bull&&z.bodyPct>.35)&&trio[1].c>trio[0].c&&trio[2].c>trio[1].c)add("Three White Soldiers","CALL");
+  if(trio.every(z=>z.bear&&z.bodyPct>.35)&&trio[1].c<trio[0].c&&trio[2].c<trio[1].c)add("Three Black Crows","PUT");
+  if(q.bear&&x.bull&&x.o>q.c&&x.c<q.o&&x.c>=(q.o+q.c)/2)add("Bullish Harami","CALL");
+  if(q.bull&&x.bear&&x.o<q.c&&x.c>q.o&&x.c<=(q.o+q.c)/2)add("Bearish Harami","PUT");
+  if(p.bear&&x.bull&&x.o<p.c&&x.c>=(p.o+p.c)/2&&x.c<p.o)add("Piercing Line","CALL");
+  if(p.bull&&x.bear&&x.o>p.c&&x.c<=(p.o+p.c)/2&&x.c>p.o)add("Dark Cloud Cover","PUT");
+  const tol=Math.max(x.range*.12,Math.abs(x.c)*.00003);
+  if(Math.abs(x.h-p.h)<=tol&&x.bear&&p.bull)add("Tweezer Top","PUT");
+  if(Math.abs(x.l-p.l)<=tol&&x.bull&&p.bear)add("Tweezer Bottom","CALL");
+  // Swing points: two bars on each side, then simple macro-structure classification.
+  const highs=[],lows=[];
+  for(let i=2;i<a.length-2;i++){
+    if(+a[i].high>+a[i-1].high&&+a[i].high>+a[i-2].high&&+a[i].high>=+a[i+1].high&&+a[i].high>=+a[i+2].high)highs.push({i,v:+a[i].high});
+    if(+a[i].low<+a[i-1].low&&+a[i].low<+a[i-2].low&&+a[i].low<=+a[i+1].low&&+a[i].low<=+a[i+2].low)lows.push({i,v:+a[i].low});
+  }
+  const macro=[], lastHigh=highs.slice(-3),lastLow=lows.slice(-3);
+  const near=(u,v)=>Math.abs(u-v)<=Math.max(x.range*.35,Math.abs(x.c)*.00015);
+  if(lastHigh.length>=2&&near(lastHigh.at(-1).v,lastHigh.at(-2).v)) {macro.push("Double Top");add("Double Top","PUT")}
+  if(lastLow.length>=2&&near(lastLow.at(-1).v,lastLow.at(-2).v)) {macro.push("Double Bottom");add("Double Bottom","CALL")}
+  if(lastHigh.length>=3&&lastLow.length>=2){
+    const h=lastHigh.slice(-3).map(z=>z.v);
+    if(h[1]>h[0]&&h[1]>h[2]&&h[2]<h[1]&&lastLow.at(-1).v>lastLow.at(-2).v){macro.push("Head & Shoulders");add("Head & Shoulders","PUT")}
+    if(h[1]<h[0]&&h[1]<h[2]&&lastLow.at(-1).v<lastLow.at(-2).v){macro.push("Inverse Head & Shoulders");add("Inverse Head & Shoulders","CALL")}
+  }
+  if(lastHigh.length>=2&&lastLow.length>=2){
+    const dh=lastHigh.at(-1).v-lastHigh.at(-2).v, dl=lastLow.at(-1).v-lastLow.at(-2).v;
+    if(dh>0&&dl>0&&dl>dh){macro.push("Ascending Triangle")}
+    else if(dh<0&&dl<0&&dh<dl){macro.push("Descending Triangle")}
+    else if(dh<0&&dl>0){macro.push("Symmetrical Triangle")}
+    else if(dh>0&&dl>0){macro.push("Rising Wedge")}
+    else if(dh<0&&dl<0){macro.push("Falling Wedge")}
+  }
+  // Simple support/resistance liquidity sweep: wick breaches a recent level but closes back inside.
+  const recent=a.slice(-21,-1), sh=Math.max(...recent.map(c=>+c.high)), sl=Math.min(...recent.map(c=>+c.low));
+  if(x.h>sh&&x.c<sh&&x.upperPct>.25){macro.push("Liquidity Sweep / Resistance Fakeout");add("Liquidity Sweep / Resistance Fakeout","PUT")}
+  if(x.l<sl&&x.c>sl&&x.lowerPct>.25){macro.push("Liquidity Sweep / Support Fakeout");add("Liquidity Sweep / Support Fakeout","CALL")}
+  // Flags are intentionally conservative: short pullback after a strong impulse.
+  const impulse=s.slice(-8,-3), pull=s.slice(-3);
+  if(impulse.length===5&&impulse.filter(z=>z.bull).length>=4&&pull.filter(z=>z.bear).length>=2){macro.push("Bull Flag")}
+  if(impulse.length===5&&impulse.filter(z=>z.bear).length>=4&&pull.filter(z=>z.bull).length>=2){macro.push("Bear Flag")}
+  return {patterns:found,directions:dirs,swings:{highs:lastHigh,lows:lastLow},macro};
+}
+function analyze(candles,asset){
+  const bars=(candles||[]).slice(-120);
+  if(bars.length<35)return {direction:"WAIT",rawDirection:"WAIT",score:0,confidence_score:0,reason:"Building analysis · 35 completed 1-minute candles required",fresh:false,age:Infinity,signalLevel:"WAIT",detected_patterns:[],confluences:[]};
+  const closes=bars.map(c=>Number(c.close)),last=bars.at(-1),prev=bars.at(-2),shape=apexCandleShape(last);
+  const macd=macdValues(closes,12,26,9),levels=findSupportResistance(bars);
+  const ranges=bars.slice(1).map((c,i)=>Math.max(+c.high-+c.low,Math.abs(+c.high-+bars[i].close),Math.abs(+c.low-+bars[i].close)));
+  const atr=ranges.slice(-14).reduce((u,v)=>u+v,0)/Math.max(1,Math.min(14,ranges.length));
+  const tick=liveTicks[asset.id],tickAge=tick?Math.max(0,(Date.now()-Number(tick.receivedAt||0))/1000):Infinity;
+  const candleAge=last.timeMs?Math.max(0,(Date.now()-Number(last.timeMs)-60000)/1000):Infinity;
+  const fresh=tickAge<=20||candleAge<=120,age=Math.min(tickAge,candleAge);
+  const macdBull=!!macd&&macd.line>macd.signal&&macd.histogram>0;
+  const macdBear=!!macd&&macd.line<macd.signal&&macd.histogram<0;
+  const histShiftUp=!!macd&&Number.isFinite(macd.previousHistogram)&&macd.histogram>macd.previousHistogram;
+  const histShiftDown=!!macd&&Number.isFinite(macd.previousHistogram)&&macd.histogram<macd.previousHistogram;
+  const patterns=detectApexPatterns(bars), names=patterns.patterns;
+  const patBull=names.some(n=>patterns.directions[n]==="CALL"),patBear=names.some(n=>patterns.directions[n]==="PUT");
+  const support=levels.support?.price??null,resistance=levels.resistance?.price??null;
+  const tol=Math.max(atr*.35,Math.abs(+last.close)*.00002);
+  const supportReject=Number.isFinite(support)&&+last.low<=support+tol&&+last.close>support&&shape.lowerPct>.18;
+  const resistanceReject=Number.isFinite(resistance)&&+last.high>=resistance-tol&&+last.close<resistance&&shape.upperPct>.18;
+  const bullBody=shape.bull&&shape.bodyPct>=.38&&shape.c>+prev.close;
+  const bearBody=shape.bear&&shape.bodyPct>=.38&&shape.c<+prev.close;
+  const bullMacd=macdBull||histShiftUp, bearMacd=macdBear||histShiftDown;
+  const bullEvidence=[patBull,supportReject,bullMacd,bullBody,patterns.macro.includes("Inverse Head & Shoulders")||patterns.macro.includes("Double Bottom")].filter(Boolean).length;
+  const bearEvidence=[patBear,resistanceReject,bearMacd,bearBody,patterns.macro.includes("Head & Shoulders")||patterns.macro.includes("Double Top")].filter(Boolean).length;
+  let rawDirection="WAIT", score=0, confluences=[];
+  if(bullEvidence>=3&&bullEvidence>bearEvidence){rawDirection="CALL";confluences=[patBull&&"Bullish candle/chart pattern",supportReject&&"Support rejection",bullMacd&&"MACD momentum shift",bullBody&&"Bullish body close",(patterns.macro.includes("Inverse Head & Shoulders")||patterns.macro.includes("Double Bottom"))&&"Bullish swing structure"].filter(Boolean)}
+  if(bearEvidence>=3&&bearEvidence>bullEvidence){rawDirection="PUT";confluences=[patBear&&"Bearish candle/chart pattern",resistanceReject&&"Resistance rejection",bearMacd&&"MACD momentum shift",bearBody&&"Bearish body close",(patterns.macro.includes("Head & Shoulders")||patterns.macro.includes("Double Top"))&&"Bearish swing structure"].filter(Boolean)}
+  const evidence=Math.max(bullEvidence,bearEvidence);
+  score=rawDirection==="WAIT"?Math.min(59,25+evidence*9+(fresh?5:0)):Math.min(96,48+evidence*9+(fresh?5:0)+(shape.bodyPct>.6?4:0));
+  if(!fresh){rawDirection="WAIT";score=Math.min(score,40)}
+  const trend=macdBull?"UP":macdBear?"DOWN":"MIXED";
+  const expiry=score>=82&&evidence>=4?"5m":score>=68&&evidence>=3?"3m":"1m";
+  const reason=rawDirection==="WAIT"
+    ?`WAIT · ${evidence}/5 directional checks align; need at least 3 matching confluences and a fresh quote.`
+    :`${rawDirection==="CALL"?"Bullish":"Bearish"} close confirmed by ${confluences.slice(0,3).join(", ")}.`;
+  const breakdown={trend:trend==="UP"?"MACD bullish":trend==="DOWN"?"MACD bearish":"MACD mixed",momentum:`MACD histogram ${macd?macd.histogram.toPrecision(5):"warming up"} · ${histShiftUp?"rising":histShiftDown?"falling":"flat"}`,volatility:`${(last.close?atr/last.close*100:0).toFixed(3)}% ATR`,price:shape.bull?"Bullish candle":shape.bear?"Bearish candle":"Doji / neutral",structure:`Support ${support??"—"} · Resistance ${resistance??"—"}`,feed:fresh?"Fresh provider data":"Stale / delayed"};
+  const result={direction:rawDirection,rawDirection,signalLevel:rawDirection==="WAIT"?"WAIT":"CONFIRMED",score,confidence_score:score,reason,fresh,age,trend,entry:+last.close,quality:shape.bodyPct,candleTime:last.time,candleTimeMs:Number(last.timeMs||0),atr,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,support,resistance,supportTouches:levels.support?.touches??0,resistanceTouches:levels.resistance?.touches??0,nearSupport:supportReject,nearResistance:resistanceReject,detected_patterns:names,macro_patterns:patterns.macro,confluences,evidence_count:evidence,recommended_expiry:expiry,breakdown};
+  result.structured={signal:rawDirection==="CALL"?"BUY":rawDirection==="PUT"?"SELL":"WAIT",confidence_score:score,detected_patterns:[...names,...patterns.macro,...(supportReject?["Support Bounce"]:[]),...(resistanceReject?["Resistance Rejection"]:[]),...(macdBull?["MACD Bullish Momentum Shift"]:macdBear?["MACD Bearish Momentum Shift"]:[])],recommended_expiry:expiry,reasoning:reason};
+  window.APEX_LAST_ANALYSIS=result.structured;
+  return result;
+}
+function apexRenderIntelligentPanel(){
+ const id=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart, r=results[id], a=r?.analysis||{};
+ const now=apexServerNow(),sec=Math.floor((now%60000)/1000),phase=sec>=50?"PHASE 2 · CONFIRMATION WINDOW":"PHASE 1 · BUILDING ANALYSIS";
+ const countdown=apexCandleCountdown();
+ const phaseEl=$("apexPhase"),clockEl=$("candleCountdown");
+ if(phaseEl)phaseEl.textContent=`${phase} · ${String(60-sec).padStart(2,"0")}s`;
+ if(clockEl)clockEl.textContent=`00:${String(countdown).padStart(2,"0")}`;
+ const output=a.structured||{signal:"WAIT",confidence_score:0,detected_patterns:[],recommended_expiry:"1m",reasoning:"Waiting for completed candle data."};
+ const signalEl=$("apexEngineSignal"),scoreEl=$("apexEngineScore"),patternsEl=$("apexEnginePatterns"),reasonEl=$("apexEngineReason"),expiryEl=$("apexEngineExpiry");
+ if(signalEl){const side=a.direction==="CALL"?"BUY":a.direction==="PUT"?"SELL":"WAIT";signalEl.textContent=side;signalEl.className="apex-engine-signal "+side.toLowerCase()}
+ if(scoreEl)scoreEl.textContent=`${Number(output.confidence_score)||0}/100`;
+ if(patternsEl)patternsEl.textContent=(output.detected_patterns||[]).join(" · ")||"No confirmed patterns yet";
+ if(reasonEl)reasonEl.textContent=output.reasoning||"Waiting for a closed candle.";
+ if(expiryEl)expiryEl.textContent=output.recommended_expiry||"1m";
+}
+function apexIntelligentHeartbeat(){
+ const now=apexServerNow(), minute=Math.floor(now/60000), sec=Math.floor((now%60000)/1000), key=String(minute);
+ apexRenderIntelligentPanel();
+ // Background analysis is tick-driven. Refresh full history once during the final ten seconds.
+ if(sec>=50&&apexPhase50Key!==key){apexPhase50Key=key;if(!busy&&running)scan();}
+ // At the next UTC minute boundary, fetch the newly closed bar and lock the decision.
+ if(sec<=1&&apexBoundaryKey!==key){apexBoundaryKey=key;if(running)setTimeout(()=>{if(running&&!busy)scan()},250);}
+ // Keep the scanner's live phase label and update the chart clock without a random interval.
+ if(sec===0)apexPhaseMinuteKey=key;
+}
+
+// Keep reverse-mode behavior but expose the effective direction in the structured UI payload.
+const apexOriginalApplyReverseSignal=applyReverseSignal;
+applyReverseSignal=function(r){
+ const side=apexOriginalApplyReverseSignal(r);
+ if(r?.analysis?.structured){
+  r.analysis.structured.signal=side==="CALL"?"BUY":side==="PUT"?"SELL":"WAIT";
+  r.analysis.structured.confidence_score=Number(r.analysis.score)||0;
+  window.APEX_LAST_ANALYSIS=r.analysis.structured;
+ }
+ return side;
+};
+// Preserve the existing trade settlement/countdown work, then correct the clock from UTC epoch time.
+const apexOriginalCountdowns=updateCountdowns;
+updateCountdowns=function(){
+ apexOriginalCountdowns();
+ const el=$("candleCountdown");
+ if(el){const left=apexCandleCountdown();el.textContent=`00:${String(left).padStart(2,"0")}`;}
+ apexRenderIntelligentPanel();
+};
+function apexStartScheduler(){
+ clearInterval(cycle);running=true;
+ $("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="INTELLIGENT SCAN";
+ status("INTELLIGENT SCANNER ACTIVE",true);
+ scan();
+ cycle=setInterval(apexIntelligentHeartbeat,250);
+}
+function apexPauseScheduler(){
+ running=false;clearInterval(cycle);cycle=null;
+ $("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";
+ status("SCANNER PAUSED");
+}
+$("startBtn").onclick=apexStartScheduler;
+$("pauseBtn").onclick=apexPauseScheduler;
+$("interval").onchange=()=>{ $("cycleText").textContent="UTC 1-minute phases";saveState(); };
+$("mobileInterval").addEventListener("change",()=>{$("interval").value=$("mobileInterval").value;$("cycleText").textContent="UTC 1-minute phases";saveState()});
+// Provider timestamps can refine the local UTC clock offset. Unknown/malformed timestamps are ignored.
+const apexOriginalHandleLiveTick=handleLiveTick;
+handleLiveTick=function(event){
+ try{
+  const raw=JSON.parse(event.data||"{}"),t=raw?.data&&typeof raw.data==="object"?raw.data:raw;
+  let stamp=t?.timestamp??t?.time??t?.ts;
+  let ms=typeof stamp==="string"&&!/^\d{10,13}$/.test(stamp)?Date.parse(stamp):Number(stamp);
+  if(Number.isFinite(ms)&&ms>0){if(ms<1e12)ms*=1000;const delta=ms-Date.now();if(Math.abs(delta)<120000)apexServerClockOffsetMs=apexServerClockOffsetMs*.8+delta*.2;}
+ }catch(e){}
+ return apexOriginalHandleLiveTick(event);
+};
+// Insert the engine status card without changing the existing dashboard structure.
+const signalCallout=$("signalCallout");
+if(signalCallout&&!$("apexIntelligentEngine")){
+ const card=document.createElement("section");card.id="apexIntelligentEngine";
+ card.innerHTML='<div class="apex-engine-head"><b>APEX INTELLIGENT ENGINE · 1M UTC</b><span id="apexPhase">PHASE 1 · BUILDING ANALYSIS</span></div><div class="apex-engine-grid"><div><div class="apex-engine-signal wait" id="apexEngineSignal">WAIT</div><div class="apex-engine-meta"><span>AI evidence score</span><span>Expiry: <b id="apexEngineExpiry">1m</b></span></div></div><div id="apexEngineScore">0/100</div></div><div id="apexEnginePatterns">Waiting for completed candle patterns…</div><p id="apexEngineReason">At least three aligned technical confluences are required.</p>';
+ signalCallout.parentNode.insertBefore(card,signalCallout);
+}
+setInterval(apexIntelligentHeartbeat,250);
+apexRenderIntelligentPanel();
+
 </script>
 </body></html>
