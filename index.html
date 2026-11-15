@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="12.3-live-feed-fix">
-<title>APEXSCAN PRO · CHATGPT MANUAL CHART SCANNER</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="8.9-otc-60-second-live-ai">
+<title>APEXSCAN PRO · V8.8 OTC BUY / SELL</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -369,13 +369,6 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
  .paper-live-board .paper-position{font-size:10px}
 }
 
-
-/* V12 manual ChatGPT signal ticket, inspired by the supplied compact OTC signal card */
-.manual-signal-ticket{margin:12px 0 16px;padding:13px;border:1px solid #405a9b;border-radius:17px;background:linear-gradient(145deg,#242b67,#171b49 60%,#101936);box-shadow:0 14px 34px #05081799,inset 0 1px #ffffff20;color:#fff}
-.ticket-market{display:flex;align-items:center;gap:11px;padding:4px 3px 13px}.ticket-symbol{width:47px;height:47px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#202a50;font-size:22px;font-weight:1000;box-shadow:0 3px 15px #0005}.ticket-market b{display:block;font-size:17px}.ticket-market small{display:block;color:#c2c9ed;font-size:11px;margin-top:2px}.ticket-market .pill{margin-left:auto}.ticket-direction{min-height:118px;border-radius:15px;display:flex;align-items:center;justify-content:center;gap:14px;flex-direction:column;text-align:center;border:2px solid #ffffff30;box-shadow:0 9px 24px #0005;padding:12px}.ticket-direction b{font-size:30px;line-height:1.05;letter-spacing:.03em}.ticket-direction .ticket-arrow{font-size:37px;font-weight:1000;line-height:1}.ticket-direction.call{background:linear-gradient(135deg,#00bd78,#078d68);box-shadow:0 0 25px #00d99a55}.ticket-direction.put{background:linear-gradient(135deg,#ff2727,#d90d45);box-shadow:0 0 25px #ff174f66}.ticket-direction.wait{background:linear-gradient(135deg,#596a91,#293c68)}.ticket-caption{text-align:center;color:#e0e5ff;font-size:12px;padding:10px 3px 12px}.ticket-details{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #ffffff35;border-radius:10px;background:#121a43aa;overflow:hidden}.ticket-details div{padding:9px 7px;border-right:1px solid #ffffff26}.ticket-details div:last-child{border:0}.ticket-details small{display:block;color:#b7c4e8;font-size:9px;font-weight:800}.ticket-details b{display:block;margin-top:4px;font-size:12px}.ticket-countdown{height:4px;background:#ffffff25;margin-top:12px;border-radius:9px;overflow:hidden}.ticket-countdown span{display:block;height:100%;width:0;background:#e9efff;transition:width .3s}
-#startBtn{min-height:48px;font-size:14px;padding:12px 20px}
-@media(max-width:600px){.manual-signal-ticket{padding:11px}.ticket-direction{min-height:112px}.ticket-direction b{font-size:29px}.ticket-details b{font-size:11px}}
-
 </style>
 <style id="apex-live-ai-styles">
 #aiForecastPanel{margin-top:12px;padding:13px;border:1px solid #31578e;border-radius:13px;background:linear-gradient(155deg,#101f42,#08152b);box-shadow:0 12px 28px #0004}
@@ -405,10 +398,10 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 </header>
 <main class="wrap">
  <div class="top">
-  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · OTC SIGNAL SCANNER</h1><p>ChatGPT-powered chart analysis · choose a pair · tap SCAN CHARTS</p></div>
-  <div class="actions"><button id="startBtn" class="primary">⌕ SCAN CHARTS</button><button id="pauseBtn" class="danger" disabled hidden>Ⅱ PAUSE</button></div>
+  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · OTC SIGNAL SCANNER</h1><p>OTCharts live OTC feed · BUY / SELL signals · scan manually or automatically</p></div>
+  <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
- <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Each scan fetches fresh candle history for the selected pair and sends it to ChatGPT for an independent analysis. No background AI scans run. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
+ <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Recent live ticks keep analysis current even while the current 60-second candle is still forming. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
  <section class="mobile-command" id="marketControls" aria-label="Market controls">
   <div class="market-tabs" role="group" aria-label="Market category">
    <button type="button" class="market-tab active" data-market-category="currencies">Currencies</button>
@@ -511,17 +504,8 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
      </div>
      <p class="tiny" id="topExpiry" style="margin:10px 0 0">Directional bias · re-evaluated each scan</p><button id="scanNow" type="button" class="primary" style="width:100%;margin-top:9px;min-height:44px">↻ SCAN MARKET NOW</button></div>
     <section id="aiForecastPanel" aria-live="polite">
-     <div class="ai-head"><h3>APEX AI · LIVE NEXT-CANDLE OUTLOOK</h3><span class="pill">MANUAL CHATGPT ANALYSIS</span></div>
-     <p class="ai-status" id="aiStatus">Choose a market and tap SCAN CHARTS. ChatGPT will analyze the latest available candles.</p>
-     <div class="manual-signal-ticket" id="manualSignalTicket">
-      <div class="ticket-market"><div class="ticket-symbol" id="ticketSymbol">A</div><div><b id="ticketPair">Select OTC market</b><small id="ticketPrice">Waiting for scan</small></div><span class="pill" id="ticketBadge">READY</span></div>
-      <div class="ticket-direction wait" id="ticketDirection">
-       <span class="ticket-arrow" id="ticketArrow">⌕</span><b id="ticketCallout">SCAN CHARTS</b>
-      </div>
-      <div class="ticket-caption" id="ticketCaption">ChatGPT will return BUY, SELL or WAIT after analyzing fresh chart data</div>
-      <div class="ticket-details"><div><small>MARKET</small><b id="ticketMarket">OTC</b></div><div><small>TIMEFRAME</small><b>1M</b></div><div><small>VALID UNTIL</small><b id="ticketValid">—</b></div></div>
-      <div class="ticket-countdown"><span id="ticketCountdownBar"></span></div>
-     </div>
+     <div class="ai-head"><h3>APEX AI · LIVE NEXT-CANDLE OUTLOOK</h3><label class="ai-live-toggle"><input type="checkbox" id="aiLiveToggle" checked> LIVE AI · 15 SEC</label></div>
+     <p class="ai-status" id="aiStatus">AI ready · analyzes the selected pair only</p>
      <div class="ai-main"><div><div class="ai-direction wait" id="aiDirection">WAITING</div><div class="tiny" id="aiPairLabel">Selected OTC pair</div></div><div class="ai-score"><b id="aiScore">—</b><small>AI EVIDENCE / 100</small></div></div>
      <div class="ai-meta"><div><small>Suggested hold</small><b id="aiHold">—</b></div><div><small>Pattern / setup</small><b id="aiPattern">Waiting for candles</b></div><div><small>Trend read</small><b id="aiTrend">—</b></div><div><small>Volume confirmation</small><b id="aiVolume">Not assessed</b></div><div style="grid-column:1/-1"><small>Support / resistance</small><b id="aiLevels">—</b></div></div>
      <p class="ai-reason" id="aiReason">The AI forecast will appear after sufficient candle history is loaded.</p>
@@ -638,14 +622,12 @@ function updateMobileMarketLabel(){
  const a=ASSETS.find(x=>x.id===$("mobileAsset")?.value);
  const el=$("mobileMarketLabel");
  if(el&&a)el.textContent=a.name+(a.kind==="otc"?" · OTC":"");
- const hero=$("heroSelectedMarket");
- if(hero)hero.textContent=a?a.name+(a.kind==="otc"?" · OTC":" · LIVE FEED"):"Select a market";
 }
 function renderWatch(){
  let box=$("watchChecks");box.innerHTML="";
  let visible=ASSETS.filter(a=>a.kind==="otc");
  if(!visible.length){box.innerHTML='<div class="empty">No OTC symbols are configured.</div>'}
- visible.forEach(a=>{let lab=document.createElement("label");lab.className="check";lab.dataset.category=assetCategory(a);let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState();stopLiveStream();connectLiveStream();updateChartOptions()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});
+ visible.forEach(a=>{let lab=document.createElement("label");lab.className="check";lab.dataset.category=assetCategory(a);let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState();if([...watch].some(id=>ASSETS.find(x=>x.id===id)?.kind==="otc"))connectLiveStream();else stopLiveStream();updateChartOptions()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});
  let note=$("categoryNote");if(note){note.style.display="none";note.textContent="OTC currency markets use your existing Netlify OTCharts function."}
  updateChartOptions();
 }
@@ -885,22 +867,8 @@ function setLiveStreamState(message,ok=false){
 }
 let poQuoteCapturedAt=0,poQuoteValue=null,poQuotePair=null;
 function selectedOTCPair(){
- // Resolve the selected market from either mobile or chart controls.
- const mobile=$("mobileAsset"),chart=$("chartAsset");
- const candidates=[mobile?.value,chart?.value,selectedChart];
- let pair=null;
- for(const id of candidates){
-  pair=ASSETS.find(a=>a.id===id&&a.kind==="otc");
-  if(pair)break;
- }
- // Recover safely if Safari restores an empty/stale select value.
- if(!pair)pair=ASSETS.find(a=>a.id==="OTC:EUR/USD"&&a.kind==="otc")||ASSETS.find(a=>a.kind==="otc")||null;
- if(pair){
-  selectedChart=pair.id;
-  if(mobile && [...mobile.options].some(o=>o.value===pair.id))mobile.value=pair.id;
-  if(chart && [...chart.options].some(o=>o.value===pair.id))chart.value=pair.id;
- }
- return pair;
+ const id=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
+ return ASSETS.find(a=>a.id===id&&a.kind==="otc")||null;
 }
 function renderPOComparison(){
  const resultEl=$("poCompareResult"),pairLabel=$("poComparePair");
@@ -966,9 +934,13 @@ function isPOComparisonVerified(assetId){
 function handleLiveTick(raw){
  let tick;try{tick=JSON.parse(raw.data)}catch(e){return}
  if(tick?.data && typeof tick.data==="object")tick=tick.data;
- const symbol=String(tick.symbol||tick.instrument||tick.s||"").trim();
- const price=Number(tick.price??tick.last??tick.close??tick.p);
- const id=OTC_SYMBOLS[symbol];
+ const symbol=String(tick.symbol||tick.instrument||tick.s||tick.asset||"").trim();
+ const normalizedSymbol=symbol.toUpperCase().replace(/^OTC:/," ").replace(/[^A-Z0-9]/g,"").trim();
+ const id=OTC_SYMBOLS[symbol] || Object.keys(OTC_SYMBOLS).find(key =>
+  key.toUpperCase().replace(/[^A-Z0-9]/g,"")===normalizedSymbol ||
+  String(OTC_SYMBOLS[key]).toUpperCase().replace(/^OTC:/,"").replace(/[^A-Z0-9]/g,"")===normalizedSymbol
+ );
+ const price=Number(tick.price??tick.last??tick.close??tick.p??tick.value);
  if(!id||!Number.isFinite(price)||price<=0)return;
  const previous=liveTicks[id]?.price ?? results[id]?.price ?? price;
  const receivedAt=Date.now(),candleStart=Math.floor(receivedAt/60000)*60000;
@@ -993,27 +965,10 @@ function handleLiveTick(raw){
   if(selectedChart===id||$("chartAsset")?.value===id){drawChart();$("chartCaption").textContent=`${result.name} · LIVE ${fmt(price)} · updating each provider tick`;}
  }
  setLiveStreamState("LIVE · "+(ASSETS.find(a=>a.id===id)?.name||id)+" tick received",true);
- status("OTC LIVE · "+(ASSETS.find(a=>a.id===id)?.name||id),true);
  renderPOComparison();
  renderPaperLiveBoard();
  settleExpiredTrades();
 }
-function mergeFreshTickIntoCandles(candles,tick){
- if(!Array.isArray(candles)||!candles.length||!tick)return {candles,merged:false};
- const receivedAt=Number(tick.receivedAt||0),price=Number(tick.price);
- if(!Number.isFinite(receivedAt)||Date.now()-receivedAt>20000||Date.now()<receivedAt||!Number.isFinite(price)||price<=0)return {candles,merged:false};
- const bucket=Math.floor(receivedAt/60000)*60000;
- const merged=candles.map(c=>({...c}));
- const last=merged.at(-1);
- if(last&&Math.floor(Number(last.timeMs||0)/60000)===Math.floor(bucket/60000)){
-  last.high=Math.max(Number(last.high),price);last.low=Math.min(Number(last.low),price);last.close=price;last.live=true;
- }else{
-  // A partial candle is built only from a verified provider tick received now.
-  merged.push({time:new Date(bucket).toISOString(),timeMs:bucket,open:price,high:price,low:price,close:price,volume:null,live:true});
- }
- return {candles:merged.slice(-240),merged:true};
-}
-
 function connectLiveStream(){
  if(liveStream||typeof EventSource==="undefined")return;
  if(![...watch].some(id=>ASSETS.find(a=>a.id===id)?.kind==="otc")){
@@ -1026,15 +981,14 @@ function connectLiveStream(){
  liveStream=new EventSource("/.netlify/functions/otc-stream?symbol="+encodeURIComponent(streamSymbol));
  liveStream.addEventListener("connected",e=>{
   let detail="connected";try{const j=JSON.parse(e.data);detail=j.message||j.status||"connected"}catch(err){}
-  setLiveStreamState("CONNECTED · waiting for first verified tick",false);
-  status("OTC STREAM OPEN · WAITING FOR TICKS",false);
+  setLiveStreamState("CONNECTED · waiting for ticks",true);
  });
  liveStream.addEventListener("tick",handleLiveTick);
  liveStream.addEventListener("dropped",e=>setLiveStreamState("provider dropped a symbol; reconnecting"));
  liveStream.addEventListener("closed",e=>setLiveStreamState("provider closed stream; reconnecting"));
  liveStream.onmessage=handleLiveTick;
- liveStream.onopen=()=>{setLiveStreamState("OPEN · awaiting first tick",false);status("OTC STREAM OPEN · WAITING FOR TICKS",false)};
- liveStream.onerror=()=>{setLiveStreamState("RECONNECTING · browser will retry automatically",false);status("OTC STREAM RECONNECTING",false)};
+ liveStream.onopen=()=>setLiveStreamState("OPEN · awaiting first tick",true);
+ liveStream.onerror=()=>setLiveStreamState("RECONNECTING · browser will retry automatically");
 }
 function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
 function renderScanner(){
@@ -1414,13 +1368,13 @@ function setMobileScreen(screen){
 }
 document.querySelectorAll(".market-tab").forEach(b=>b.addEventListener("click",()=>setMarketCategory(b.dataset.marketCategory)));
 document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>setMobileScreen(b.dataset.screen)));
-$("mobileAsset").addEventListener("change",()=>{const id=$("mobileAsset").value;$("chartAsset").value=id;selectedChart=id;watch.add(id);renderWatch();drawChart();updateMobileMarketLabel();stopLiveStream();connectLiveStream();saveState();setAIStatus("Market selected · waiting for live tick, then tap SCAN CHARTS.")});
+$("mobileAsset").addEventListener("change",()=>{const id=$("mobileAsset").value;$("chartAsset").value=id;selectedChart=id;watch.add(id);renderWatch();drawChart();updateMobileMarketLabel();stopLiveStream();connectLiveStream();saveState();if(aiLiveEnabled)runLiveAIAnalysis();if(!busy)scan()});
 $("mobileInterval").addEventListener("change",()=>{$("interval").value=$("mobileInterval").value;$("interval").dispatchEvent(new Event("change"));});
 function syncMobileControls(){if($("mobileInterval"))$("mobileInterval").value=$("interval").value||"15000";updateChartOptions()}
 window.addEventListener("resize",()=>{setMobileScreen(activeMobileScreen);drawChart()});
-$("scanNow").onclick=runManualChatGPTScan;
-$("startBtn").onclick=runManualChatGPTScan;
-$("pauseBtn").onclick=()=>{};
+$("scanNow").onclick=()=>{scan().catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="Scan failed: "+(err?.message||"unknown error")})};
+$("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN";status("AUTO SCANNER ACTIVE",true);scan();cycle=setInterval(()=>{if(!busy)scan()},Math.max(5000,+$("interval").value))};
+$("pauseBtn").onclick=()=>{running=false;clearInterval(cycle);$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED")};
 $("saveKey").type="button";
 $("saveKey").addEventListener("click",async(event)=>{
  event.preventDefault();
@@ -1457,62 +1411,93 @@ $("autoPaperToggle").addEventListener("change",()=>{
 $("scanMode").addEventListener("change",()=>{saveState();if(latestScan)renderScanner()});
 $("clearSignals").onclick=()=>{if(confirm("Clear signal history?")){history=[];renderHistory();saveState()}};
 $("clearTrades").onclick=()=>{if(confirm("Delete all paper journal records?")){trades=[];renderTrades();saveState()}};
-$("chartAsset").onchange=()=>{selectedChart=$("chartAsset").value;watch.add(selectedChart);$("mobileAsset").value=selectedChart;renderWatch();drawChart();stopLiveStream();connectLiveStream();saveState();setAIStatus("Market selected · waiting for live tick, then tap SCAN CHARTS.")};
+$("chartAsset").onchange=()=>{selectedChart=$("chartAsset").value;watch.add(selectedChart);$("mobileAsset").value=selectedChart;renderWatch();drawChart();stopLiveStream();connectLiveStream();saveState();if(aiLiveEnabled)runLiveAIAnalysis();if(!busy)scan()};
 document.querySelectorAll(".tf-btn").forEach(b=>b.addEventListener("click",()=>setChartTimeframe(Number(b.dataset.tf))));
-$("threshold").onchange=()=>{$("thresholdText").textContent=$("threshold").value+" / 100";saveState()};
+$("threshold").onchange=()=>{$("thresholdText").textContent=$("threshold").value+" / 100";if(latestScan)scan();saveState()};
 $("interval").onchange=()=>{if(running){clearInterval(cycle);cycle=setInterval(()=>{if(!busy)scan()},Math.max(5000,+$("interval").value||15000))}$("cycleText").textContent=((+$("interval").value||15000)/1000)+" sec";saveState()};
 ["stake","payout"].forEach(id=>$(id).addEventListener("change",saveState));
-let aiRequestBusy=false,aiRequestSequence=0,manualSignalExpiresAt=0,manualSignalTimer=null;
+let aiLiveEnabled=(()=>{try{return localStorage.getItem("apex_ai_live")!=="0"}catch(e){return true}})(),aiRequestBusy=false,aiRequestSequence=0,aiTimer=null;
 function setAIStatus(message,ok=false){const el=$("aiStatus");if(el){el.textContent=message;el.style.color=ok?"var(--green)":"var(--amber)"}}
-function selectedAIResult(){const pair=selectedOTCPair();return pair?{pair,result:results[pair.id]}:null;}
-function renderAIForecast(data,pair){
- const dir=String(data.direction||"WAIT").toUpperCase();const valid=["CALL","PUT","WAIT"].includes(dir)?dir:"WAIT";
- const directionEl=$("aiDirection");directionEl.textContent=valid==="CALL"?"CALL / BUY":valid==="PUT"?"PUT / SELL":"WAIT";directionEl.className="ai-direction "+valid.toLowerCase();
- $("aiPairLabel").textContent=pair?.name||"Selected OTC pair";$("aiScore").textContent=Number.isFinite(Number(data.evidence_score))?`${Math.max(0,Math.min(100,Number(data.evidence_score)))}/100`:"—";
- $("aiHold").textContent=formatHold(Number(data.hold_seconds)||30);$("aiPattern").textContent=String(data.pattern||"—");$("aiTrend").textContent=String(data.trend||"—");$("aiVolume").textContent=String(data.volume_read||"Not supplied");$("aiLevels").textContent=String(data.support_resistance||"Not clear from supplied candles");$("aiReason").textContent=String(data.reason||"No explanation returned.");
- const flags=Array.isArray(data.risk_flags)?data.risk_flags.filter(Boolean):[];$("aiRisk").textContent=flags.length?"Risk checks: "+flags.join(" · "):"";
- const isCall=valid==="CALL",isPut=valid==="PUT",cls=isCall?"call":isPut?"put":"wait";
- $("ticketSymbol").textContent=(pair?.name||"A").replace(/[^A-Z]/gi,"").slice(0,1).toUpperCase()||"A";$("ticketPair").textContent=pair?.name||"Selected market";
- const price=Number(results[pair.id]?.livePrice??results[pair.id]?.price??results[pair.id]?.candles?.at(-1)?.close);$("ticketPrice").textContent=Number.isFinite(price)?`Entry reference · ${fmt(price)}`:"Entry reference unavailable";
- $("ticketDirection").className="ticket-direction "+cls;$("ticketArrow").textContent=isCall?"↑":isPut?"↓":"—";$("ticketCallout").textContent=isCall?"CALL / BUY":isPut?"PUT / SELL":"WAIT";
- $("ticketCaption").textContent=String(data.reason||"ChatGPT found insufficient evidence for a directional call.");$("ticketMarket").textContent=pair?.kind==="otc"?"OTC":"REGULAR";$("ticketBadge").textContent=valid==="WAIT"?"NO TRADE":"CHATGPT SIGNAL";
- manualSignalExpiresAt=Date.now()+60_000;$("ticketValid").textContent="01:00";updateTicketCountdown();clearInterval(manualSignalTimer);manualSignalTimer=setInterval(updateTicketCountdown,250);
+function selectedAIResult(){
+ const pair=selectedOTCPair();
+ return pair?{pair,result:results[pair.id]}:null;
 }
-function updateTicketCountdown(){const left=Math.max(0,manualSignalExpiresAt-Date.now());if($("ticketValid"))$("ticketValid").textContent=left?`00:${String(Math.ceil(left/1000)).padStart(2,"0")}`:"EXPIRED";if($("ticketCountdownBar"))$("ticketCountdownBar").style.width=`${left/60000*100}%`;if(!left&&manualSignalExpiresAt){$("ticketBadge").textContent="EXPIRED · RESCAN";$("ticketDirection").className="ticket-direction wait";$("ticketCallout").textContent="RESCAN CHARTS";$("ticketArrow").textContent="↻";clearInterval(manualSignalTimer);}}
-async function runManualChatGPTScan(){
- if(aiRequestBusy)return;
+function renderAIForecast(data,pair){
+ const dir=String(data.direction||"WAIT").toUpperCase();
+ const valid=["CALL","PUT","WAIT"].includes(dir)?dir:"WAIT";
+ const directionEl=$("aiDirection");directionEl.textContent=valid==="CALL"?"CALL / BUY":valid==="PUT"?"PUT / SELL":"WAIT";
+ directionEl.className="ai-direction "+valid.toLowerCase();
+ $("aiPairLabel").textContent=pair?.name||"Selected OTC pair";
+ $("aiScore").textContent=Number.isFinite(Number(data.evidence_score))?`${Math.max(0,Math.min(100,Number(data.evidence_score)))}/100`:"—";
+ $("aiHold").textContent=formatHold(Number(data.hold_seconds)||30);
+ $("aiPattern").textContent=String(data.pattern||"—");
+ $("aiTrend").textContent=String(data.trend||"—");
+ $("aiVolume").textContent=String(data.volume_read||"Not supplied");
+ $("aiLevels").textContent=String(data.support_resistance||"Not clear from supplied candles");
+ $("aiReason").textContent=String(data.reason||"No explanation returned.");
+ const flags=Array.isArray(data.risk_flags)?data.risk_flags.filter(Boolean):[];
+ $("aiRisk").textContent=flags.length?"Risk checks: "+flags.join(" · "):"";
+}
+async function runLiveAIAnalysis(){
+ if(!aiLiveEnabled||aiRequestBusy)return;
  const selected=selectedAIResult();
- if(!selected){
-  status("PAIR SELECTION ERROR",false);
-  setAIStatus("No OTC pair is available. Reload the page and choose a market.");
+ if(!selected){setAIStatus("Select an OTC pair to start AI analysis.");return;}
+ const {pair,result}=selected;
+ if(!result?.candles||result.candles.length<35){setAIStatus("Waiting for at least 35 candles for a meaningful AI read.");return;}
+ const candle=result.candles.at(-1),tick=liveTicks[pair.id];
+ const now=Date.now();
+ const tickAge=tick?now-Number(tick.receivedAt||0):Infinity;
+ const candleAge=Number.isFinite(Number(candle.timeMs))?now-Number(candle.timeMs):Infinity;
+ const tickFresh=Number.isFinite(tickAge)&&tickAge>=0&&tickAge<=20000;
+ const candleFresh=Number.isFinite(candleAge)&&candleAge>=0&&candleAge<=180000;
+ // A provider's historical candle endpoint can lag while its live stream is current.
+ // Pause only when BOTH sources are stale; a verified live tick is sufficient to
+ // keep the AI running and is already incorporated into the forming 60-second candle.
+ if(!tickFresh&&!candleFresh){
+  setAIStatus("AI paused · no fresh 1-minute candle or live tick for over 3 minutes. Checking the OTC feed.");
   return;
  }
- const {pair}=selected;let candlesLoaded=false;status("CONNECTING TO OTCHARTS",false);aiRequestBusy=true;const seq=++aiRequestSequence;$("startBtn").disabled=true;$("scanNow").disabled=true;$("ticketPair").textContent=pair.name;$("ticketDirection").className="ticket-direction wait";$("ticketArrow").textContent="…";$("ticketCallout").textContent="ANALYZING";$("ticketBadge").textContent="CHATGPT WORKING";setAIStatus(`Fetching fresh ${pair.name} candles and sending them to ChatGPT…`);
+ aiRequestBusy=true;
+ const seq=++aiRequestSequence;
+ setAIStatus(`Analyzing ${pair.name} · 1-minute candles · ${tickFresh?"live tick verified":"live tick not currently verified"} · patterns, momentum and structure…`);
+ const payload={
+  pair:pair.name,symbol:pair.symbol,timeframe:"60-second (1-minute) candles; candle timestamps should be 60 seconds apart",
+  livePrice:Number(tick?.price??result.livePrice??candle.close),
+  liveTickAgeSeconds:Number.isFinite(tickAge)?Math.max(0,Math.round(tickAge/1000)):null,
+   liveTickTimestamp:tick?.receivedAt?new Date(tick.receivedAt).toISOString():null,
+   liveTickFresh:tickFresh,
+   candleIntervalSeconds:60,
+   candleTimestamp:candle.time||(candle.timeMs?new Date(candle.timeMs).toISOString():null),
+  technical:{direction:result.analysis?.direction||"WAIT",score:Number(result.analysis?.score)||0,trend:result.analysis?.trend||"MIXED",rsi:Number.isFinite(Number(result.analysis?.rsi))?Number(result.analysis.rsi):null,signalLevel:result.analysis?.signalLevel||"EARLY",reason:String(result.analysis?.reason||"")},
+  candles:result.candles.slice(-60).map(c=>({time:c.time||new Date(c.timeMs).toISOString(),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close),volume:c.volume===null||c.volume===undefined||c.volume===""?null:(Number.isFinite(Number(c.volume))?Number(c.volume):null)}))
+ };
  try{
-  let candles=await fetchAsset(pair);if(candles.length<35)throw Error(`Only ${candles.length} candles received; at least 35 are required.`);
-  candlesLoaded=true;
-  const tick=liveTicks[pair.id];
-  const tickMerge=mergeFreshTickIntoCandles(candles,tick);
-  candles=tickMerge.candles;
-  const candle=candles.at(-1),age=Date.now()-Number(candle.timeMs||0);
-  if(!Number.isFinite(age)||age<0||age>180000){
-   const ageSeconds=Number.isFinite(age)?Math.round(age/1000):"unknown";
-   status("OTC HISTORY STALE · NO FRESH TICK",false);
-   throw Error(`OTCharts returned an old candle (${ageSeconds}s old) and no verified live tick arrived in the last 20 seconds. Wait for the stream status to show LIVE, then scan again. No signal was issued.`);
-  }
-  status(tickMerge.merged?"OTC LIVE DATA VERIFIED":"OTC CANDLE HISTORY FRESH · NO LIVE TICK",tickMerge.merged);
-  const technical=analyze(candles,pair);const previous=results[pair.id];
-  results[pair.id]={id:pair.id,name:pair.name,price:candle.close,livePrice:tick?.price??candle.close,candles,analysis:technical,scannedAt:Date.now()};
-  if(selectedChart===pair.id){drawChart();renderScanner();}
-  const priorCandle=tickMerge.merged&&candles.length>1?candles.at(-2):null;
-  const historyGapSeconds=priorCandle?Math.max(0,Math.round((candle.timeMs-priorCandle.timeMs)/1000)):0;
-  const payload={pair:pair.name,symbol:pair.symbol,timeframe:"60-second (1-minute) candles; candle timestamps should be 60 seconds apart",livePrice:Number(tick?.price??candle.close),liveTickAgeSeconds:tick?Math.max(0,Math.round((Date.now()-tick.receivedAt)/1000)):null,liveTickTimestamp:tick?.receivedAt?new Date(tick.receivedAt).toISOString():null,liveTickFresh:!!tick&&Date.now()-tick.receivedAt<=20000,candleIntervalSeconds:60,candleTimestamp:candle.time,historyGapSeconds,technical:{direction:technical.direction||"WAIT",score:Number(technical.score)||0,trend:technical.trend||"MIXED",rsi:Number.isFinite(Number(technical.rsi))?Number(technical.rsi):null,signalLevel:technical.signalLevel||"EARLY",reason:String(technical.reason||"")+(historyGapSeconds>120?` · DATA GAP ${historyGapSeconds}s before live candle` : "")},candles:candles.slice(-60).map(c=>({time:c.time,open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close),volume:c.volume===null||c.volume===undefined?null:Number(c.volume)}))};
-  const response=await fetch("/.netlify/functions/openai-analysis",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),cache:"no-store"});const raw=await response.text();let body={};try{body=JSON.parse(raw)}catch(e){}if(!response.ok)throw Error(body.error||`AI function returned HTTP ${response.status}`);if(seq!==aiRequestSequence||selectedOTCPair()?.id!==pair.id)return;
-  renderAIForecast(body,pair);setAIStatus(`CHATGPT ANALYSIS COMPLETE · ${pair.name} · ${body.data_candles||candles.length} candles · ${clock()}`,true);
- }catch(error){if(seq===aiRequestSequence){if(!candlesLoaded)status("DATA CONNECTION ERROR",false);setAIStatus("SCAN FAILED · "+(error?.message||"Unknown error"));$("ticketBadge").textContent="SCAN ERROR";$("ticketCallout").textContent="NO SIGNAL";$("ticketCaption").textContent=error?.message||"Unable to analyze this chart.";}}
- finally{aiRequestBusy=false;$("startBtn").disabled=false;$("scanNow").disabled=false;}
+  const response=await fetch("/.netlify/functions/openai-analysis",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),cache:"no-store"});
+  const raw=await response.text();let body={};try{body=JSON.parse(raw)}catch(e){}
+  if(!response.ok)throw new Error(body.error||`AI function returned HTTP ${response.status}`);
+  if(seq!==aiRequestSequence)return;
+  // Ignore an answer for a pair that is no longer selected.
+  if(selectedOTCPair()?.id!==pair.id)return;
+  renderAIForecast(body,pair);
+  setAIStatus(`LIVE AI · ${pair.name} · 1-minute candles · ${tickFresh?"live tick verified":"candle history only; live tick not verified"} · updated ${clock()}`,true);
+ }catch(error){
+  if(seq===aiRequestSequence)setAIStatus("AI error · "+(error?.message||"Request failed")+". The technical scanner continues normally.");
+ }finally{aiRequestBusy=false;if(aiLiveEnabled&&selectedOTCPair()?.id!==pair.id)setTimeout(()=>runLiveAIAnalysis(),250);}
 }
+function startLiveAI(){
+ clearInterval(aiTimer);aiTimer=null;
+ if(!aiLiveEnabled)return;
+ runLiveAIAnalysis();
+ aiTimer=setInterval(()=>runLiveAIAnalysis(),15000);
+}
+$("aiLiveToggle").checked=aiLiveEnabled;
+$("aiLiveToggle").addEventListener("change",()=>{
+ aiLiveEnabled=$("aiLiveToggle").checked;
+ try{localStorage.setItem("apex_ai_live",aiLiveEnabled?"1":"0")}catch(e){}
+ if(aiLiveEnabled){setAIStatus("Live AI enabled · selected pair only · every 15 seconds");startLiveAI();}
+ else{clearInterval(aiTimer);aiTimer=null;aiRequestSequence++;setAIStatus("Live AI paused · original V8.9 scanner remains active.");}
+});
 setInterval(()=>{$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();updateCountdowns();settleExpiredTrades()},1000);
-loadState();status("READY · TAP SCAN",false);$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · New qualified signals open simulated trades automatically":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();setAIStatus("Connecting to the selected OTC pair · waiting for a verified live tick.");$("ticketPair").textContent=selectedOTCPair()?.name||"Select OTC market";connectLiveStream();
+loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · New qualified signals open simulated trades automatically":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();setTimeout(()=>{if(!busy)scan()},250);setTimeout(()=>startLiveAI(),6500);
 </script>
 </body></html>
