@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="8.9-otc-60-second-live-ai">
-<title>APEXSCAN PRO · V8.8 OTC BUY / SELL</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="9.0-otc-reversal-confirmation">
+<title>APEXSCAN PRO · V9.0 SMART REVERSAL</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -435,7 +435,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
      <div class="mini"><label>Early setups</label><b id="staleCount">0</b></div>
     </div>
     <div class="scan-table-wrap"><table><thead><tr><th>Market</th><th>Price</th><th>Change</th><th>Trend</th><th>RSI</th><th>Score</th><th>Signal</th><th>Setup</th></tr></thead><tbody id="scannerBody"><tr><td colspan="8" class="empty">Connect a data provider, choose markets, then scan.</td></tr></tbody></table></div>
-    <div class="chartfoot"><span id="scanFoot">CCI(2) + MACD(12,26,9) must agree on a completed candle; signal is latched at the next candle open.</span><span id="lastUpdated">—</span></div>
+    <div class="chartfoot"><span id="scanFoot">CCI(14) + MACD(12,26,9) must agree on a completed candle; signal is latched at the next candle open.</span><span id="lastUpdated">—</span></div>
    </div>
    <div class="panel" id="chartPanel">
     <div class="panel-head chart-head"><h2>LIVE OTC CANDLE CHART</h2><select id="chartAsset" style="max-width:170px;background:#091321;color:white;border:1px solid var(--line);padding:7px;border-radius:7px"></select></div>
@@ -459,7 +459,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
       <div class="float-sub" id="floatRecord">0 settled · 0 pending</div>
      </div>
     </div>
-    <div class="chartfoot"><span id="chartCaption">Waiting for candles</span><span id="chartMeta">CCI(2) + MACD(12,26,9) · closed-candle signals</span></div>
+    <div class="chartfoot"><span id="chartCaption">Waiting for candles</span><span id="chartMeta">CCI(14) + MACD(12,26,9) · closed-candle signals</span></div>
    </div>
    <div class="panel" id="signalHistoryPanel">
     <div class="panel-head"><h2>SIGNAL HISTORY</h2><button class="small" id="clearSignals">Clear signals</button></div>
@@ -480,14 +480,14 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
    <div class="panel" id="signalPanel">
     <div class="panel-head"><h2>LIVE OTC SIGNAL</h2><div class="signal-tools"><span class="pill">BUY / SELL ONLY</span><button type="button" id="alertToggle" class="small" aria-pressed="false">🔔 Enable callouts</button></div></div>
     <div id="signalCallout" class="signal-callout" role="status" aria-live="assertive">Scan a loaded OTC pair to generate a BUY or SELL directional bias</div>
-    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Technical engine is checking trend, momentum and candle structure</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>CCI(2)</span><span>+100 / -111</span><span>MACD 12/26/9</span><span>Closed candle</span><span>Next-candle lock</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · Each fresh BUY/SELL direction can open one simulated trade per candle</span></div>
+    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Technical engine is checking trend, momentum and candle structure</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>CCI(14)</span><span>Trigger +100 / -111</span><span>MACD 12/26/9</span><span>Closed candle</span><span>Next-candle lock</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · Each fresh BUY/SELL direction can open one simulated trade per candle</span></div>
      <div id="paperLiveBoard" class="paper-live-board" aria-live="polite"><b>LIVE PAPER POSITIONS</b><span>No open paper trades yet · waiting for the next directional signal.</span></div>
      <div class="countdown-grid">
       <div><small>BUY / SELL VALID FOR</small><b id="signalCountdown">--:--</b></div>
       <div><small>1-MIN CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
      </div>
      <div class="trade-duration" style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;padding:10px;border:1px solid #31527a;border-radius:10px;background:#07182a">
-      <div style="display:flex;flex-direction:column;gap:5px"><small style="font-size:9px;color:#9ed5ff;font-weight:900;letter-spacing:.08em">AI-SELECTED TRADE HOLD · NO MANUAL DURATION</small><b id="durationAdvice" style="font-size:16px;color:#fff">AI evaluating market structure…</b><small style="font-size:10px;color:#9db1cc">AI chooses from 5s · 10s · 15s · 30s · 1m · 3m · 5m · 15m · 30m · 1h · 4h, based on available trend history and live conditions.</small></div>
+      <div style="display:flex;flex-direction:column;gap:5px"><small style="font-size:9px;color:#9ed5ff;font-weight:900;letter-spacing:.08em">AI-SELECTED TRADE HOLD · NO MANUAL DURATION</small><b id="durationAdvice" style="font-size:16px;color:#fff">AI evaluating market structure…</b><small style="font-size:10px;color:#9db1cc">AI chooses from 1m · 3m · 5m · 15m · 30m · 1h · 4h; holds shorter than one full candle are disabled., based on available trend history and live conditions.</small></div>
      </div>
      <div class="po-compare" id="poCompare" hidden>
       <div class="po-compare-head"><b>POCKET OPTION PRICE CHECK</b><span id="poComparePair">SELECTED PAIR</span></div>
@@ -529,7 +529,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <div class="checkgrid" id="watchChecks"></div>
     <div class="fields" style="margin-top:11px">
      <div class="field"><label>Auto scan interval</label><select id="interval"><option value="5000">5 seconds</option><option value="10000">10 seconds</option><option value="15000" selected>15 seconds</option><option value="30000">30 seconds</option></select></div>
-     <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. OTC analysis uses 60-second (1-minute) candles. AI selects a paper-trade hold from 5 seconds to 4 hours based on trend persistence, signal confluence and available history; longer holds require substantially more history.</div></div>
+     <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. OTC analysis uses 60-second (1-minute) candles. AI selects a paper-trade hold from 1 minute to 4 hours based on trend persistence, signal confluence and available history; longer holds require substantially more history.</div></div>
      <div class="field"><label>Scanner mode</label><select id="scanMode"><option value="aggressive" selected>Aggressive · early setups</option><option value="balanced">Balanced · confirmed only</option></select></div>
      <div class="field"><label>Signal threshold</label><select id="threshold"><option value="15" selected>15 · Very sensitive</option><option value="30">30 · More sensitive</option><option value="70">70 · Active</option><option value="75">75 · Balanced</option><option value="80">80 · Selective</option><option value="85">85 · Strict</option></select></div>
      <div class="field"><label>Paper stake ($)</label><input id="stake" type="number" min="1" max="100000" value="10"></div>
@@ -540,7 +540,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
    </div>
    <div class="panel" id="enginePanel">
     <div class="panel-head"><h2>CCI + MACD CONFIRMATION</h2><span class="pill">DUAL-INDICATOR ENGINE</span></div>
-    <div class="tiny">Signals use CCI period 2 with +100 / -111 reference levels and standard MACD 12 / 26 / 9. Standard 2-period CCI cannot reach those outer levels, so CCI direction is read above/below zero; MACD must confirm the same direction. Volume-based confirmation is unavailable when the feed supplies no volume. Some complex indicators are explicitly marked as proxies rather than exact platform replicas. The engine compares bullish and bearish evidence, explains which factors agree or conflict, and estimates a next-candle bias. It is a technical rules engine—not a human trader or a guaranteed predictor. Confidence scores are confluence ratings, not win probabilities.</div><div id="analysisBreakdown" class="analysis-breakdown"><div><span>Trend structure</span><b>Awaiting scan</b></div><div><span>Momentum</span><b>Awaiting scan</b></div><div><span>Volatility</span><b>Awaiting scan</b></div><div><span>Price action</span><b>Awaiting scan</b></div><div><span>Market structure</span><b>Awaiting scan</b></div><div><span>Feed integrity</span><b>Awaiting scan</b></div></div><div class="tiny" style="margin-top:8px">Indicator values are calculated from available OHLC candles; SAR, Alligator, Ichimoku, STC, ZigZag and Fractal Chaos entries are simplified approximations. Volume is not scored when OTCharts does not provide volume.</div>
+    <div class="tiny">Signals use CCI period 14 with +100 / -111 reference levels and standard MACD 12 / 26 / 9. CCI(14) uses +100 / -111 directional thresholds; MACD and candle direction must confirm the setup. RSI extremes are used as exhaustion warnings, not automatic reverse signals. Volume-based confirmation is unavailable when the feed supplies no volume. Some complex indicators are explicitly marked as proxies rather than exact platform replicas. The engine compares bullish and bearish evidence, explains which factors agree or conflict, and estimates a next-candle bias. It is a technical rules engine—not a human trader or a guaranteed predictor. Confidence scores are confluence ratings, not win probabilities.</div><div id="analysisBreakdown" class="analysis-breakdown"><div><span>Trend structure</span><b>Awaiting scan</b></div><div><span>Momentum</span><b>Awaiting scan</b></div><div><span>Volatility</span><b>Awaiting scan</b></div><div><span>Price action</span><b>Awaiting scan</b></div><div><span>Market structure</span><b>Awaiting scan</b></div><div><span>Feed integrity</span><b>Awaiting scan</b></div></div><div class="tiny" style="margin-top:8px">Indicator values are calculated from available OHLC candles; SAR, Alligator, Ichimoku, STC, ZigZag and Fractal Chaos entries are simplified approximations. Volume is not scored when OTCharts does not provide volume.</div>
     <div style="margin-top:10px" class="metricrow"><div class="metricbox"><small>Signal</small><b>CCI + MACD</b></div><div class="metricbox"><small>Momentum</small><b>RSI 14</b></div><div class="metricbox"><small>Confirm</small><b>MACD</b></div><div class="metricbox"><small>Quality</small><b>Candle</b></div></div>
    </div>
   </aside>
@@ -724,9 +724,9 @@ function macdValues(closes,fast=12,slow=26,signal=9){
 function analyze(candles,asset){
  if(candles.length<35)return {direction:"WAIT",score:0,reason:"Building candle history · 35 completed candles are required",fresh:false,signalLevel:"WAIT"};
  const closes=candles.map(c=>Number(c.close)),last=candles.at(-1),prev=candles.at(-2);
- const cci=cciValue(candles,2),previousCci=cciValue(candles,2,candles.length-2);
- const macd=macdValues(closes,12,26,9);
- const rv=rsi(closes,14);
+ // Use a conventional 14-period CCI so the configured +100 / -111 levels are reachable.
+ const cci=cciValue(candles,14),previousCci=cciValue(candles,14,candles.length-2);
+ const macd=macdValues(closes,12,26,9),rv=rsi(closes,14);
  const tr=[];
  for(let i=1;i<candles.length;i++){
   const q=candles[i],p=candles[i-1];
@@ -738,41 +738,67 @@ function analyze(candles,asset){
  const tick=liveTicks[asset.id],tickAge=tick?Math.max(0,(Date.now()-Number(tick.receivedAt||0))/1000):Infinity;
  const candleAge=last.timeMs?Math.max(0,(Date.now()-last.timeMs)/1000):Infinity;
  const fresh=tickAge<=15||candleAge<=120,age=Math.min(tickAge,candleAge);
-
- // Both indicators must agree. No EMA, RSI, candle colour, or fallback vote can override them.
  const macdBull=!!macd&&macd.line>macd.signal&&macd.histogram>0;
  const macdBear=!!macd&&macd.line<macd.signal&&macd.histogram<0;
- /* Standard 2-period CCI is bounded near +/-66.7, so +100/-111 cannot be reached.
-    Keep those as reference levels; read CCI direction around zero and require MACD agreement. */
- const cciBull=Number.isFinite(cci)&&cci>0;
- const cciBear=Number.isFinite(cci)&&cci<0;
- let direction="WAIT",score=0,signalLevel="WAIT";
- if(cciBull&&macdBull){direction="CALL";score=100;signalLevel="CONFIRMED";}
- else if(cciBear&&macdBear){direction="PUT";score=100;signalLevel="CONFIRMED";}
- const cciState=cciBull?"Bullish above zero":cciBear?"Bearish below zero":"At zero / neutral";
- const macdState=macdBull?"Bullish (line above signal)":macdBear?"Bearish (line below signal)":"Neutral / not aligned";
+ const histRising=!!macd&&Number.isFinite(macd.previousHistogram)&&macd.histogram>macd.previousHistogram;
+ const histFalling=!!macd&&Number.isFinite(macd.previousHistogram)&&macd.histogram<macd.previousHistogram;
+ const cciBull=Number.isFinite(cci)&&cci>=100,cciBear=Number.isFinite(cci)&&cci<=-111;
+ const cciRising=Number.isFinite(cci)&&Number.isFinite(previousCci)&&cci>previousCci;
+ const cciFalling=Number.isFinite(cci)&&Number.isFinite(previousCci)&&cci<previousCci;
+ const bullCandle=last.close>last.open&&last.close>prev.close;
+ const bearCandle=last.close<last.open&&last.close<prev.close;
+ const rsiOversold=Number.isFinite(rv)&&rv<=25,rsiOverbought=Number.isFinite(rv)&&rv>=75;
+ let direction="WAIT",signalLevel="WAIT",score=0;
  const reasons=[];
- if(direction==="CALL")reasons.push("CCI +100 bullish trigger", "MACD bullish confirmation");
- else if(direction==="PUT")reasons.push("CCI -111 bearish trigger", "MACD bearish confirmation");
- else reasons.push("WAIT · CCI and MACD do not both confirm the same direction");
+ // Trend entries require CCI, MACD and price action to agree. Extreme RSI blocks
+ // chasing an already-stretched move; it does not automatically invert the trade.
+ if(cciBull&&macdBull&&bullCandle&&!rsiOverbought){
+  direction="CALL";signalLevel="CONFIRMED";
+  score=Math.min(92,55+10+(histRising?8:0)+(bodyRatio>=.55?7:0)+(rv>=35&&rv<=70?7:0)+(fresh?5:0));
+  reasons.push("CCI(14) bullish trigger ≥ +100","MACD bullish alignment","bullish candle confirmation");
+ }else if(cciBear&&macdBear&&bearCandle&&!rsiOversold){
+  direction="PUT";signalLevel="CONFIRMED";
+  score=Math.min(92,55+10+(histFalling?8:0)+(bodyRatio>=.55?7:0)+(rv>=30&&rv<=65?7:0)+(fresh?5:0));
+  reasons.push("CCI(14) bearish trigger ≤ -111","MACD bearish alignment","bearish candle confirmation");
+ }else{
+  // Early reversal requires RSI extreme + improving CCI + improving MACD histogram + candle confirmation.
+  const bullishReversal=rsiOversold&&cciRising&&histRising&&bullCandle;
+  const bearishReversal=rsiOverbought&&cciFalling&&histFalling&&bearCandle;
+  if(bullishReversal){
+   direction="CALL";signalLevel="EARLY REVERSAL";score=Math.min(78,60+(bodyRatio>=.5?6:0)+(fresh?5:0));
+   reasons.push("RSI oversold and recovering","CCI turning upward","MACD bearish pressure easing","bullish reversal candle");
+  }else if(bearishReversal){
+   direction="PUT";signalLevel="EARLY REVERSAL";score=Math.min(78,60+(bodyRatio>=.5?6:0)+(fresh?5:0));
+   reasons.push("RSI overbought and rolling over","CCI turning downward","MACD bullish pressure easing","bearish reversal candle");
+  }else{
+   if(rsiOversold)reasons.push("RSI oversold · block fresh SELL until reversal confirms");
+   else if(rsiOverbought)reasons.push("RSI overbought · block fresh BUY until reversal confirms");
+   if(!cciBull&&!cciBear)reasons.push("CCI(14) has not reached its directional trigger");
+   if(!macdBull&&!macdBear)reasons.push("MACD line / signal / histogram not aligned");
+   if(cciBull&&macdBull&&!bullCandle)reasons.push("Bullish indicators · waiting for bullish candle confirmation");
+   if(cciBear&&macdBear&&!bearCandle)reasons.push("Bearish indicators · waiting for bearish candle confirmation");
+   if(!reasons.length)reasons.push("No confirmed trend or reversal setup");
+   score=Math.min(49,(cciBull||cciBear?20:10)+(macdBull||macdBear?15:5)+(fresh?10:0));
+  }
+ }
  if(!macd)reasons.push("MACD warming up · more candle history required");
  if(!fresh)reasons.push("Data is delayed · fresh quote required for paper entry");
+ const cciState=cciBull?"Bullish trigger":cciBear?"Bearish trigger":cciRising?"Rising":cciFalling?"Falling":"Neutral";
+ const macdState=macdBull?"Bullish":macdBear?"Bearish":histRising?"Histogram improving":histFalling?"Histogram weakening":"Neutral / not aligned";
  const breakdown={
-  trend:"Not used · EMA removed from signal engine",
-  momentum:`CCI(2) ${Number.isFinite(cci)?cci.toFixed(1):"—"} · ${cciState}`,
+  trend:"EMA excluded · price-action confirmation only",
+  momentum:`CCI(14) ${Number.isFinite(cci)?cci.toFixed(1):"—"} · ${cciState}`,
   volatility:atrPct.toFixed(3)+"% ATR",
   price:`MACD(12,26,9) ${macd?macdState:"warming up"}`,
-  structure:`CCI direction ${cciBull?"above zero":cciBear?"below zero":"neutral"} · +100/-111 reference levels`,
+  structure:`RSI ${Number.isFinite(rv)?rv.toFixed(1):"—"} · ${bullCandle?"bullish candle":bearCandle?"bearish candle":"no candle confirmation"}`,
   feed:tickAge<=30?Math.round(tickAge)+"s · live tick":fresh?Math.round(candleAge)+"s · recent candle":"no recent data"
  };
- return {
-  direction,signalLevel,score,reason:reasons.join(" · "),fresh,age,rsi:rv,
+ return {direction,signalLevel,score,reason:reasons.join(" · "),fresh,age,rsi:rv,
   trend:macdBull?"UP":macdBear?"DOWN":"MIXED",entry:last.close,quality:bodyRatio,
-  candleTime:last.time,candleTimeMs:Number(last.timeMs||0),atr,atrPct,
-  cci,previousCci,macdLine:macd?.line??null,macdSignal:macd?.signal??null,
-  macdHistogram:macd?.histogram??null,bullScore:direction==="CALL"?100:0,
-  bearScore:direction==="PUT"?100:0,nextBias:direction,nextStrength:score,breakdown
- };
+  candleTime:last.time,candleTimeMs:Number(last.timeMs||0),atr,atrPct,cci,previousCci,
+  macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,
+  bullScore:direction==="CALL"?score:0,bearScore:direction==="PUT"?score:0,
+  nextBias:direction,nextStrength:score,breakdown};
 }
 async function regularData(symbol){
  if(!apiKey)throw Error("Twelve Data API key missing");
@@ -815,7 +841,7 @@ function setChartTimeframe(minutes){
  document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===chartTimeframe));
  const tfLabel=chartTimeframe===1?"60-second":chartTimeframe+"-minute";
  $("tfNote").textContent=tfLabel+" candles";
- $("chartMeta").textContent=`CCI(2) + MACD(12,26,9) · ${tfLabel} candles`;
+ $("chartMeta").textContent=`CCI(14) + MACD(12,26,9) · ${tfLabel} candles`;
  drawChart();
 }
 function aggregateCandles(candles,minutes){
@@ -871,7 +897,7 @@ function drawChart(){
  ctx.fillStyle="#8ea4c2";ctx.font="9px system-ui";ctx.textAlign="left";
  [0,Math.floor(candles.length/2),candles.length-1].forEach(i=>{const d=new Date(candles[i].timeMs);ctx.fillText(d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}),left+i*step+step/2,h-5)});
  $("chartCaption").textContent=`${ASSETS.find(a=>a.id===id)?.name||id} · ${candles.length} candles · candle history · latest ${fmt(livePrice>0?livePrice:last.close)}`;
- $("chartMeta").textContent=`LIVE ticks · CCI(2) + MACD · ${chartTimeframe===1?"60-second":chartTimeframe+"-minute"} view`;
+ $("chartMeta").textContent=`LIVE ticks · CCI(14) + MACD · ${chartTimeframe===1?"60-second":chartTimeframe+"-minute"} view`;
 }
 
 
@@ -1017,7 +1043,7 @@ function renderScanner(){
  $("kScanned").textContent=arr.length+" / "+watch.size;$("kSignals").textContent=signals.length;$("freshCount").textContent=arr.length;$("staleCount").textContent="—";
  $("kHealth").textContent=arr.length?"ANALYZED":"OFFLINE";$("kHealthNote").textContent=signals.length+" directional setups · "+fresh+" recently updated";
  $("kScanTime").textContent=latestScan?"Last scan "+new Date(latestScan).toLocaleTimeString():"Not scanned yet";$("lastUpdated").textContent=latestScan?"Updated "+clock():"—";
- $("staleCount").textContent=arr.filter(r=>r.analysis.signalLevel==="EARLY").length;$("kBest").textContent=rows[0]?.analysis.score??"—";$("kBestAsset").textContent=rows[0]?.name||"Awaiting scan";
+ $("staleCount").textContent=arr.filter(r=>["EARLY","EARLY REVERSAL"].includes(r.analysis.signalLevel)).length;$("kBest").textContent=rows[0]?.analysis.score??"—";$("kBestAsset").textContent=rows[0]?.name||"Awaiting scan";
  $("scanFoot").textContent=`${watch.size} OTC markets selected · ${signals.length} directional BUY/SELL setups`;
  updateTop(rows);updateChartOptions();
 }
@@ -1040,11 +1066,11 @@ function lockedCandleDirection(r){
  if(lockedDirectionsByCandle.size>1000)lockedDirectionsByCandle.clear();
  return side;
 }
-const AI_HOLD_OPTIONS=[5,10,15,30,60,180,300,900,1800,3600,14400];
+const AI_HOLD_OPTIONS=[60,180,300,900,1800,3600,14400];
 function formatHold(seconds){const n=Number(seconds)||60;if(n<60)return `${n}s`;if(n<3600)return `${n/60}m`;return `${n/3600}h`;}
 function candleDurationSeconds(r){
  const a=r?.analysis,c=r?.candles||[];
- if(Number(a?.aiHoldSeconds)>0)return Math.max(5,Math.min(14400,Number(a.aiHoldSeconds)));
+ if(Number(a?.aiHoldSeconds)>0)return Math.max(60,Math.min(14400,Number(a.aiHoldSeconds)));
  if(!a||!["CALL","PUT"].includes(a.direction)||c.length<12)return 60;
  if(!a.fresh)return 60;
  const side=a.direction==="CALL"?1:-1,close=c.map(x=>Number(x.close));
@@ -1063,10 +1089,7 @@ function candleDurationSeconds(r){
   [300,bars>=20&&trend&&confluence&&c24>=.68],
   [180,bars>=12&&trend&&confluence&&c12>=.70],
   [60,trend&&confluence&&c12>=.65],
-  [30,c12>=.58],
-  [15,c6>=.58],
-  [10,c6>=.50],
-  [5,true]
+   [60,true]
  ];
  return options.find(x=>x[1])[0];
 }
@@ -1100,7 +1123,7 @@ function updateTop(rows){
    const side=dir==="CALL"?"BUY":"SELL";
    banner.className="signal-callout "+(side==="BUY"?"buy":"sell");
    const duration=candleDurationSeconds(r);
-   banner.innerHTML=`<strong style="display:block;font-size:1.18em">${side} SIGNAL · ${r.name}</strong><span style="display:block;margin-top:7px;font-size:1.12em">AI HOLD: ${formatHold(duration)}</span><small style="display:block;margin-top:5px">ENTRY ${fmt(r.livePrice??r.price)} · SCORE ${s.score}/100</small>`;
+   banner.innerHTML=`<strong style="display:block;font-size:1.18em">${side} SIGNAL · ${r.name}</strong><small style="display:block;margin-top:4px">${s.signalLevel||"DIRECTIONAL"}</small><span style="display:block;margin-top:7px;font-size:1.12em">AI HOLD: ${formatHold(duration)}</span><small style="display:block;margin-top:5px">ENTRY ${fmt(r.livePrice??r.price)} · SCORE ${s.score}/100</small>`;
   }else{
    banner.className="signal-callout neutral";
    banner.textContent=!r?"SELECT AN OTC PAIR TO START":
@@ -1110,7 +1133,7 @@ function updateTop(rows){
  }
  $("topDirection").textContent=candidate?(dir==="CALL"?"BUY":"SELL"):"SCANNING";
  $("topDirection").style.color=candidate?(dir==="CALL"?"var(--green)":"var(--red)"):"";
- $("topScore").textContent=candidate?(s.signalLevel==="EARLY"?"EARLY BIAS · ":"CONFIRMED · ")+s.score+" / 100":
+ $("topScore").textContent=candidate?(s.signalLevel==="CONFIRMED"?"CONFIRMED":s.signalLevel==="EARLY REVERSAL"?"EARLY REVERSAL":"DIRECTIONAL")+" · "+s.score+" / 100":
   !r?"NO PAIR":!r.candles?.length?"NO DATA":`BUILDING ANALYSIS · ${s.score??0}/100`;
  $("topReason").textContent=!r?"Select an OTC pair to load candle history.":
   !r.candles?.length?(s?.reason||r.lastError||"OTC candle request did not return usable history."):
@@ -1124,8 +1147,8 @@ function updateTop(rows){
  $("topEntry").textContent=Number.isFinite(entry)&&entry>0?fmt(entry):"—";
  $("topRsi").textContent=Number.isFinite(Number(s?.rsi))?Number(s.rsi).toFixed(1):"—";
  $("indicatorChips").innerHTML=s&&r?.candles?.length>=35
-  ?`<span>CCI(2) · ${Number.isFinite(s.cci)?s.cci.toFixed(1):"—"}</span><span>MACD line/signal · ${Number.isFinite(s.macdLine)&&Number.isFinite(s.macdSignal)?(s.macdLine>s.macdSignal?"Bullish":"Bearish"):"—"}</span><span>MACD · ${Number.isFinite(s.macdHistogram)?(s.macdHistogram>0?"Bullish":s.macdHistogram<0?"Bearish":"Neutral"):"—"}</span><span>Candle quality · ${Math.round((s.quality||0)*100)}%</span><span>Quote · ${fresh?"Live":"Delayed"}</span>`
-  :'<span>CCI(2) · waiting</span><span>RSI 14 · waiting</span><span>MACD · waiting</span><span>Candle pressure · waiting</span><span>Feed freshness · waiting</span>';
+  ?`<span>CCI(14) · ${Number.isFinite(s.cci)?s.cci.toFixed(1):"—"}</span><span>MACD line/signal · ${Number.isFinite(s.macdLine)&&Number.isFinite(s.macdSignal)?(s.macdLine>s.macdSignal?"Bullish":"Bearish"):"—"}</span><span>MACD · ${Number.isFinite(s.macdHistogram)?(s.macdHistogram>0?"Bullish":s.macdHistogram<0?"Bearish":"Neutral"):"—"}</span><span>Candle quality · ${Math.round((s.quality||0)*100)}%</span><span>Quote · ${fresh?"Live":"Delayed"}</span>`
+  :'<span>CCI(14) · waiting</span><span>RSI 14 · waiting</span><span>MACD · waiting</span><span>Candle pressure · waiting</span><span>Feed freshness · waiting</span>';
  if(s?.breakdown){
   $("analysisBreakdown").innerHTML=Object.entries(s.breakdown).map(([k,v])=>`<div><span>${({trend:"Trend structure",momentum:"Momentum",volatility:"Volatility",price:"Price action",structure:"Market structure",feed:"Feed integrity"})[k]||k}</span><b>${v||"—"}</b></div>`).join("");
  }else $("analysisBreakdown").innerHTML="<div><span>Analysis</span><b>Waiting for market data</b></div>";
