@@ -1440,7 +1440,20 @@ async function runLiveAIAnalysis(){
  if(!selected){setAIStatus("Select an OTC pair to start AI analysis.");return;}
  const {pair,result}=selected;
  if(!result?.candles||result.candles.length<35){setAIStatus("Waiting for at least 35 candles for a meaningful AI read.");return;}
- const candle=result.candles.at(-1),tick=liveTicks[pair.id];
+ // Validate OHLC structure before sending candles to the AI endpoint.
+ // Malformed provider bars are skipped without changing the main scanner feed.
+ const aiCandles=result.candles.filter(c=>{
+  const o=Number(c?.open),h=Number(c?.high),l=Number(c?.low),cl=Number(c?.close);
+  const t=Number(c?.timeMs);
+  return [o,h,l,cl].every(Number.isFinite)&&o>0&&h>0&&l>0&&cl>0&&
+   h>=Math.max(o,cl)&&l<=Math.min(o,cl)&&h>=l&&
+   ((Number.isFinite(t)&&t>0)||(Boolean(c?.time&&Number.isFinite(Date.parse(c.time)))));
+ }).sort((a,b)=>Number(a.timeMs||Date.parse(a.time))-Number(b.timeMs||Date.parse(b.time)));
+ if(aiCandles.length<35){
+  setAIStatus(`AI paused · only ${aiCandles.length} structurally valid candles are available; 35 are required. The technical scanner remains active.`);
+  return;
+ }
+ const candle=aiCandles.at(-1),tick=liveTicks[pair.id];
  const now=Date.now();
  const tickAge=tick?now-Number(tick.receivedAt||0):Infinity;
  const candleAge=Number.isFinite(Number(candle.timeMs))?now-Number(candle.timeMs):Infinity;
@@ -1461,7 +1474,7 @@ async function runLiveAIAnalysis(){
    candleIntervalSeconds:60,
    candleTimestamp:candle.time||(candle.timeMs?new Date(candle.timeMs).toISOString():null),
   technical:{direction:result.analysis?.direction||"WAIT",score:Number(result.analysis?.score)||0,trend:result.analysis?.trend||"MIXED",rsi:Number.isFinite(Number(result.analysis?.rsi))?Number(result.analysis.rsi):null,signalLevel:result.analysis?.signalLevel||"EARLY",reason:String(result.analysis?.reason||"")},
-  candles:result.candles.slice(-60).map(c=>({time:c.time||new Date(c.timeMs).toISOString(),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close),volume:c.volume===null||c.volume===undefined||c.volume===""?null:(Number.isFinite(Number(c.volume))?Number(c.volume):null)}))
+  candles:aiCandles.slice(-60).map(c=>({time:c.time||(Number.isFinite(Number(c.timeMs))?new Date(Number(c.timeMs)).toISOString():new Date(c.time).toISOString()),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close),volume:c.volume===null||c.volume===undefined||c.volume===""?null:(Number.isFinite(Number(c.volume))?Number(c.volume):null)}))
  };
  try{
   const response=await fetch("/.netlify/functions/openai-analysis",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),cache:"no-store"});
