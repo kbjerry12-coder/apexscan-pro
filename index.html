@@ -478,7 +478,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
   </section>
   <aside>
    <div class="panel" id="signalPanel">
-    <div class="panel-head"><h2>LIVE OTC SIGNAL</h2><div class="signal-tools"><span class="pill">BUY / SELL ONLY</span><button type="button" id="alertToggle" class="small" aria-pressed="false">🔔 Enable callouts</button></div></div>
+    <div class="panel-head"><h2>LIVE OTC SIGNAL</h2><div class="signal-tools"><span class="pill">REVERSE MODE ON · SIGNALS INVERTED</span><button type="button" id="alertToggle" class="small" aria-pressed="false">🔔 Enable callouts</button></div></div>
     <div id="signalCallout" class="signal-callout" role="status" aria-live="assertive">Scan a loaded OTC pair to generate a BUY or SELL directional bias</div>
     <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Technical engine is checking trend, momentum and candle structure</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>CCI(14)</span><span>Trigger +100 / -111</span><span>MACD 12/26/9</span><span>Closed candle</span><span>Next-candle lock</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · Each fresh BUY/SELL direction can open one simulated trade per candle</span></div>
      <div id="paperLiveBoard" class="paper-live-board" aria-live="polite"><b>LIVE PAPER POSITIONS</b><span>No open paper trades yet · waiting for the next directional signal.</span></div>
@@ -1002,7 +1002,7 @@ function handleLiveTick(raw){
   if(asset&&candles.length>=36){
    const closed=closedOneMinuteCandles(candles);
    result.analysis=closed.length>=35?analyze(closed,asset):{direction:"WAIT",score:0,reason:"Waiting for a completed candle before CCI + MACD confirmation",fresh:false,age:Infinity,signalLevel:"WAIT"};
-   result.analysis={...result.analysis,direction:lockedCandleDirection(result)};
+   result.analysis={...result.analysis};applyReverseSignal(result);
    if(result.analysis.direction!=="WAIT")addSignal(result);
   }
   renderScanner();
@@ -1061,10 +1061,22 @@ function lockedCandleDirection(r){
  if(!currentMinute||!analysisTime||currentMinute<=Math.floor(analysisTime/60000))return "WAIT";
  const key=`${r.id}|${currentMinute}`;
  if(lockedDirectionsByCandle.has(key))return lockedDirectionsByCandle.get(key);
- const side=["CALL","PUT"].includes(r.analysis.direction)?r.analysis.direction:"WAIT";
- lockedDirectionsByCandle.set(key,side);
+ const sourceSide=["CALL","PUT"].includes(r.analysis.rawDirection||r.analysis.direction)
+  ?(r.analysis.rawDirection||r.analysis.direction):"WAIT";
+ lockedDirectionsByCandle.set(key,sourceSide);
  if(lockedDirectionsByCandle.size>1000)lockedDirectionsByCandle.clear();
- return side;
+ return sourceSide;
+}
+function applyReverseSignal(r){
+ if(!r?.analysis)return "WAIT";
+ const sourceSide=lockedCandleDirection(r);
+ const effectiveSide=sourceSide==="CALL"?"PUT":sourceSide==="PUT"?"CALL":"WAIT";
+ r.analysis.rawDirection=sourceSide;
+ r.analysis.direction=effectiveSide;
+ r.analysis.reverseMode=true;
+ r.analysis.reverseLabel=sourceSide==="CALL"?"Original BUY → Reverse SELL":
+  sourceSide==="PUT"?"Original SELL → Reverse BUY":"Waiting for original BUY/SELL setup";
+ return effectiveSide;
 }
 const AI_HOLD_OPTIONS=[60,180,300,900,1800,3600,14400];
 function formatHold(seconds){const n=Number(seconds)||60;if(n<60)return `${n}s`;if(n<3600)return `${n/60}m`;return `${n/3600}h`;}
@@ -1137,7 +1149,7 @@ function updateTop(rows){
   !r?"NO PAIR":!r.candles?.length?"NO DATA":`BUILDING ANALYSIS · ${s.score??0}/100`;
  $("topReason").textContent=!r?"Select an OTC pair to load candle history.":
   !r.candles?.length?(s?.reason||r.lastError||"OTC candle request did not return usable history."):
-  candidate?s.reason:s?.reason||"Directional momentum is being evaluated.";
+  candidate?`${s.reverseLabel||"Reverse mode active"} · Original analysis: ${s.reason}`:s?.reason||"Directional momentum is being evaluated.";
  $("signalStatusLine").textContent=!r?"DATA NOT LOADED":
   !r.candles?.length?"FEED ERROR · ENTRY AND RSI UNAVAILABLE":
   candidate?`${dir==="CALL"?"BUY":"SELL"} ${s.signalLevel||"DIRECTIONAL"} · ${fresh?"FRESH DATA · PAPER TRADE "+(autoPaperEnabled?"ENABLED":"PAUSED"):"STALE DATA · PAPER ENTRY BLOCKED"}`:
@@ -1317,7 +1329,7 @@ function addSignal(r){
    let prior=old?.price??null,change=prior===null?null:price-prior;
    results[id]={id,name:a.name,price,change,candles:data,analysis,scannedAt:Date.now()};
    if(liveTicks[id]){results[id].livePrice=liveTicks[id].price;results[id].liveChange=liveTicks[id].change;}
-   results[id].analysis={...results[id].analysis,direction:lockedCandleDirection(results[id])};
+   results[id].analysis={...results[id].analysis};applyReverseSignal(results[id]);
    if(results[id].analysis.direction!=="WAIT")addSignal(results[id]);
    if(selectedChart===id||!selectedChart){try{drawChart()}catch(chartError){console.error(chartError)}}
   }catch(e){
@@ -1328,7 +1340,7 @@ function addSignal(r){
     const retained=previous.candles;
     const confirmedBars=closedOneMinuteCandles(retained);
     results[id]={...previous,analysis:confirmedBars.length>=35?analyze(confirmedBars,a):{direction:"WAIT",score:0,reason:"Waiting for completed candles · feed refresh failed",fresh:false,age:Infinity,signalLevel:"WAIT"},lastError:e.message,scannedAt:Date.now()};
-    results[id].analysis={...results[id].analysis,direction:lockedCandleDirection(results[id])};
+    results[id].analysis={...results[id].analysis};applyReverseSignal(results[id]);
    }else{
     results[id]={id,name:a.name,price:NaN,change:null,candles:[],analysis:{direction:"WAIT",score:0,reason:e.message,fresh:false,age:Infinity},lastError:e.message};
    }
