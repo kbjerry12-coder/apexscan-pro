@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="8.8-otc-directional-buy-sell-voice">
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="8.9-otc-60-second-live-ai">
 <title>APEXSCAN PRO · V8.8 OTC BUY / SELL</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
@@ -401,7 +401,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
   <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · OTC SIGNAL SCANNER</h1><p>OTCharts live OTC feed · BUY / SELL signals · scan manually or automatically</p></div>
   <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
- <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Recent live ticks keep analysis current even while the current 30-second candle is still forming. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
+ <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Recent live ticks keep analysis current even while the current 60-second candle is still forming. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
  <section class="mobile-command" id="marketControls" aria-label="Market controls">
   <div class="market-tabs" role="group" aria-label="Market category">
    <button type="button" class="market-tab active" data-market-category="currencies">Currencies</button>
@@ -413,7 +413,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <option value="5000">5 sec</option><option value="10000">10 sec</option><option value="15000" selected>15 sec</option><option value="30000">30 sec</option>
    </select></label>
   </div>
-  <div class="mobile-market-meta"><span id="heroSelectedMarket">OTC market selected</span><span id="heroLiveLabel">30-second candle analysis</span></div>
+  <div class="mobile-market-meta"><span id="heroSelectedMarket">OTC market selected</span><span id="heroLiveLabel">60-second candle analysis</span></div>
   <div class="category-note" id="categoryNote" aria-live="polite">OTC currency markets are selected by default.</div>
  </section>
  <section class="kpis">
@@ -440,11 +440,10 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
    <div class="panel" id="chartPanel">
     <div class="panel-head chart-head"><h2>LIVE OTC CANDLE CHART</h2><select id="chartAsset" style="max-width:170px;background:#091321;color:white;border:1px solid var(--line);padding:7px;border-radius:7px"></select></div>
     <div class="tf-row" role="group" aria-label="Chart timeframe">
-     <button type="button" class="tf-btn active" data-tf="0.5">30 SEC</button>
      <button type="button" class="tf-btn" data-tf="1">1 MIN</button>
      <button type="button" class="tf-btn" data-tf="5">5 MIN</button>
      <button type="button" class="tf-btn" data-tf="15">15 MIN</button>
-     <span class="tf-note" id="tfNote">30-second candles</span>
+     <span class="tf-note" id="tfNote">60-second (1-minute) candles</span>
     </div>
     <div class="chart-stage">
      <div class="chartbox"><canvas id="chart"></canvas></div>
@@ -460,7 +459,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
       <div class="float-sub" id="floatRecord">0 settled · 0 pending</div>
      </div>
     </div>
-    <div class="chartfoot"><span id="chartCaption">Waiting for candles</span><span id="chartMeta">EMA 9 · EMA 21 · 30-second candles</span></div>
+    <div class="chartfoot"><span id="chartCaption">Waiting for candles</span><span id="chartMeta">EMA 9 · EMA 21 · 60-second (1-minute) candles</span></div>
    </div>
    <div class="panel" id="signalHistoryPanel">
     <div class="panel-head"><h2>SIGNAL HISTORY</h2><button class="small" id="clearSignals">Clear signals</button></div>
@@ -485,7 +484,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
      <div id="paperLiveBoard" class="paper-live-board" aria-live="polite"><b>LIVE PAPER POSITIONS</b><span>No open paper trades yet · waiting for a qualified signal.</span></div>
      <div class="countdown-grid">
       <div><small>BUY / SELL VALID FOR</small><b id="signalCountdown">--:--</b></div>
-      <div><small>30-SEC CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
+      <div><small>1-MIN CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
      </div>
      <div class="trade-duration" style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;padding:10px;border:1px solid #31527a;border-radius:10px;background:#07182a">
       <div style="display:flex;flex-direction:column;gap:5px"><small style="font-size:9px;color:#9ed5ff;font-weight:900;letter-spacing:.08em">AI-SELECTED TRADE HOLD · NO MANUAL DURATION</small><b id="durationAdvice" style="font-size:16px;color:#fff">AI evaluating market structure…</b><small style="font-size:10px;color:#9db1cc">AI chooses from 5s · 10s · 15s · 30s · 1m · 3m · 5m · 15m · 30m · 1h · 4h, based on available trend history and live conditions.</small></div>
@@ -531,7 +530,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <div class="checkgrid" id="watchChecks"></div>
     <div class="fields" style="margin-top:11px">
      <div class="field"><label>Auto scan interval</label><select id="interval"><option value="5000">5 seconds</option><option value="10000">10 seconds</option><option value="15000" selected>15 seconds</option><option value="30000">30 seconds</option></select></div>
-     <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. OTC analysis uses 30-second candles. AI selects a paper-trade hold from 5 seconds to 4 hours based on trend persistence, signal confluence and available history; longer holds require substantially more history.</div></div>
+     <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. OTC analysis uses 60-second (1-minute) candles. AI selects a paper-trade hold from 5 seconds to 4 hours based on trend persistence, signal confluence and available history; longer holds require substantially more history.</div></div>
      <div class="field"><label>Scanner mode</label><select id="scanMode"><option value="aggressive" selected>Aggressive · early setups</option><option value="balanced">Balanced · confirmed only</option></select></div>
      <div class="field"><label>Signal threshold</label><select id="threshold"><option value="15" selected>15 · Very sensitive</option><option value="30">30 · More sensitive</option><option value="70">70 · Active</option><option value="75">75 · Balanced</option><option value="80">80 · Selective</option><option value="85">85 · Strict</option></select></div>
      <div class="field"><label>Paper stake ($)</label><input id="stake" type="number" min="1" max="100000" value="10"></div>
@@ -577,7 +576,7 @@ const ASSETS=[
  {id:"OTC:USD/MYR",name:"USD/MYR OTC",kind:"otc",symbol:"USDMYR_otc",default:false},
  {id:"OTC:SAR/CNY",name:"SAR/CNY OTC",kind:"otc",symbol:"SARCNY_otc",default:false}
 ];
-let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=0.5,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
+let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6}),clock=()=>new Date().toLocaleTimeString();
 function status(t,ok=false){$("statusText").textContent=t;$("statusLed").style.background=ok?"var(--green)":"var(--amber)"}
 function saveState(){try{localStorage.setItem(STORE,JSON.stringify({watch:[...watch],history:history.slice(0,150),trades:trades.slice(0,250),threshold:$("threshold").value,mode:$("scanMode").value,interval:$("interval").value,stake:$("stake").value,payout:$("payout").value,chart:selectedChart,autoPaper:autoPaperEnabled}))}catch(e){}}
@@ -730,7 +729,7 @@ function analyze(candles,asset){
  const volOK=atrPct>0&&atrPct<1.8; if(!volOK)reasons.push(atrPct>=1.8?"volatility spike":"very low volatility");
  const tick=liveTicks[asset.id],tickAge=tick?Math.max(0,(Date.now()-Number(tick.receivedAt||0))/1000):Infinity;
  const candleAge=last.timeMs?Math.max(0,(Date.now()-last.timeMs)/1000):Infinity;
- const fresh=tickAge<=30||candleAge<=150;
+ const fresh=tickAge<=15||candleAge<=120;
  const age=Math.min(tickAge,candleAge);
  // Candle-color-first signal logic: the latest forming candle determines direction.
  // Indicators remain supporting analysis and cannot override candle color.
@@ -788,15 +787,15 @@ async function fetchAsset(asset){
 }
 
 function setChartTimeframe(minutes){
- chartTimeframe=[0.5,1,5,15].includes(minutes)?minutes:0.5;
+ chartTimeframe=[1,5,15].includes(minutes)?minutes:1;
  document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===chartTimeframe));
- const tfLabel=chartTimeframe===0.5?"30-second":chartTimeframe+"-minute";
+ const tfLabel=chartTimeframe===1?"60-second":chartTimeframe+"-minute";
  $("tfNote").textContent=tfLabel+" candles";
  $("chartMeta").textContent=`EMA 9 · EMA 21 · ${tfLabel} candles`;
  drawChart();
 }
 function aggregateCandles(candles,minutes){
- if(minutes===0.5)return candles.slice(-100);
+ 
  if(minutes===1){minutes=1;}
  const bucketMs=minutes*60000,map=new Map();
  candles.forEach(c=>{
@@ -854,7 +853,7 @@ function drawChart(){
  ctx.fillStyle="#8ea4c2";ctx.font="9px system-ui";ctx.textAlign="left";
  [0,Math.floor(candles.length/2),candles.length-1].forEach(i=>{const d=new Date(candles[i].timeMs);ctx.fillText(d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}),left+i*step+step/2,h-5)});
  $("chartCaption").textContent=`${ASSETS.find(a=>a.id===id)?.name||id} · ${candles.length} candles · candle history · latest ${fmt(livePrice>0?livePrice:last.close)}`;
- $("chartMeta").textContent=`LIVE ticks · EMA 9 / 21 · ${chartTimeframe===0.5?"30-second":chartTimeframe+"-minute"} view`;
+ $("chartMeta").textContent=`LIVE ticks · EMA 9 / 21 · ${chartTimeframe===1?"60-second":chartTimeframe+"-minute"} view`;
 }
 
 
@@ -940,12 +939,12 @@ function handleLiveTick(raw){
  const id=OTC_SYMBOLS[symbol];
  if(!id||!Number.isFinite(price)||price<=0)return;
  const previous=liveTicks[id]?.price ?? results[id]?.price ?? price;
- const receivedAt=Date.now(),candleStart=Math.floor(receivedAt/30000)*30000;
+ const receivedAt=Date.now(),candleStart=Math.floor(receivedAt/60000)*60000;
  liveTicks[id]={price,change:price-previous,time:tick.time||tick.timestamp||receivedAt,receivedAt};
  if(results[id]){
   const result=results[id];result.livePrice=price;result.liveChange=price-previous;result.liveUpdated=receivedAt;
   const candles=result.candles||(result.candles=[]),last=candles[candles.length-1];
-  if(last&&Math.floor(Number(last.timeMs||0)/30000)===Math.floor(candleStart/30000)){
+  if(last&&Math.floor(Number(last.timeMs||0)/60000)===Math.floor(candleStart/60000)){
    last.high=Math.max(last.high,price);last.low=Math.min(last.low,price);last.close=price;
   }else{
    candles.push({time:new Date(candleStart).toISOString(),timeMs:candleStart,open:last?last.close:price,high:price,low:price,close:price,live:true});
@@ -990,7 +989,7 @@ function connectLiveStream(){
 function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
 function renderScanner(){
  let arr=[...watch].map(id=>results[id]).filter(Boolean),rows=[...arr].sort((a,b)=>b.analysis.score-a.analysis.score);
- $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.direction==="CALL"?"BUY":s.direction==="PUT"?"SELL":"—",cls=shownDirection==="BUY"?"call":shownDirection==="SELL"?"put":"wait",change=r.change,timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+30000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":s.trend==="DOWN"?"red":"muted"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">00:30</small>`:""}</td><td><span class="${s.signalLevel==="CONFIRMED"?"green":"blue"}">${s.signalLevel||"EARLY"}</span></td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
+ $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.direction==="CALL"?"BUY":s.direction==="PUT"?"SELL":"—",cls=shownDirection==="BUY"?"call":shownDirection==="SELL"?"put":"wait",change=r.change,timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+60000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":s.trend==="DOWN"?"red":"muted"}">${s.trend||"—"}</td><td>${s.rsi?s.rsi.toFixed(1):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">00:30</small>`:""}</td><td><span class="${s.signalLevel==="CONFIRMED"?"green":"blue"}">${s.signalLevel||"EARLY"}</span></td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
  document.querySelectorAll("#scannerBody tr[data-asset]").forEach(tr=>tr.addEventListener("click",()=>{selectedChart=tr.dataset.asset;$("chartAsset").value=selectedChart;updateChartOptions();drawChart()}));
  let fresh=arr.filter(r=>r.analysis.fresh&&hasCurrentFeed(r.id,r.candles?.at(-1))).length,signals=arr.filter(r=>["CALL","PUT"].includes(r.analysis.direction));
  $("kScanned").textContent=arr.length+" / "+watch.size;$("kSignals").textContent=signals.length;$("freshCount").textContent=arr.length;$("staleCount").textContent="—";
@@ -1005,7 +1004,7 @@ function lockedCandleDirection(r){
  const candle=r?.candles?.at(-1);
  if(!r||!candle)return r?.analysis?.direction||"WAIT";
  const raw=Number(candle.timeMs||0);
- const bucket=raw>0?Math.floor(raw/30000):Math.floor(Date.now()/30000);
+ const bucket=raw>0?Math.floor(raw/60000):Math.floor(Date.now()/60000);
  const candleKey=`${r.id}|${bucket}`;
  const now=Date.now();
  const price=Number(r.livePrice??candle.close);
@@ -1028,11 +1027,11 @@ function lockedCandleDirection(r){
  return state.direction||"WAIT";
 }
 const AI_HOLD_OPTIONS=[5,10,15,30,60,180,300,900,1800,3600,14400];
-function formatHold(seconds){const n=Number(seconds)||30;if(n<60)return `${n}s`;if(n<3600)return `${n/60}m`;return `${n/3600}h`;}
+function formatHold(seconds){const n=Number(seconds)||60;if(n<60)return `${n}s`;if(n<3600)return `${n/60}m`;return `${n/3600}h`;}
 function candleDurationSeconds(r){
  const a=r?.analysis,c=r?.candles||[];
- if(!a||!["CALL","PUT"].includes(a.direction)||c.length<12)return 30;
- if(!a.fresh)return 30;
+ if(!a||!["CALL","PUT"].includes(a.direction)||c.length<12)return 60;
+ if(!a.fresh)return 60;
  const side=a.direction==="CALL"?1:-1,close=c.map(x=>Number(x.close));
  const aligned=(n)=>{const d=close.slice(-n-1).slice(1).map((v,i)=>Math.sign(v-close.slice(-n-1)[i])).filter(Boolean);return d.length?d.filter(x=>x===side).length/d.length:0};
  const c6=aligned(6),c12=aligned(12),c24=aligned(24),c48=aligned(48);
@@ -1073,7 +1072,7 @@ function updateTop(rows){
  const timerKey=candidate?`${candidate.id}|${dir}|${candidate.analysis.candleTime}`:"";
  if(timerKey&&timerKey!==signalTimerKey){
   signalTimerKey=timerKey;
-  signalExpiries[timerKey]=signalExpiries[timerKey]||Date.now()+30000;
+  signalExpiries[timerKey]=signalExpiries[timerKey]||Date.now()+60000;
   signalExpiryAt=signalExpiries[timerKey];
  }
  if(!timerKey){signalTimerKey="";signalExpiryAt=0;}
@@ -1161,8 +1160,8 @@ function ageForCandle(c){const t=Number(c?.timeMs||0);return t?Math.max(0,(Date.
 function hasCurrentFeed(assetId,candle){
  const tick=liveTicks[assetId],tickAge=tick?Date.now()-Number(tick.receivedAt||0):Infinity;
  // A recent provider tick is stronger freshness evidence than the timestamp of the
- // last completed 30-second candle. Fall back to the candle timestamp for history-only.
- return (Number.isFinite(tickAge)&&tickAge>=0&&tickAge<=30000)||ageForCandle(candle)<=150;
+ // last completed 60-second candle. Fall back to the candle timestamp for history-only.
+ return (Number.isFinite(tickAge)&&tickAge>=0&&tickAge<=15000)||ageForCandle(candle)<=120;
 }
 function updateCountdowns(){
  const now=Date.now();
@@ -1174,7 +1173,7 @@ function updateCountdowns(){
  const selected=results[$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart];
  const candle=selected?.candles?.at(-1);
  if(candle&&ageForCandle(candle)<150){
-  const left=Math.max(1,Math.ceil((30000-(now%30000))/1000));
+  const left=Math.max(1,Math.ceil((60000-(now%60000))/1000));
   $("candleCountdown").textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
  }else $("candleCountdown").textContent="--:--";
  document.querySelectorAll(".row-countdown").forEach(el=>{
@@ -1224,9 +1223,9 @@ const announcedCandleKeys=new Set();
 function signalCandleKey(r){
  const candle=r?.candles?.at(-1);
  const rawTime=Number(candle?.timeMs||0);
- // Normalize every forming 30-second candle to one stable key, even if
+ // Normalize every forming 60-second candle to one stable key, even if
  // the provider refreshes its timestamp or sends many ticks per second.
- const minute=rawTime>0?Math.floor(rawTime/30000):Math.floor(Date.now()/30000);
+ const minute=rawTime>0?Math.floor(rawTime/60000):Math.floor(Date.now()/60000);
  return `${r.id}|${minute}`;
 }
 function announceSignal(r){
@@ -1442,16 +1441,25 @@ async function runLiveAIAnalysis(){
  const {pair,result}=selected;
  if(!result?.candles||result.candles.length<35){setAIStatus("Waiting for at least 35 candles for a meaningful AI read.");return;}
  const candle=result.candles.at(-1),tick=liveTicks[pair.id];
- const tickAge=tick?Date.now()-Number(tick.receivedAt||0):Infinity;
- const candleAge=Number.isFinite(Number(candle.timeMs))?Date.now()-Number(candle.timeMs):Infinity;
- if(tickAge>45000&&candleAge>180000){setAIStatus("AI paused · selected pair data is too old. Checking feed freshness.");return;}
+ const now=Date.now();
+ const tickAge=tick?now-Number(tick.receivedAt||0):Infinity;
+ const candleAge=Number.isFinite(Number(candle.timeMs))?now-Number(candle.timeMs):Infinity;
+ const tickFresh=Number.isFinite(tickAge)&&tickAge>=0&&tickAge<=20000;
+ if(candleAge<0||candleAge>180000){
+  setAIStatus("AI paused · latest 1-minute candle is older than 3 minutes. Waiting for fresh candle data.");
+  return;
+ }
  aiRequestBusy=true;
  const seq=++aiRequestSequence;
- setAIStatus(`Analyzing ${pair.name} · candles, momentum, wicks, structure and volume…`);
+ setAIStatus(`Analyzing ${pair.name} · 1-minute candles · ${tickFresh?"live tick verified":"live tick not currently verified"} · patterns, momentum and structure…`);
  const payload={
-  pair:pair.name,symbol:pair.symbol,timeframe:"30-second live-built candles",
+  pair:pair.name,symbol:pair.symbol,timeframe:"60-second (1-minute) candles; candle timestamps should be 60 seconds apart",
   livePrice:Number(tick?.price??result.livePrice??candle.close),
   liveTickAgeSeconds:Number.isFinite(tickAge)?Math.max(0,Math.round(tickAge/1000)):null,
+   liveTickTimestamp:tick?.receivedAt?new Date(tick.receivedAt).toISOString():null,
+   liveTickFresh:tickFresh,
+   candleIntervalSeconds:60,
+   candleTimestamp:candle.time||(candle.timeMs?new Date(candle.timeMs).toISOString():null),
   technical:{direction:result.analysis?.direction||"WAIT",score:Number(result.analysis?.score)||0,trend:result.analysis?.trend||"MIXED",rsi:Number.isFinite(Number(result.analysis?.rsi))?Number(result.analysis.rsi):null,signalLevel:result.analysis?.signalLevel||"EARLY",reason:String(result.analysis?.reason||"")},
   candles:result.candles.slice(-60).map(c=>({time:c.time||new Date(c.timeMs).toISOString(),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close),volume:c.volume===null||c.volume===undefined||c.volume===""?null:(Number.isFinite(Number(c.volume))?Number(c.volume):null)}))
  };
@@ -1463,7 +1471,7 @@ async function runLiveAIAnalysis(){
   // Ignore an answer for a pair that is no longer selected.
   if(selectedOTCPair()?.id!==pair.id)return;
   renderAIForecast(body,pair);
-  setAIStatus(`LIVE AI · ${pair.name} · updated ${clock()} · next analysis in 15 sec`,true);
+  setAIStatus(`LIVE AI · ${pair.name} · 1-minute candles · ${tickFresh?"live tick verified":"candle history only; live tick not verified"} · updated ${clock()}`,true);
  }catch(error){
   if(seq===aiRequestSequence)setAIStatus("AI error · "+(error?.message||"Request failed")+". The technical scanner continues normally.");
  }finally{aiRequestBusy=false;if(aiLiveEnabled&&selectedOTCPair()?.id!==pair.id)setTimeout(()=>runLiveAIAnalysis(),250);}
