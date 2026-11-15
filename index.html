@@ -1607,6 +1607,42 @@ function gptSetStatus(message,kind="wait"){
  const ai=$("gptAIState");if(ai)ai.textContent=kind==="ok"?"ANALYZED":kind==="error"?"ERROR":message.toLowerCase().includes("waiting")||message.toLowerCase().includes("checking")?"ANALYZING":"READY";
  setAIStatus(message,kind==="ok");
 }
+// Load candle history immediately so the chart, entry price and indicators are visible
+// even while the separate live-tick stream is reconnecting. This does NOT create a signal.
+let gptHistoryLoadToken=0;
+async function gptLoadSelectedHistory(reason="initial load"){
+ const pair=selectedOTCPair();
+ if(!pair){gptSetStatus("Select an OTC pair to load its 1-minute chart history.");return;}
+ const token=++gptHistoryLoadToken;
+ gptSetStatus(`Loading ${pair.name} · requesting 1-minute candle history…`);
+ try{
+  const fetched=await fetchAsset(pair);
+  if(token!==gptHistoryLoadToken)return;
+  const candles=gptMergeCandles(fetched,[]);
+  if(candles.length<2)throw new Error(`Only ${candles.length} candles returned. The chart needs more history.`);
+  const last=candles.at(-1),technical=analyze(candles,pair),tick=liveTicks[pair.id];
+  const previous=results[pair.id]||{};
+  results[pair.id]={...previous,id:pair.id,name:pair.name,price:last.close,
+   livePrice:tick&&Date.now()-tick.receivedAt<15000?tick.price:undefined,
+   candles,analysis:{...technical,direction:"WAIT",signalLevel:"HISTORY LOADED · MANUAL SCAN REQUIRED"},
+   scannedAt:Date.now(),historyLoadedAt:Date.now(),lastError:null};
+  renderScanner();
+  drawChart();
+  const age=Math.max(0,Math.round((Date.now()-last.timeMs)/1000));
+  gptSetStatus(`${candles.length} candles loaded · latest close ${fmt(last.close)} · ${age}s since candle timestamp · press SCAN CHARTS for ChatGPT analysis.`);
+ }catch(error){
+  if(token!==gptHistoryLoadToken)return;
+  const existing=results[pair.id];
+  if(existing?.candles?.length){
+   existing.lastError=error?.message||"History refresh failed";
+   renderScanner();drawChart();
+  }else{
+   results[pair.id]={id:pair.id,name:pair.name,price:NaN,candles:[],analysis:{direction:"WAIT",score:0,rsi:null,trend:"MIXED",fresh:false,reason:error?.message||"Candle history unavailable"},lastError:error?.message||"Candle history unavailable"};
+   renderScanner();drawChart();
+  }
+  gptSetStatus(`Candle history error · ${error?.message||"Unable to load candles"}. Check the otc-candles Netlify function and OTCHARTS_API_KEY.`,"error");
+ }
+}
 function gptMergeCandles(primary,cache){
  const map=new Map();
  for(const c of [...(primary||[]),...(cache||[])]){const t=Number(c.timeMs||Date.parse(c.time));if(!Number.isFinite(t))continue;map.set(Math.floor(t/60000),{...c,timeMs:t,time:c.time||new Date(t).toISOString()});}
@@ -1614,30 +1650,42 @@ function gptMergeCandles(primary,cache){
 }
 function gptClosedDirection(c){return c.close>c.open?"CALL":c.close<c.open?"PUT":"WAIT";}
 async function gptWaitForCandleBoundary(pair){
- const started=Date.now(),timeout=76000;let lastError="";
+ // Do not depend on EventSource/live ticks to decide whether a candle closed.
+ // Use the candle-history endpoint itself and wait for its newest CLOSED bar to advance.
+ const timeout=96000,started=Date.now();let lastError="";
+ let initial=[];
+ try{initial=gptMergeCandles(await fetchAsset(pair),[]);}catch(e){lastError=e?.message||"Candle history request failed";}
+ if(initial.length<35)throw new Error(lastError||`Only ${initial.length} candles are available. At least 35 are needed for analysis.`);
+ const now0=Date.now();
+ const initialClosed=initial.filter(c=>Number(c.timeMs)+60000<=now0-1200);
+ const baseline=initialClosed.at(-1)?.timeMs;
+ if(!Number.isFinite(baseline))throw new Error("The feed has not supplied a completed 1-minute candle yet. Chart history may still be loading.");
  while(Date.now()-started<timeout){
-  let candles=[];
-  try{candles=await fetchAsset(pair);}catch(e){lastError=e?.message||"Candle request failed";}
-  const cached=results[pair.id]?.candles||[];
-  const merged=gptMergeCandles(candles,cached);
-  const now=Date.now(),minuteStart=Math.floor(now/60000)*60000;
-  const tick=liveTicks[pair.id],tickInCurrentMinute=!!tick&&Number(tick.receivedAt)>=minuteStart&&now-Number(tick.receivedAt)<20000;
-  const endpointHasCurrentMinute=merged.some(c=>Math.floor(c.timeMs/60000)===Math.floor(minuteStart/60000));
-  if((tickInCurrentMinute||endpointHasCurrentMinute)&&merged.length>=36){
-   const closed=merged.filter(c=>Math.floor(c.timeMs/60000)<Math.floor(minuteStart/60000));
-   const last=closed.at(-1);
-   if(last&&now-(last.timeMs+60000)>=1200&&closed.length>=35){
-    const closedAge=now-(last.timeMs+60000);
-    if(closedAge<=125000)return {candles:closed.slice(-80),formingMinute:minuteStart,tick,tickFresh:tickInCurrentMinute,closedAge};
+  try{
+   const fetched=gptMergeCandles(await fetchAsset(pair),[]);
+   if(fetched.length>=35){
+    const now=Date.now();
+    const closed=fetched.filter(c=>Number(c.timeMs)+60000<=now-1200);
+    const latest=closed.at(-1);
+    if(latest&&latest.timeMs>baseline){
+     const closedAge=now-(latest.timeMs+60000);
+     if(closedAge>=0&&closedAge<=150000){
+      return {candles:closed.slice(-80),formingMinute:Math.floor(now/60000)*60000,
+       tick:liveTicks[pair.id]||null,
+       tickFresh:!!liveTicks[pair.id]&&Date.now()-Number(liveTicks[pair.id].receivedAt)<15000,
+       closedAge};
+     }
+    }
    }
-  }
-  const remaining=timeout-(Date.now()-started);
-  if(remaining<=0)break;
-  const wait=Math.min(1800,remaining);
-  gptSetStatus(lastError?`Waiting for the next completed candle · feed response: ${lastError}`:"Waiting for the 1-minute candle to close and the next candle to begin…");
-  await gptSleep(wait);
+  }catch(e){lastError=e?.message||"Candle history refresh failed";}
+  gptSetStatus(lastError
+   ?`Waiting for the next completed 1-minute candle · history refresh: ${lastError}`
+   :"Waiting for the next 1-minute candle to close · checking candle history (live ticks are optional)…");
+  await gptSleep(1800);
  }
- throw new Error(lastError?`Could not confirm a newly formed candle. Feed says: ${lastError}`:"No new 1-minute candle boundary was confirmed within 76 seconds. No signal was issued.");
+ throw new Error(lastError
+  ?`No new completed candle was received. Candle feed says: ${lastError}`
+  :"The candle-history feed did not publish a newer completed 1-minute candle within 96 seconds. No signal was issued.");
 }
 function gptApplyStableLock(pairId,direction,candles){
  if(!["CALL","PUT"].includes(direction))return {direction:"WAIT",reason:"ChatGPT did not find a clear direction."};
@@ -1710,12 +1758,12 @@ $("gptScanButton").addEventListener("click",runGPTManualScan);
 $("gptAudioToggle").addEventListener("click",()=>{calloutsEnabled=!calloutsEnabled;$("gptAudioToggle").textContent=calloutsEnabled?"🔊 Audio callouts ON":"🔔 Enable audio callouts";if(calloutsEnabled&&"speechSynthesis" in window){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance("Audio callouts enabled"));}});
 $("gptSettingsToggle").addEventListener("click",()=>{const box=$("gptSettingsSlot");if(box){box.hidden=!box.hidden;if(!box.hidden)box.scrollIntoView({behavior:"smooth",block:"start"});}});
 // Pair changes only change the selected instrument. They never launch a scan automatically.
-$("mobileAsset").addEventListener("change",e=>{e.stopImmediatePropagation();const id=$("mobileAsset").value;selectedChart=id;$("chartAsset").value=id;watch.add(id);renderWatch();updateMobileMarketLabel();stopLiveStream();connectLiveStream();saveState();gptSetStatus(`Selected ${ASSETS.find(a=>a.id===id)?.name||id}. Press SCAN CHARTS when ready.`);},{capture:true});
-$("chartAsset").addEventListener("change",e=>{e.stopImmediatePropagation();const id=$("chartAsset").value;selectedChart=id;$("mobileAsset").value=id;watch.add(id);renderWatch();stopLiveStream();connectLiveStream();saveState();gptSetStatus(`Selected ${ASSETS.find(a=>a.id===id)?.name||id}. Press SCAN CHARTS when ready.`);},{capture:true});
+$("mobileAsset").addEventListener("change",e=>{e.stopImmediatePropagation();const id=$("mobileAsset").value;selectedChart=id;$("chartAsset").value=id;watch.add(id);renderWatch();updateMobileMarketLabel();stopLiveStream();connectLiveStream();saveState();gptLoadSelectedHistory("pair changed");},{capture:true});
+$("chartAsset").addEventListener("change",e=>{e.stopImmediatePropagation();const id=$("chartAsset").value;selectedChart=id;$("mobileAsset").value=id;watch.add(id);renderWatch();stopLiveStream();connectLiveStream();saveState();gptLoadSelectedHistory("chart pair changed");},{capture:true});
 // Live countdown to the next 1-minute boundary.
 setInterval(()=>{const now=Date.now(),left=60000-(now%60000);const sec=Math.ceil(left/1000);if($("gptCandleClock"))$("gptCandleClock").textContent=`00:${String(sec).padStart(2,"0")}`;if($("gptCandleProgress"))$("gptCandleProgress").style.width=`${(1-left/60000)*100}%`;},250);
 
 setInterval(()=>{$("clock").textContent=clock();if($("gptClock"))$("gptClock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();updateCountdowns();settleExpiredTrades()},1000);
-loadState();autoPaperEnabled=false;$("autoPaperToggle").checked=false;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · New qualified signals open simulated trades automatically":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();setAIStatus("ChatGPT is ready · press SCAN CHARTS for a closed-candle analysis.");
+loadState();autoPaperEnabled=false;$("autoPaperToggle").checked=false;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · New qualified signals open simulated trades automatically":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();gptLoadSelectedHistory("startup");setAIStatus("ChatGPT is ready · candle history is loading. Press SCAN CHARTS for a closed-candle analysis.");
 </script>
 </body></html>
