@@ -62,7 +62,7 @@ export default async (request) => {
 
     return Response.json({
       candles: candles.slice(-500),
-      timeframe: 30,
+      timeframe: 60,
       symbol
     }, {
       headers: {
