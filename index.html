@@ -398,7 +398,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 </header>
 <main class="wrap">
  <div class="top">
-  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · OTC SIGNAL SCANNER</h1><p>OTCharts live OTC feed · BUY / SELL signals · scan manually or automatically</p></div>
+  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · OTC SIGNAL SCANNER</h1><p>OTCharts live OTC feed · BUY / SELL directional signals · every usable scan returns a side</p></div>
   <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
  <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Live ticks update displayed prices, but BUY/SELL entries wait for a completed 60-second candle and aligned trend confirmation. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
@@ -479,9 +479,9 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
   <aside>
    <div class="panel" id="signalPanel">
     <div class="panel-head"><h2>LIVE OTC SIGNAL</h2><div class="signal-tools"><span class="pill">BUY / SELL ONLY</span><button type="button" id="alertToggle" class="small" aria-pressed="false">🔔 Enable callouts</button></div></div>
-    <div id="signalCallout" class="signal-callout" role="status" aria-live="assertive">Select an OTC pair and scan to generate a directional BUY or SELL bias</div>
-    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Technical engine is checking trend, momentum and candle structure</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>EMA 9 / 21</span><span>RSI 14</span><span>MACD</span><span>Candle pressure</span><span>Price action</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · Fresh BUY/SELL signals can open one simulated trade per candle</span></div>
-     <div id="paperLiveBoard" class="paper-live-board" aria-live="polite"><b>LIVE PAPER POSITIONS</b><span>No open paper trades yet · waiting for a qualified signal.</span></div>
+    <div id="signalCallout" class="signal-callout" role="status" aria-live="assertive">Scan a loaded OTC pair to generate a BUY or SELL directional bias</div>
+    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Technical engine is checking trend, momentum and candle structure</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>RSI</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>EMA 9 / 21</span><span>RSI 14</span><span>MACD</span><span>Candle pressure</span><span>Price action</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · Each fresh BUY/SELL direction can open one simulated trade per candle</span></div>
+     <div id="paperLiveBoard" class="paper-live-board" aria-live="polite"><b>LIVE PAPER POSITIONS</b><span>No open paper trades yet · waiting for the next directional signal.</span></div>
      <div class="countdown-grid">
       <div><small>BUY / SELL VALID FOR</small><b id="signalCountdown">--:--</b></div>
       <div><small>1-MIN CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
@@ -735,12 +735,18 @@ function analyze(candles,asset){
  const directionBias=bull-bear;
  const score=Math.round(Math.max(bull,bear));
  const candleUp=last.close>last.open,candleDown=last.close<last.open;
- const bullConfirmed=candleUp&&trendUp&&macdUp&&momentum>0&&rv>=50&&directionBias>=14&&score>=55;
- const bearConfirmed=candleDown&&trendDown&&macdDown&&momentum<0&&rv<=50&&directionBias<=-14&&score>=55;
- const direction=bullConfirmed?"CALL":bearConfirmed?"PUT":"WAIT";
- const signalLevel=direction==="WAIT"?"WAIT":"CONFIRMED";
- reasons.unshift(direction==="CALL"?"closed candle + trend + momentum confirm BUY":direction==="PUT"?"closed candle + trend + momentum confirm SELL":"no trade · closed-candle evidence is mixed");
- if(!fresh)reasons.push("feed is not fresh enough for a new entry");
+ // Always return a directional bias when usable candles exist. The side is
+ // selected from the stronger indicator vote; ties fall back to candle body,
+ // then recent momentum. This is a signal, not a claim of high confidence.
+ let direction;
+ if(directionBias>0)direction="CALL";
+ else if(directionBias<0)direction="PUT";
+ else if(candleUp)direction="CALL";
+ else if(candleDown)direction="PUT";
+ else direction=momentum>=0?"CALL":"PUT";
+ const signalLevel=(Math.abs(directionBias)>=14&&score>=55)?"CONFIRMED":"DIRECTIONAL";
+ reasons.unshift(direction==="CALL"?"directional bias · BUY": "directional bias · SELL");
+ if(!fresh)reasons.push("data is delayed · treat this as an unverified directional bias");
  const nextBias=direction;
  const nextStrength=Math.min(95,Math.round(50+Math.abs(bull-bear)*.45));
  const breakdown={...Object.fromEntries(fullSet.indicators.map(([k,v])=>[k,v])),trend:trendUp?"Bullish aligned":trendDown?"Bearish aligned":"Mixed / transitional",momentum:rv.toFixed(1)+" RSI · "+(momentum>0?"rising":"falling"),volatility:atrPct.toFixed(3)+"% ATR / "+(volOK?"normal":"high or quiet"),price:Math.round(bodyRatio*100)+"% candle body",structure:last.close>swingHigh?"Upside break":last.close<swingLow?"Downside break":"Inside recent range",feed:tickAge<=30?Math.round(tickAge)+"s · live tick":fresh?Math.round(candleAge)+"s · candle":"no recent data"};
@@ -1047,7 +1053,7 @@ function updateTop(rows){
  const candle=r?.candles?.at(-1);
  const fresh=!!(r&&s&&s.fresh&&r.candles?.length>=35&&candle&&hasCurrentFeed(r.id,candle));
  const liveDirection=s?.direction;
- const candidate=["CALL","PUT"].includes(liveDirection)&&s?.signalLevel==="CONFIRMED"&&fresh?r:null;
+ const candidate=["CALL","PUT"].includes(liveDirection)?r:null;
  latestTop=candidate;
  const dir=candidate?.analysis.direction||"";
  const timerKey=candidate?`${candidate.id}|${dir}|${candidate.analysis.candleTime}`:"";
@@ -1083,7 +1089,7 @@ function updateTop(rows){
   candidate?s.reason:s?.reason||"Directional momentum is being evaluated.";
  $("signalStatusLine").textContent=!r?"DATA NOT LOADED":
   !r.candles?.length?"FEED ERROR · ENTRY AND RSI UNAVAILABLE":
-  candidate?`${dir==="CALL"?"BUY":"SELL"} ${s.signalLevel==="EARLY"?"BIAS":"SETUP"} · PAPER TRADE ${autoPaperEnabled?"ENABLED":"PAUSED"}`:
+  candidate?`${dir==="CALL"?"BUY":"SELL"} ${s.signalLevel||"DIRECTIONAL"} · ${fresh?"FRESH DATA · PAPER TRADE "+(autoPaperEnabled?"ENABLED":"PAUSED"):"STALE DATA · PAPER ENTRY BLOCKED"}`:
   "LIVE CANDLES RECEIVED · TECHNICAL ANALYSIS RUNNING";
  $("topAsset").textContent=r?.name||"—";
  const entry=Number(r?.livePrice??r?.price??s?.entry);
@@ -1178,7 +1184,7 @@ function renderPaperLiveBoard(){
   const left=Math.max(0,Math.ceil((Number(t.expiryAt||0)-Date.now())/1000));
   const side=t.side==="CALL"?"BUY":"SELL";
   return `<div class="paper-position"><strong class="${t.side==="CALL"?"green":"red"}">${side} · ${t.asset}</strong><span class="pending">${left>0?"OPEN · "+left+"s":"WAITING FOR EXIT QUOTE"}</span><small>Entry ${fmt(t.entry)} · $${Number(t.stake).toFixed(2)} · ${t.automatic?"AUTO":"MANUAL"}</small><small>${t.entrySource||"OTCharts price"} · AI hold ${formatHold(t.expirySeconds||60)} · score ${t.score}/100</small></div>`;
- }).join(""):"<span>No open paper trades yet · waiting for a qualified signal.</span>");
+ }).join(""):"<span>No open paper trades yet · waiting for the next directional signal.</span>");
 }
 
 function renderTrades(){
@@ -1288,7 +1294,7 @@ function addSignal(r){
 }
 function openPaperTrade(r,side,isAutomatic=true,signalKey=""){
  if(!r||!r.analysis?.fresh||!hasCurrentFeed(r.id,r.candles?.at(-1))||!["CALL","PUT"].includes(side)){
-  if($("paperStatus"))$("paperStatus").textContent="Paper trade skipped · waiting for a fresh qualified signal.";
+  if($("paperStatus"))$("paperStatus").textContent="Paper trade skipped · no fresh market quote. Signal is shown, but no result will be fabricated.";
   return false;
  }
  const key=signalKey||`${r.id}|${side}|${r.analysis.candleTime}`;
@@ -1398,12 +1404,12 @@ $("saveKey").addEventListener("click",async(event)=>{
 });
 $("paperFromTop").onclick=addPaper;$("exportCsv").onclick=exportCSV;
 $("autoPaperToggle").checked=autoPaperEnabled;
-$("autoPaperStatus").textContent=autoPaperEnabled?"ON · Fresh BUY/SELL signals can open one simulated trade per candle":"OFF · Automatic paper trades are paused";
+$("autoPaperStatus").textContent=autoPaperEnabled?"ON · Each fresh BUY/SELL direction can open one simulated trade per candle":"OFF · Automatic paper trades are paused";
 $("poCompareBtn").addEventListener("click",comparePocketOptionPrice);
 $("poPriceInput").addEventListener("keydown",e=>{if(e.key==="Enter")comparePocketOptionPrice()});
 $("autoPaperToggle").addEventListener("change",()=>{
  autoPaperEnabled=$("autoPaperToggle").checked;
- $("autoPaperStatus").textContent=autoPaperEnabled?"ON · Fresh BUY/SELL signals can open one simulated trade per candle":"OFF · Automatic paper trades are paused";
+ $("autoPaperStatus").textContent=autoPaperEnabled?"ON · Each fresh BUY/SELL direction can open one simulated trade per candle":"OFF · Automatic paper trades are paused";
  $("paperStatus").textContent=autoPaperEnabled?"Automatic paper trading enabled.":"Automatic paper trading paused.";
  saveState();
 });
@@ -1508,6 +1514,6 @@ function startLiveAI(){
  aiTimer=setInterval(()=>runLiveAIAnalysis(),15000);
 }
 setInterval(()=>{$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();updateCountdowns();settleExpiredTrades()},1000);
-loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · Fresh BUY/SELL signals can open one simulated trade per candle":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();setTimeout(()=>{if(!busy)scan()},250);
+loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · Each fresh BUY/SELL direction can open one simulated trade per candle":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();setTimeout(()=>{if(!busy)scan()},250);
 </script>
 </body></html>
