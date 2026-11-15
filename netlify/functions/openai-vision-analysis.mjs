@@ -1,79 +1,52 @@
 export default async (request) => {
   if (request.method !== "POST") {
     return Response.json(
-      { error: "Method not allowed" },
+      { error: "POST required" },
       { status: 405 }
     );
   }
 
-  const key = process.env.OPENAI_API_KEY;
-
-  if (!key) {
-    return Response.json({
-      error: "OPENAI_API_KEY is missing from Netlify."
-    }, { status: 500 });
-  }
-
   try {
+    const key = process.env.OPENAI_API_KEY;
+
+    if (!key) {
+      return Response.json(
+        { error: "OPENAI_API_KEY is missing" },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
-    const image = body?.image;
+    const image = body.image;
 
     if (
       typeof image !== "string" ||
-      !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(image)
+      !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(image)
     ) {
-      return Response.json({
-        error: "Please upload a valid chart screenshot."
-      }, { status: 400 });
+      return Response.json(
+        { error: "Upload a valid PNG, JPG or WEBP chart." },
+        { status: 400 }
+      );
     }
-
-    if (image.length > 11500000) {
-      return Response.json({
-        error: "Image too large. Maximum 8 MB."
-      }, { status: 413 });
-    }
-
-    const pair = String(body.pair || "Unknown pair");
-    const timeframe = String(body.timeframe || "1 minute");
 
     const prompt = `
-You are APEX AI VISION, an expert visual chart analysis assistant.
+You are APEX AI VISION.
 
-Analyze the uploaded trading chart.
+Analyze this trading chart visually.
 
-IMPORTANT:
-- Read the visible candlesticks.
-- Identify bullish or bearish momentum.
-- Read MACD if visible.
-- Identify support and resistance.
-- Examine candle structure.
-- Identify possible reversals.
-- Do not invent unreadable values.
-- Do not claim guaranteed wins.
-- If evidence is unclear, return WAIT.
+Check:
+1. Candlestick direction and structure.
+2. Bullish or bearish momentum.
+3. MACD if visible.
+4. Support and resistance.
+5. Reversal patterns.
+6. Whether the next direction favors CALL or PUT.
 
-Market: ${pair}
-Timeframe: ${timeframe}
+If evidence is unclear, return WAIT.
+Never invent indicator readings.
 
-Determine the original chart direction:
-
-CALL = bullish
-PUT = bearish
-WAIT = unclear
-
-Return a JSON response with:
-
-{
- "direction": "CALL, PUT, or WAIT",
- "evidence_score": 0,
- "pattern": "",
- "trend": "",
- "support_resistance": "",
- "reason": "",
- "risk_flags": []
-}
-
-The evidence score is not a win probability.
+Return the analysis using the required JSON fields.
+The evidence score is NOT a win probability.
 `;
 
     const response = await fetch(
@@ -101,7 +74,41 @@ The evidence score is not a win probability.
             ]
           }],
           text: {
-            format: { type: "json_object" }
+            format: {
+              type: "json_schema",
+              name: "apex_chart_analysis",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  direction: {
+                    type: "string",
+                    enum: ["CALL", "PUT", "WAIT"]
+                  },
+                  evidence_score: {
+                    type: "integer"
+                  },
+                  pattern: { type: "string" },
+                  trend: { type: "string" },
+                  support_resistance: { type: "string" },
+                  reason: { type: "string" },
+                  risk_flags: {
+                    type: "array",
+                    items: { type: "string" }
+                  }
+                },
+                required: [
+                  "direction",
+                  "evidence_score",
+                  "pattern",
+                  "trend",
+                  "support_resistance",
+                  "reason",
+                  "risk_flags"
+                ],
+                additionalProperties: false
+              }
+            }
           },
           max_output_tokens: 700,
           store: false
@@ -113,28 +120,32 @@ The evidence score is not a win probability.
 
     if (!response.ok) {
       return Response.json({
-        error: data?.error?.message || "AI analysis failed."
+        error: data.error?.message || "OpenAI request failed"
       }, { status: 502 });
     }
 
     const output = (data.output || [])
       .flatMap(item => item.content || [])
-      .filter(item => item.type === "output_text")
-      .map(item => item.text)
-      .join("\n");
+      .find(item => item.type === "output_text")?.text;
 
     if (!output) {
-      throw new Error("No AI analysis returned.");
+      return Response.json({
+        error: "AI returned no analysis."
+      }, { status: 502 });
     }
 
-    const result = JSON.parse(output);
+    let result;
 
-    const original = ["CALL", "PUT", "WAIT"]
-      .includes(String(result.direction).toUpperCase())
-      ? String(result.direction).toUpperCase()
-      : "WAIT";
+    try {
+      result = JSON.parse(output);
+    } catch {
+      return Response.json({
+        error: "AI response was not valid JSON. Please scan again."
+      }, { status: 502 });
+    }
 
-    // APEXSCAN reverse signal mode
+    const original = result.direction;
+
     const reversed =
       original === "CALL" ? "PUT" :
       original === "PUT" ? "CALL" :
@@ -147,21 +158,18 @@ The evidence score is not a win probability.
       reverse_mode: true,
       evidence_score: Math.max(
         0,
-        Math.min(100, Number(result.evidence_score) || 0)
+        Math.min(100, result.evidence_score)
       ),
-      pattern: result.pattern || "Unknown",
-      trend: result.trend || "Unknown",
-      support_resistance:
-        result.support_resistance || "Not identified",
-      reason: result.reason || "Insufficient evidence",
-      risk_flags: Array.isArray(result.risk_flags)
-        ? result.risk_flags
-        : []
+      pattern: result.pattern,
+      trend: result.trend,
+      support_resistance: result.support_resistance,
+      reason: result.reason,
+      risk_flags: result.risk_flags
     });
 
   } catch (error) {
     return Response.json({
-      error: error.message || "Analysis failed."
+      error: error.message || "Vision analysis failed"
     }, { status: 500 });
   }
 };
