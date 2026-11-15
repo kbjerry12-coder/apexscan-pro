@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="11.6-auto-single-pair">
-<title>APEXSCAN PRO · V11.6 AUTO SINGLE-PAIR</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="11.7-manual-chatgpt-isolated">
+<title>APEXSCAN PRO · V11.7 CHATGPT ISOLATED</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -519,7 +519,7 @@ header{background:#030914f2;border-bottom:1px solid #12344b}
 </header>
 <main class="wrap">
  <div class="top">
-  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V11.6 AUTO SINGLE-PAIR</h1><p>Selected OTC pair · automatic live analysis · one-minute candles</p></div>
+  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V11.7 CHATGPT ISOLATED</h1><p>Selected OTC pair · automatic live analysis · one-minute candles</p></div>
   <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN SELECTED PAIR</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
  <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. No cooldown between one-minute signals: evaluate each new candle immediately and confirm direction from fresh live ticks. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
@@ -644,7 +644,8 @@ header{background:#030914f2;border-bottom:1px solid #12344b}
     <p class="tiny" id="chatgptReason">ChatGPT is the primary decision-maker. APEX is secondary confirmation only. ChatGPT evaluates the selected pair from recent OHLC candles; it does not place trades.</p>
     <p class="tiny" id="chatgptRisk"></p>
     <div class="ai-actions"><button type="button" class="primary" id="chatgptAnalyze">✦ ANALYZE SELECTED PAIR</button></div>
-    <label class="ai-auto-toggle"><input type="checkbox" id="chatgptAuto" checked> AUTO ANALYZE ONCE PER NEW 1-MINUTE CANDLE</label>
+    <label class="ai-auto-toggle"><input type="checkbox" id="chatgptAuto"> AUTO ANALYZE (DISABLED FOR SCANNER TEST)</label>
+    <div class="tiny">ChatGPT is now manual-only during this test. The technical scanner and BUY/SELL signals run independently. Tap ANALYZE SELECTED PAIR when you want a second opinion.</div>
     <div class="ai-usage" id="chatgptUsage">Daily browser limit: 0 / 100 analyses · Manual + automatic</div>
     <div class="tiny">Comparison rules: matching BUY/SELL = AGREEMENT; opposite directions = DISAGREEMENT; either side WAIT = NO CLEAR AGREEMENT. Suggested hold: 1m, 5m, 15m, 30m, 1h or 4h. AI opinions are not guaranteed predictions.</div>
    </div>
@@ -1572,7 +1573,7 @@ async function scan(forceHistory=false){
   $("progressText").textContent=errors.length?`History error(s): ${errors.join(" · ")}`:
    `Ready · ${fresh} fresh pair(s) · live stream supplies new prices`;
   saveState();
-  try{maybeAutoChatGPT()}catch(aiError){console.error("Auto analysis:",aiError)}
+  // ChatGPT is intentionally isolated from the technical scan. Manual analysis remains available.
  }catch(scanError){
   const message=scanError?.message||String(scanError);
   console.error("APEXSCAN scan failed:",scanError);status("SCAN ERROR");
@@ -1748,7 +1749,7 @@ async function analyzeAllPairsWithChatGPT(source="auto"){
   $("chatgptReason").textContent="Selected pair review complete · one analysis per new one-minute candle.";
  }finally{chatgptState.queueBusy=false;}
 }
-function maybeAutoChatGPT(){if(!$("chatgptAuto")?.checked||chatgptState.busy||chatgptState.queueBusy)return;analyzeAllPairsWithChatGPT("auto")}
+function maybeAutoChatGPT(){return;} // Disabled during scanner-isolation test.
 
 
 (function buildReferenceDashboard(){
