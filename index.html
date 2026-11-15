@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="11.2-chatgpt-primary-otc-dropdown-fix">
-<title>APEXSCAN PRO · V11.2 CHATGPT PRIMARY SCANNER</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="11.3-live-feed-watchlist-fix">
+<title>APEXSCAN PRO · V11.3 LIVE FEED FIX</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -519,7 +519,7 @@ header{background:#030914f2;border-bottom:1px solid #12344b}
 </header>
 <main class="wrap">
  <div class="top">
-  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V11.2 CHATGPT PRIMARY SCANNER</h1><p>ChatGPT primary analysis · all OTC pairs · once per new 1-minute candle</p></div>
+  <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · V11.3 LIVE FEED FIX</h1><p>ChatGPT primary analysis · all OTC pairs · once per new 1-minute candle</p></div>
   <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN ALL OTC PAIRS</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
  <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. No cooldown between one-minute signals: evaluate each new candle immediately and confirm direction from fresh live ticks. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
@@ -929,7 +929,7 @@ async function regularData(symbol){
  return j.values.slice().reverse().map(v=>{let t=new Date(v.datetime.replace(" ","T")+"Z");return {time:v.datetime,timeMs:t.getTime(),open:+v.open,high:+v.high,low:+v.low,close:+v.close}});
 }
 async function otcData(symbol){
- const r=await fetch(`/.netlify/functions/otc-candles?symbol=${encodeURIComponent(symbol)}`,{cache:"no-store"});
+ const r=await fetch(`/.netlify/functions/otc-candles?symbol=${encodeURIComponent(symbol)}`,{cache:"no-store",signal:AbortSignal.timeout(18000)});
  const rawBody=await r.text();let j={};try{j=JSON.parse(rawBody)}catch(e){}
  if(!r.ok)throw Error(j.error||j.message||`OTC function returned HTTP ${r.status}: ${rawBody.slice(0,180)||"empty response"}`);
  const list=Array.isArray(j)?j:(j.candles??j.data?.candles??j.data??j.results??[]);
@@ -1073,7 +1073,7 @@ function stopVisualScan(){
 }
 $("startVisualScan").addEventListener("click",startVisualScan);$("stopVisualScan").addEventListener("click",stopVisualScan);
 
-// One browser EventSource owns the single OTCharts stream for all three OTC pairs.
+// One browser EventSource owns the single OTCharts stream for the currently selected OTC pair.
 let liveStream=null,liveStreamState="CONNECTING",liveTicks={};
 const OTC_SYMBOLS={EURUSD_otc:"OTC:EUR/USD",GBPUSD_otc:"OTC:GBP/USD",USDJPY_otc:"OTC:USD/JPY",AUDCAD_otc:"OTC:AUD/CAD",AUDCHF_otc:"OTC:AUD/CHF",CHFJPY_otc:"OTC:CHF/JPY",EURCHF_otc:"OTC:EUR/CHF",EURNZD_otc:"OTC:EUR/NZD",GBPAUD_otc:"OTC:GBP/AUD",UAHUSD_otc:"OTC:UAH/USD",USDARS_otc:"OTC:USD/ARS",USDBDT_otc:"OTC:USD/BDT",USDCLP_otc:"OTC:USD/CLP",USDPKR_otc:"OTC:USD/PKR",USDTHB_otc:"OTC:USD/THB",KESUSD_otc:"OTC:KES/USD",USDMYR_otc:"OTC:USD/MYR",SARCNY_otc:"OTC:SAR/CNY"};
 function setLiveStreamState(message,ok=false){
@@ -1501,7 +1501,8 @@ function addSignal(r){
  if(busy)return;if(!( $("mobileAsset")?.value||selectedChart)){alert("Select one market pair first.");return}
  busy=true;status("SCANNING",true);$("scanNow").disabled=true;$("progressText").textContent="Starting scan…";$("scanProgress").style.width="0%";
  const selectedId=$("mobileAsset")?.value||selectedChart;
-  let ids=ASSETS.filter(a=>a.kind==="otc").map(a=>a.id),done=0,errors=0,errorDetails=[];
+  let ids=[...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")),done=0,errors=0,errorDetails=[];
+ if(!ids.length){status("SELECT OTC PAIRS");$("progressText").textContent="Choose at least one OTC pair in the watchlist.";busy=false;$("scanNow").disabled=false;return;}
  for(const id of ids){
   let a=ASSETS.find(x=>x.id===id);
   try{
@@ -1525,7 +1526,7 @@ function addSignal(r){
     results[id]={id,name:a.name,price:NaN,change:null,candles:[],analysis:{direction:"WAIT",score:0,reason:e.message,fresh:false,age:Infinity},lastError:e.message};
    }
   }
-  done++;$("scanProgress").style.width=(done/ids.length*100)+"%";$("progressText").textContent=`Scanned all OTC pairs ${done} of ${ids.length} · ${errors} errors`;
+  done++;$("scanProgress").style.width=(done/ids.length*100)+"%";$("progressText").textContent=`Scanned selected OTC pairs ${done} of ${ids.length} · ${errors} errors`;
   renderScanner();
   // Avoid bursting the provider and stay within low-tier rate limits.
   if(done<ids.length)await new Promise(resolve=>setTimeout(resolve,900));
@@ -1605,7 +1606,7 @@ $("mobileInterval").addEventListener("change",()=>{$("interval").value=$("mobile
 function syncMobileControls(){if($("mobileInterval"))$("mobileInterval").value=$("interval").value||"15000";updateChartOptions()}
 window.addEventListener("resize",()=>{setMobileScreen(activeMobileScreen);drawChart()});
 $("scanNow").onclick=()=>{scan().catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="Scan failed: "+(err?.message||"unknown error")})};
-$("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN ALL OTC PAIRS";status("AUTO SCAN ALL OTC PAIRSNER ACTIVE",true);scan();cycle=setInterval(()=>{if(!busy)scan()},Math.max(5000,+$("interval").value))};
+$("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN WATCHLIST";status("AUTO SCAN ACTIVE",true);scan().catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="Scan failed: "+(err?.message||"unknown error")});cycle=setInterval(()=>{if(!busy)scan().catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="Scan failed: "+(err?.message||"unknown error")})},Math.max(5000,+$("interval").value))};
 $("pauseBtn").onclick=()=>{running=false;clearInterval(cycle);$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED")};
 $("saveKey").type="button";
 $("saveKey").addEventListener("click",async(event)=>{
@@ -1685,19 +1686,23 @@ $("chatgptAnalyze").addEventListener("click",()=>analyzeAllPairsWithChatGPT("man
 aiSetUsage(aiGetUsage());
 async function analyzeAllPairsWithChatGPT(source="auto"){
  if(chatgptState.busy||chatgptState.queueBusy)return;
- chatgptState.queueBusy=true;
- const pairs=ASSETS.filter(a=>a.kind==="otc").map(a=>results[a.id]).filter(r=>r&&Array.isArray(r.candles)&&r.candles.length>=35&&r.analysis?.fresh);
- if(!pairs.length){$("chatgptStatus").textContent="WAITING FOR MARKET DATA";$("chatgptReason").textContent="Run the full OTC scan first. ChatGPT needs fresh candle history for each pair.";chatgptState.queueBusy=false;return}
- let completed=0,skipped=0;
- for(const r of pairs){
-  const candle=r.candles.at(-1),key=`${r.id}|${Math.floor(Number(candle.timeMs||0)/60000)}`;
-  if(chatgptState.analyzedKeys.has(key)){skipped++;continue;}
-  await runChatGPTAnalysis(r,source);
-  if(chatgptState.analyzedKeys.has(key))completed++;
-  if(chatgptState.busy)break;
+ const selectedId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
+ const r=results[selectedId];
+ if(!r||!Array.isArray(r.candles)||r.candles.length<35||!r.analysis?.fresh){
+  $("chatgptStatus").textContent="WAITING FOR SELECTED PAIR";
+  $("chatgptReason").textContent="Scan the selected OTC pair first. ChatGPT needs at least 35 fresh candles.";
+  return;
  }
- $("chatgptReason").textContent=`Full-market review finished · ${completed} analyzed · ${skipped} already checked · ${pairs.length} fresh pairs available. The panel shows the latest pair reviewed.`;
- chatgptState.queueBusy=false;
+ const candle=r.candles.at(-1),key=`${r.id}|${Math.floor(Number(candle.timeMs||0)/60000)}`;
+ if(chatgptState.analyzedKeys.has(key)){
+  $("chatgptReason").textContent="This selected pair has already been analyzed for the current one-minute candle.";
+  return;
+ }
+ chatgptState.queueBusy=true;
+ try{
+  await runChatGPTAnalysis(r,source);
+  $("chatgptReason").textContent="Selected pair review complete · one analysis per new one-minute candle.";
+ }finally{chatgptState.queueBusy=false;}
 }
 function maybeAutoChatGPT(){if(!$("chatgptAuto")?.checked||chatgptState.busy||chatgptState.queueBusy)return;analyzeAllPairsWithChatGPT("auto")}
 
@@ -1728,10 +1733,10 @@ function maybeAutoChatGPT(){if(!$("chatgptAuto")?.checked||chatgptState.busy||ch
  addEventListener("resize",responsive);responsive();
  const apexHead=get("signalPanel")?.querySelector(".panel-head h2");if(apexHead)apexHead.textContent="APEX TECHNICAL · CONFIRMATION";
  const head=document.querySelector(".top h1");if(head)head.textContent="APEXSCAN PRO · V11.2 CHATGPT PRIMARY SCANNER";
- const sub=document.querySelector(".top p");if(sub)sub.textContent="ChatGPT decides · selected OTC pair only · one analysis per new 1-minute candle";
+ const sub=document.querySelector(".top p");if(sub)sub.textContent="ChatGPT primary · selected OTC pair · one analysis per new 1-minute candle";
 })();
 
 setInterval(()=>{$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();updateCountdowns();settleExpiredTrades()},1000);
-loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · New qualified signals open simulated trades automatically":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();setTimeout(()=>{if(!busy)scan()},250);
+loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · New qualified signals open simulated trades automatically":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();setTimeout(()=>{if(!busy)scan().catch(err=>{busy=false;$("scanNow").disabled=false;status("SCAN ERROR");$("progressText").textContent="Scan failed: "+(err?.message||"unknown error")})},250);
 </script>
 </body></html>
