@@ -9,14 +9,11 @@ export default async (request) => {
 
   const url = new URL(request.url);
   const raw = url.searchParams.get("symbol") || "EURUSD_otc";
+  const symbols = [...new Set(
+    raw.split(",").map(s => s.trim()).filter(Boolean)
+  )];
 
-  const symbols = [
-    ...new Set(
-      raw.split(",").map(s => s.trim()).filter(Boolean)
-    )
-  ];
-
-  // OTCharts Lite: maximum five instruments per stream.
+  // OTCharts Lite allows up to five OTC instruments on one stream.
   if (
     !symbols.length ||
     symbols.length > 5 ||
@@ -29,7 +26,6 @@ export default async (request) => {
   }
 
   const upstream = new URL("https://otcharts.com/v1/stream");
-
   upstream.searchParams.set("venue", "otc");
   upstream.searchParams.set("symbol", symbols.join(","));
 
@@ -51,8 +47,7 @@ export default async (request) => {
       } catch {}
 
       return Response.json({
-        error: body.error ||
-          body.message ||
+        error: body.error || body.message ||
           `OTCharts stream returned HTTP ${response.status}`,
         details: body,
         retryAfter: response.headers.get("retry-after")
@@ -66,7 +61,7 @@ export default async (request) => {
 
     if (!response.body) {
       return Response.json({
-        error: "OTCharts returned no stream body."
+        error: "OTCharts opened the request but returned no stream body."
       }, { status: 502 });
     }
 
