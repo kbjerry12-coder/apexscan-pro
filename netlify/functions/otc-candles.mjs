@@ -1,4 +1,3 @@
-
 export default async (request) => {
   const key = process.env.OTCHARTS_API_KEY;
 
