@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="9.2-macd-support-resistance-reverse">
-<title>APEXSCAN PRO · V9.0 SMART REVERSAL</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="7.0-chatgpt-picture-scanner-learning-engine">
+<title>APEXSCAN PRO · V7.0 AI INTELLIGENCE</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -407,6 +407,10 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 #visionReason{font-size:11px;line-height:1.5;color:#c1d3ed;margin:9px 1px 0}
 @media(max-width:700px){#visionScanner{padding:11px}.vision-result .vision-final{font-size:26px}}
 
+
+/* V7.0 ChatGPT assistant */
+.chat-shell{display:flex;flex-direction:column;gap:9px}.chat-log{height:280px;max-height:42vh;overflow:auto;display:flex;flex-direction:column;gap:9px;padding:10px;background:#071321;border:1px solid #203a58;border-radius:11px}.chat-msg{max-width:94%;padding:10px 11px;border-radius:11px;font-size:11px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}.chat-msg.user{align-self:flex-end;background:linear-gradient(120deg,#123e5a,#26345d);border:1px solid #37658a}.chat-msg.assistant{align-self:flex-start;background:#101f33;border:1px solid #294461}.chat-msg .chat-signal{display:inline-block;margin-bottom:6px;padding:4px 8px;border-radius:6px;font-weight:900;letter-spacing:.08em}.chat-signal.call{background:#103b31;color:#45edb6}.chat-signal.put{background:#421e2c;color:#ff7896}.chat-signal.wait{background:#3a301c;color:#ffd078}.chat-compose{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}.chat-compose textarea{width:100%;min-height:54px;max-height:120px;resize:vertical;padding:10px;background:#081525;color:var(--text);border:1px solid #294665;border-radius:9px;outline:none;font:inherit;font-size:11px}.chat-compose textarea:focus{border-color:#66b7ff}.chat-quick{display:flex;gap:6px;flex-wrap:wrap}.chat-quick button{font-size:9px;padding:6px 8px}.chat-note{font-size:9px;color:var(--muted);line-height:1.45}.chat-send{min-width:66px;align-self:stretch}.chat-status{font-size:10px;color:var(--amber);min-height:14px}
+@media(max-width:900px){.chat-log{height:240px;max-height:38vh}.chat-compose textarea{font-size:16px}}
 </style>
 </head>
 <body>
@@ -593,7 +597,19 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <div class="tiny">Directional signals use MACD (12 / 26 / 9) plus completed-candle direction only. Support and resistance are calculated from recent swing highs and lows and shown as nearby reference levels; they are context, not a guaranteed reversal or a separate signal trigger. Reverse mode remains enabled, so the displayed and paper-trade direction is the opposite of the MACD source direction. Confidence scores are technical confluence ratings, not win probabilities.</div><div id="analysisBreakdown" class="analysis-breakdown"><div><span>Trend structure</span><b>Awaiting scan</b></div><div><span>Momentum</span><b>Awaiting scan</b></div><div><span>Volatility</span><b>Awaiting scan</b></div><div><span>Price action</span><b>Awaiting scan</b></div><div><span>Market structure</span><b>Awaiting scan</b></div><div><span>Feed integrity</span><b>Awaiting scan</b></div></div><div class="tiny" style="margin-top:8px">Indicator values are calculated from available OHLC candles; SAR, Alligator, Ichimoku, STC, ZigZag and Fractal Chaos entries are simplified approximations. Volume is not scored when OTCharts does not provide volume.</div>
     <div style="margin-top:10px" class="metricrow"><div class="metricbox"><small>Signal</small><b>MACD only</b></div><div class="metricbox"><small>Momentum</small><b>MACD histogram</b></div><div class="metricbox"><small>Levels</small><b>Support / resistance</b></div><div class="metricbox"><small>Quality</small><b>Candle</b></div></div>
    </div>
-  </aside>
+  
+   <div class="panel" id="apexChatPanel">
+    <div class="panel-head"><h2>CHATGPT · APEX TRADING ASSISTANT</h2><span class="pill">LIVE MARKET CONTEXT</span></div>
+    <p class="tiny" style="margin:0 0 9px">Ask ChatGPT to read the selected OTC pair, explain a signal, compare CALL vs PUT, or review your recent candle structure. It receives the bot's current technical snapshot when available.</p>
+    <div class="chat-shell">
+     <div class="chat-log" id="apexChatLog" role="log" aria-live="polite"><div class="chat-msg assistant">I'm your APEX trading assistant. Select an OTC pair, then ask me to analyze it. I can return CALL, PUT, or WAIT with the reasons and risks.</div></div>
+     <div class="chat-quick"><button type="button" class="small" data-chat-prompt="Analyze my selected OTC pair now. Give me your best CALL, PUT, or WAIT assessment and explain why.">✧ Analyze pair</button><button type="button" class="small" data-chat-prompt="Why is the current signal showing this direction? Explain the MACD, candle and support/resistance evidence.">Why this signal?</button><button type="button" class="small" data-chat-prompt="Compare bullish and bearish evidence on the selected pair. Is there a clear edge or should I wait?">CALL vs PUT</button></div>
+     <div class="chat-compose"><textarea id="apexChatInput" rows="2" maxlength="1200" placeholder="Ask ChatGPT about the market or request a signal…"></textarea><button type="button" class="primary chat-send" id="apexChatSend">SEND</button></div>
+     <div class="chat-status" id="apexChatStatus" role="status">Ready · ChatGPT API connection uses your secure Netlify function.</div>
+     <div class="chat-note">AI analysis is not a guaranteed prediction. Chat responses do not place trades or automatically create paper positions. Verify fresh market data and test signals in paper mode.</div>
+    </div>
+   </div>
+</aside>
  </div>
  <div class="footer">APEXSCAN PRO · Independent market-data analysis · No broker execution · Trading involves substantial risk.</div>
  <nav class="mobile-nav" id="mobileNav" aria-label="Main navigation">
@@ -1680,5 +1696,37 @@ visionButton.addEventListener("click",async()=>{
  finally{visionBusy=false;visionButton.disabled=!visionImageData;visionButton.textContent="✧ ANALYZE CHART WITH AI";}
 });
 
+
+
+// APEXSCAN PRO V7.0 · ChatGPT conversational trading assistant.
+// API credentials remain server-side in Netlify; this browser code never contains a key.
+const apexChatLogEl=$("apexChatLog"), apexChatInputEl=$("apexChatInput"), apexChatSendEl=$("apexChatSend"), apexChatStatusEl=$("apexChatStatus");
+let apexChatMessages=[], apexChatBusy=false;
+function apexChatStatus(message,good=false){if(apexChatStatusEl){apexChatStatusEl.textContent=message;apexChatStatusEl.style.color=good?"var(--green)":"var(--amber)"}}
+function apexChatAdd(role,text,signal=null){
+ const node=document.createElement("div");node.className="chat-msg "+(role==="user"?"user":"assistant");
+ if(role!=="user"&&["CALL","PUT","WAIT"].includes(signal)){const badge=document.createElement("div");badge.className="chat-signal "+signal.toLowerCase();badge.textContent="AI SIGNAL · "+signal;node.appendChild(badge)}
+ const body=document.createElement("div");body.textContent=text;node.appendChild(body);apexChatLogEl.appendChild(node);apexChatLogEl.scrollTop=apexChatLogEl.scrollHeight;
+}
+function apexChatSnapshot(){
+ const pair=selectedOTCPair?.();const result=pair?results?.[pair.id]:null;const candles=(result?.candles||[]).slice(-24).map(c=>({time:c.time||null,open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)}));
+ const a=result?.analysis||{};const tick=pair?liveTicks?.[pair.id]:null;
+ return {pair:pair?.name||"No pair selected",symbol:pair?.symbol||null,timeframe:"1-minute OTC candles",feedFresh:!!(a.fresh),livePrice:Number(tick?.price??result?.livePrice??candles.at(-1)?.close)||null,liveTickAgeSeconds:tick?.receivedAt?Math.max(0,Math.round((Date.now()-tick.receivedAt)/1000)):null,technical:{direction:a.direction||"WAIT",score:Number(a.score)||0,reason:String(a.reason||"No technical read yet"),macdLine:Number.isFinite(Number(a.macdLine))?Number(a.macdLine):null,macdSignal:Number.isFinite(Number(a.macdSignal))?Number(a.macdSignal):null,macdHistogram:Number.isFinite(Number(a.macdHistogram))?Number(a.macdHistogram):null,support:Number.isFinite(Number(a.support))?Number(a.support):null,resistance:Number.isFinite(Number(a.resistance))?Number(a.resistance):null,reverseMode:true},candles};
+}
+async function apexChatSend(textOverride){
+ const message=String(textOverride??apexChatInputEl.value).trim();if(!message||apexChatBusy)return;
+ apexChatMessages.push({role:"user",content:message});apexChatMessages=apexChatMessages.slice(-12);apexChatAdd("user",message);apexChatInputEl.value="";apexChatBusy=true;apexChatSendEl.disabled=true;apexChatStatus("ChatGPT is reviewing your question and the latest available market snapshot…");
+ try{
+  const response=await fetch("/.netlify/functions/openai-chat-assistant",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:apexChatMessages,market:apexChatSnapshot()}),cache:"no-store"});
+  const raw=await response.text();let body={};try{body=JSON.parse(raw)}catch{}
+  if(!response.ok)throw new Error(body.error||`ChatGPT returned HTTP ${response.status}`);
+  const reply=String(body.reply||"I couldn't form a useful answer from the available information.");const signal=["CALL","PUT","WAIT"].includes(String(body.signal).toUpperCase())?String(body.signal).toUpperCase():null;
+  apexChatMessages.push({role:"assistant",content:reply});apexChatMessages=apexChatMessages.slice(-12);apexChatAdd("assistant",reply,signal);apexChatStatus(`ChatGPT response received · ${signal?"Signal: "+signal:"Explanation only"} · ${clock()}`,true);
+ }catch(error){apexChatStatus("ChatGPT connection error · "+(error?.message||"Request failed")+". Check the Netlify function and OPENAI_API_KEY.");apexChatMessages.pop();}
+ finally{apexChatBusy=false;apexChatSendEl.disabled=false;apexChatInputEl.focus()}
+}
+apexChatSendEl.addEventListener("click",()=>apexChatSend());
+apexChatInputEl.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();apexChatSend()}});
+document.querySelectorAll("[data-chat-prompt]").forEach(btn=>btn.addEventListener("click",()=>apexChatSend(btn.dataset.chatPrompt)));
 </script>
 </body></html>
