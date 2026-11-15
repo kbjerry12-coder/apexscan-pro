@@ -1,3 +1,4 @@
+
 export default async (request) => {
   const key = process.env.OTCHARTS_API_KEY;
 
@@ -17,7 +18,6 @@ export default async (request) => {
   }
 
   const upstream = new URL("https://otcharts.com/v1/candles");
-
   upstream.searchParams.set("venue", "otc");
   upstream.searchParams.set("symbol", symbol);
   upstream.searchParams.set("tf", "60");
@@ -42,7 +42,8 @@ export default async (request) => {
     if (!response.ok) {
       return Response.json({
         error: body.error || body.message ||
-          `OTCharts returned HTTP ${response.status}`
+          `OTCharts returned HTTP ${response.status}`,
+        status: response.status
       }, { status: response.status });
     }
 
@@ -56,14 +57,18 @@ export default async (request) => {
 
     if (!Array.isArray(candles) || !candles.length) {
       return Response.json({
-        error: "No recognized OTC candles returned."
+        error: "OTCharts returned no recognized candles.",
+        details: Object.keys(body || {})
       }, { status: 502 });
     }
 
     return Response.json({
       candles: candles.slice(-500),
+      count: candles.length,
       timeframe: 60,
-      symbol
+      symbol,
+      interval: body.interval || "60s",
+      gaps: body.gaps || null
     }, {
       headers: {
         "Cache-Control": "no-store, max-age=0"
@@ -73,7 +78,7 @@ export default async (request) => {
   } catch (error) {
     return Response.json({
       error: error?.name === "TimeoutError"
-        ? "OTCharts request timed out."
+        ? "OTCharts candle request timed out."
         : "Could not reach OTCharts: " +
           (error?.message || "network error")
     }, { status: 502 });
