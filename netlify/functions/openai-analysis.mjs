@@ -1,4 +1,3 @@
-
 const MODEL = process.env.OPENAI_MODEL || "gpt-6.1-sol";
 
 const ALLOWED_HOLDS = [
