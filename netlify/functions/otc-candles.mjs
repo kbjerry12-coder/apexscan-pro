@@ -46,13 +46,8 @@ export default async (request) => {
       }, { status: response.status });
     }
 
-    const candles = Array.isArray(body)
-      ? body
-      : (body.candles ||
-         body.data?.candles ||
-         body.data ||
-         body.results ||
-         []);
+    const candles = Array.isArray(body) ? body :
+      (body.candles || body.data?.candles || body.data || body.results || []);
 
     if (!Array.isArray(candles) || !candles.length) {
       return Response.json({
