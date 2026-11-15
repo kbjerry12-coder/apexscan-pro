@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="gpt-trade-engine-version" content="1.0-closed-candle-chatgpt">
+<meta name="theme-color" content="#080d17"><meta name="gpt-trade-engine-version" content="8.9-compatible-top-callouts">
 <title>GPT TRADE ENGINE · AI Trading Scanner</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
@@ -404,11 +404,6 @@ header .brand{font-size:20px;letter-spacing:.07em} header .brand small{font-size
 @media(max-width:1100px){.gpt-workspace{grid-template-columns:240px minmax(0,1fr)}.gpt-right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.gpt-bottom{grid-template-columns:1fr}}
 @media(max-width:760px){header{padding:9px 12px}header .brand{font-size:16px}.headright{font-size:9px}.wrap{padding:8px}.gpt-statusbar{align-items:flex-start;flex-direction:column;padding:10px}.gpt-statuschips{width:100%;justify-content:space-between}.gpt-chip{font-size:8px;padding:6px}.gpt-nav{overflow:auto;justify-content:flex-start}.gpt-nav span{font-size:10px;min-width:92px;padding:9px 5px}.gpt-workspace{display:flex;flex-direction:column;gap:9px}.gpt-left,.gpt-center,.gpt-right{width:100%;gap:9px}.gpt-right{display:flex}.gpt-controls{padding:11px}#chartPanel .chartbox{height:310px}#chartPanel .panel-head h2{font-size:10px}#chartPanel .panel-head select{max-width:135px!important}#aiForecastPanel .ai-meta{grid-template-columns:1fr 1fr}.gpt-bottom{display:flex;flex-direction:column}.gpt-disclaimer{min-height:48px}.gpt-mode-list{grid-template-columns:1fr 1fr}.gpt-mode-list div{font-size:9px;padding:7px 5px}.gpt-countbox strong{font-size:30px}}
 
-/* V8.9-style prominent BUY / SELL callout restored for each completed candle. */
-#signalPanel #signalCallout.buy,#signalPanel #signalCallout.sell{display:block!important;min-height:72px;font-size:clamp(15px,3.2vw,20px);font-weight:1000;letter-spacing:.035em;padding:17px 12px;margin:0 0 12px;text-shadow:0 0 12px currentColor}
-#signalPanel #signalCallout.buy{border:1px solid #22e5ad;background:linear-gradient(125deg,#064b3c,#0a2638);color:#8affd9;box-shadow:0 0 24px #14e5a655,inset 0 0 18px #13dca522}
-#signalPanel #signalCallout.sell{border:1px solid #ff5578;background:linear-gradient(125deg,#57172d,#28162e);color:#ffc0ce;box-shadow:0 0 24px #ff466355,inset 0 0 18px #ff466322}
-@media(max-width:700px){#signalPanel #signalCallout.buy,#signalPanel #signalCallout.sell{font-size:15px;padding:16px 9px;min-height:68px}}
 </style>
 <style id="apex-live-ai-styles">
 #aiForecastPanel{margin-top:12px;padding:13px;border:1px solid #31578e;border-radius:13px;background:linear-gradient(155deg,#101f42,#08152b);box-shadow:0 12px 28px #0004}
@@ -1227,6 +1222,28 @@ function updateTop(rows){
  $("topExpiry").textContent=candidate?"Live direction · callouts update when candle momentum changes":
   "Waiting for a live directional candle.";
  if($("durationAdvice"))$("durationAdvice").textContent=candidate?`${candleDurationSuggestion(r)} · ${formatHold(candleDurationSeconds(r))}`:"AI evaluating market structure…";
+ // The technical refresh must not erase the last completed-candle ChatGPT callout.
+ if(gptTopSignal && gptTopSignal.pairId===selectedId){
+  const aiSide=gptTopSignal.direction;
+  const banner=$("signalCallout");
+  if(banner){
+   if(aiSide==="CALL"||aiSide==="PUT"){
+    const side=aiSide==="CALL"?"BUY":"SELL";
+    banner.className="signal-callout "+(side==="BUY"?"buy":"sell");
+    banner.innerHTML=`<strong style="display:block;font-size:1.25em">${side} · ${ASSETS.find(a=>a.id===selectedId)?.name||selectedId}</strong><span style="display:block;margin-top:6px">AI HOLD: ${formatHold(gptTopSignal.hold)} · ENTRY ${fmt(gptTopSignal.entry)}</span><small style="display:block;margin-top:4px">AI EVIDENCE ${gptTopSignal.score}/100 · CLOSED-CANDLE ANALYSIS</small>`;
+   }else{
+    banner.className="signal-callout neutral";
+    banner.innerHTML=`<strong style="display:block;font-size:1.2em">WAIT · ${ASSETS.find(a=>a.id===selectedId)?.name||selectedId}</strong><span style="display:block;margin-top:5px">No confirmed BUY or SELL on this candle</span><small style="display:block;margin-top:4px">AI EVIDENCE ${gptTopSignal.score}/100</small>`;
+   }
+  }
+  $("topDirection").textContent=aiSide==="CALL"?"BUY":aiSide==="PUT"?"SELL":"WAITING";
+  $("topDirection").style.color=aiSide==="CALL"?"var(--green)":aiSide==="PUT"?"var(--red)":"var(--amber)";
+  $("topAsset").textContent=ASSETS.find(a=>a.id===selectedId)?.name||selectedId;
+  $("topEntry").textContent=Number.isFinite(gptTopSignal.entry)?fmt(gptTopSignal.entry):"—";
+  $("topScore").textContent=aiSide==="WAIT"?"CONFIRMATION PENDING":`AI EVIDENCE ${gptTopSignal.score}/100`;
+  $("topReason").textContent=gptTopSignal.reason;
+  $("topSignal").className="signal-card "+(aiSide==="CALL"?"call":aiSide==="PUT"?"put":"wait");
+ }
 }
 
 function renderHistory(){$("signalHistory").innerHTML=history.length?history.map(x=>`<tr><td>${x.time}</td><td>${x.asset}</td><td><span class="tag ${x.side.toLowerCase()}">${x.side}</span></td><td>${fmt(x.entry)}</td><td>${x.score}</td><td>${x.age}s</td></tr>`).join(""):'<tr><td colspan="6" class="empty">No directional setups recorded yet.</td></tr>'}
@@ -1606,6 +1623,7 @@ $("aiLiveToggle").addEventListener("change",()=>{
 
 // GPT TRADE ENGINE · manual ChatGPT scan, closed 1-minute candles only.
 const gptSignalLocks=new Map(),gptScannedCandles=new Map();
+let gptTopSignal=null; // Keep the latest ChatGPT candle-close callout visible in the top panel.
 const gptSleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function gptSetStatus(message,kind="wait"){
  const el=$("gptScanStatus");if(el)el.textContent=message;
@@ -1711,23 +1729,23 @@ function gptApplyStableLock(pairId,direction,candles){
  return {direction:"WAIT",reason:`Potential ${direction} reversal. Waiting for a second separate 1-minute close before changing the locked ${state.locked} direction.`};
 }
 function gptPaintFinalSignal(direction,entry,hold,score,reason,pair){
+ gptTopSignal={pairId:pair?.id||null,direction,entry,hold,score,reason,candleTime:results[pair?.id]?.candles?.at(-1)?.timeMs||null};
+ const banner=$("signalCallout");
+ if(banner){
+  if(direction==="CALL"||direction==="PUT"){
+   const side=direction==="CALL"?"BUY":"SELL";
+   banner.className="signal-callout "+(side==="BUY"?"buy":"sell");
+   banner.innerHTML=`<strong style="display:block;font-size:1.25em">${side} · ${pair.name}</strong><span style="display:block;margin-top:6px">AI HOLD: ${formatHold(hold)} · ENTRY ${fmt(entry)}</span><small style="display:block;margin-top:4px">AI EVIDENCE ${score}/100 · CLOSED-CANDLE ANALYSIS</small>`;
+  }else{
+   banner.className="signal-callout neutral";
+   banner.innerHTML=`<strong style="display:block;font-size:1.2em">WAIT · ${pair.name}</strong><span style="display:block;margin-top:5px">No confirmed BUY or SELL on this candle</span><small style="display:block;margin-top:4px">AI EVIDENCE ${score}/100</small>`;
+  }
+ }
+
  const el=$("aiDirection");if(el){el.textContent=direction==="CALL"?"BUY (CALL)":direction==="PUT"?"SELL (PUT)":"WAIT";el.className="ai-direction "+direction.toLowerCase();}
  $("aiPairLabel").textContent=pair.name;$("aiHold").textContent=direction==="WAIT"?"—":formatHold(hold);
  $("aiScore").textContent=direction==="WAIT"?"—":`${score}/100`;
  $("aiReason").textContent=reason;
-
- // Restore the prominent V8.9-style BUY / SELL banner at the top of the signal panel.
- const callout=$("signalCallout");
- if(callout){
-  callout.className="signal-callout "+(direction==="CALL"?"buy":direction==="PUT"?"sell":"neutral");
-  callout.textContent=direction==="CALL"
-   ?`▲ BUY / CALL  ·  ${pair.name}  ·  ENTRY ${Number.isFinite(entry)?fmt(entry):"—"}`
-   :direction==="PUT"
-    ?`▼ SELL / PUT  ·  ${pair.name}  ·  ENTRY ${Number.isFinite(entry)?fmt(entry):"—"}`
-    :"WAIT · NO CONFIRMED DIRECTION · "+pair.name;
-  callout.setAttribute("data-signal-time",String(Date.now()));
- }
-
  const top=$("topDirection");if(top){top.textContent=direction==="CALL"?"BUY":direction==="PUT"?"SELL":"WAITING";top.className="signal-dir";}
  $("topAsset").textContent=pair.name;$("topEntry").textContent=Number.isFinite(entry)?fmt(entry):"—";if($("gptAIEntry"))$("gptAIEntry").textContent=Number.isFinite(entry)?fmt(entry):"—";
  $("topReason").textContent=reason;$("topScore").textContent=direction==="WAIT"?"CONFIRMATION PENDING":`AI EVIDENCE ${score}/100`;
@@ -1776,29 +1794,12 @@ $("gptScanButton").addEventListener("click",runGPTManualScan);
 $("gptAudioToggle").addEventListener("click",()=>{calloutsEnabled=!calloutsEnabled;$("gptAudioToggle").textContent=calloutsEnabled?"🔊 Audio callouts ON":"🔔 Enable audio callouts";if(calloutsEnabled&&"speechSynthesis" in window){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance("Audio callouts enabled"));}});
 $("gptSettingsToggle").addEventListener("click",()=>{const box=$("gptSettingsSlot");if(box){box.hidden=!box.hidden;if(!box.hidden)box.scrollIntoView({behavior:"smooth",block:"start"});}});
 // Pair changes only change the selected instrument. They never launch a scan automatically.
-$("mobileAsset").addEventListener("change",e=>{e.stopImmediatePropagation();const id=$("mobileAsset").value;selectedChart=id;$("chartAsset").value=id;watch.add(id);renderWatch();updateMobileMarketLabel();stopLiveStream();connectLiveStream();saveState();gptLoadSelectedHistory("pair changed");},{capture:true});
-$("chartAsset").addEventListener("change",e=>{e.stopImmediatePropagation();const id=$("chartAsset").value;selectedChart=id;$("mobileAsset").value=id;watch.add(id);renderWatch();stopLiveStream();connectLiveStream();saveState();gptLoadSelectedHistory("chart pair changed");},{capture:true});
-// Automatically analyze each newly completed 1-minute candle.
-// The scanner waits for a newer CLOSED candle from the history endpoint.
-let gptAutoScanStarted=false;
-async function gptAutoScanLoop(){
- if(gptAutoScanStarted)return;
- gptAutoScanStarted=true;
- while(true){
-  try{
-   while(aiRequestBusy)await gptSleep(500);
-   await runGPTManualScan();
-  }catch(error){
-   gptSetStatus(error?.message||"Automatic candle scan failed. Retrying at the next candle close.","error");
-  }
-  await gptSleep(300);
- }
-}
-
+$("mobileAsset").addEventListener("change",e=>{e.stopImmediatePropagation();gptTopSignal=null;const id=$("mobileAsset").value;selectedChart=id;$("chartAsset").value=id;watch.add(id);renderWatch();updateMobileMarketLabel();stopLiveStream();connectLiveStream();saveState();gptLoadSelectedHistory("pair changed");},{capture:true});
+$("chartAsset").addEventListener("change",e=>{e.stopImmediatePropagation();gptTopSignal=null;const id=$("chartAsset").value;selectedChart=id;$("mobileAsset").value=id;watch.add(id);renderWatch();stopLiveStream();connectLiveStream();saveState();gptLoadSelectedHistory("chart pair changed");},{capture:true});
 // Live countdown to the next 1-minute boundary.
 setInterval(()=>{const now=Date.now(),left=60000-(now%60000);const sec=Math.ceil(left/1000);if($("gptCandleClock"))$("gptCandleClock").textContent=`00:${String(sec).padStart(2,"0")}`;if($("gptCandleProgress"))$("gptCandleProgress").style.width=`${(1-left/60000)*100}%`;},250);
 
 setInterval(()=>{$("clock").textContent=clock();if($("gptClock"))$("gptClock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();updateCountdowns();settleExpiredTrades()},1000);
-loadState();autoPaperEnabled=false;$("autoPaperToggle").checked=false;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · New qualified signals open simulated trades automatically":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();gptLoadSelectedHistory("startup");setAIStatus("ChatGPT is ready · automatic analysis will run after each completed 1-minute candle.");gptAutoScanLoop();
+loadState();autoPaperEnabled=false;$("autoPaperToggle").checked=false;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · New qualified signals open simulated trades automatically":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();gptLoadSelectedHistory("startup");setAIStatus("ChatGPT is ready · candle history is loading. Press SCAN CHARTS for a closed-candle analysis.");
 </script>
 </body></html>
