@@ -425,6 +425,16 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 #apexEngineReason{font-size:10px;line-height:1.45;color:#a9c6e8;margin:7px 0 0}
 @media(max-width:700px){#apexIntelligentEngine{padding:9px}.apex-engine-signal{font-size:21px}}
 </style>
+
+<style id="apex-v91-trend-box-style">
+.apex-box-legend{display:flex;align-items:center;gap:9px 15px;flex-wrap:wrap;margin-top:9px;padding:9px 10px;border:1px solid #24456d;border-radius:9px;background:linear-gradient(100deg,#09172c,#0b1b32);font-size:9px;color:#a9c4e6}
+.apex-box-legend span{display:inline-flex;align-items:center;gap:5px}
+.box-key{display:inline-block;width:17px;height:3px;border-radius:2px}
+.box-key.upper{background:#f5ad35}.box-key.lower{background:#36cce8}.box-key.mid{height:0;border-top:2px dashed #d7e6f5}
+.apex-box-legend b{margin-left:auto;color:#65e4c5;letter-spacing:.07em}
+@media(max-width:700px){.apex-box-legend{gap:7px 10px;font-size:8px}.apex-box-legend b{width:100%;margin-left:0}}
+</style>
+
 </head>
 <body>
 <header>
@@ -495,6 +505,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
      </div>
     </div>
     <div class="chartfoot"><span id="chartCaption">Waiting for candles</span><span id="chartMeta">MACD(12,26,9) · closed-candle signals</span></div>
+    <div class="apex-box-legend" aria-live="polite"><span><i class="box-key upper"></i> Upper boundary / breakout</span><span><i class="box-key lower"></i> Lower boundary</span><span><i class="box-key mid"></i> Mid-range</span><b id="trendBoxStatus">TREND BOX · WAITING FOR CANDLES</b></div>
    </div>
    <div class="panel" id="signalHistoryPanel">
     <div class="panel-head"><h2>SIGNAL HISTORY</h2><button class="small" id="clearSignals">Clear signals</button></div>
@@ -932,6 +943,33 @@ function aggregateCandles(candles,minutes){
  });
  return [...map.values()].slice(-100);
 }
+
+/* V9.1 · Visual trend/range box scanner.
+   Uses completed chart bars for structure; it is a visual aid, not a guaranteed breakout predictor. */
+function apexDetectTrendBox(candles){
+ const bars=(candles||[]).filter(c=>[c.open,c.high,c.low,c.close].every(v=>Number.isFinite(Number(v))));
+ if(bars.length<12)return null;
+ const end=bars.length-1, zoneEnd=end-1, zoneStart=Math.max(0,zoneEnd-19);
+ const zone=bars.slice(zoneStart,zoneEnd+1);
+ if(zone.length<10)return null;
+ const hi=Math.max(...zone.map(c=>+c.high)),lo=Math.min(...zone.map(c=>+c.low));
+ const span=hi-lo;
+ const ranges=zone.map(c=>Math.max(0,+c.high-+c.low)).filter(v=>v>0).sort((a,b)=>a-b);
+ const avgRange=ranges.length?ranges[Math.floor(ranges.length/2)]:span/zone.length;
+ const recent=bars.slice(-8),prior=bars.slice(-16,-8);
+ const recentMean=recent.reduce((v,c)=>v+Number(c.close),0)/recent.length;
+ const priorMean=prior.length?prior.reduce((v,c)=>v+Number(c.close),0)/prior.length:recentMean;
+ const drift=recentMean-priorMean;
+ const last=bars[end],buffer=Math.max(avgRange*.12,span*.015);
+ let state="RANGE",direction="FLAT";
+ if(+last.close>hi+buffer){state="BREAKOUT UP";direction="UP"}
+ else if(+last.close<lo-buffer){state="BREAKOUT DOWN";direction="DOWN"}
+ else if(drift>avgRange*1.15){state="UPTREND";direction="UP"}
+ else if(drift< -avgRange*1.15){state="DOWNTREND";direction="DOWN"}
+ const compressed=span<=avgRange*13;
+ return {start:zoneStart,end:zoneEnd,high:hi,low:lo,mid:(hi+lo)/2,state,direction,compressed,breakout:state.startsWith("BREAKOUT"),lastIndex:end};
+}
+
 function drawChart(){
  const canvas=$("chart");if(!canvas)return;
  const ctx=canvas.getContext("2d");if(!ctx)return;
@@ -965,6 +1003,40 @@ function drawChart(){
   ctx.fillText(`${label} ${fmt(level.price)} · ${level.touches} touch${level.touches===1?"":"es"}`,w-right-4,Math.max(top+10,py-5));ctx.restore();
  });
  const step=plotW/candles.length,cw=Math.max(2,Math.min(10,step*.62));
+ // Draw the detected structure zone behind the candles, in the style of the supplied reference.
+ const trendBox=apexDetectTrendBox(candles);
+ if(trendBox){
+  const x1=left+trendBox.start*step+step*.12;
+  const x2=Math.min(w-right,left+(trendBox.lastIndex+1)*step-step*.12);
+  const yTop=y(trendBox.high),yBottom=y(trendBox.low),boxW=Math.max(4,x2-x1),boxH=Math.max(3,yBottom-yTop);
+  const up=trendBox.direction==="UP",down=trendBox.direction==="DOWN";
+  const edge=up?"#f5ad35":down?"#ff637d":"#39cce9";
+  const lower="#36cce8";
+  ctx.save();
+  ctx.fillStyle=up?"rgba(245,173,53,.075)":down?"rgba(255,99,125,.07)":"rgba(54,204,232,.065)";
+  ctx.fillRect(x1,yTop,boxW,boxH);
+  ctx.strokeStyle=edge;ctx.lineWidth=1.7;ctx.strokeRect(x1,yTop,boxW,boxH);
+  ctx.setLineDash([7,5]);ctx.strokeStyle="#e8bd65";ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(x1,y(trendBox.mid));ctx.lineTo(x2,y(trendBox.mid));ctx.stroke();
+  ctx.setLineDash([]);ctx.strokeStyle=lower;ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.moveTo(x1,yBottom);ctx.lineTo(x2,yBottom);ctx.stroke();
+  const label=trendBox.state+(trendBox.compressed?" · BOX":" · STRUCTURE");
+  ctx.font="bold 9px system-ui";const labelW=Math.min(boxW-8,ctx.measureText(label).width+12);
+  if(labelW>45){
+   ctx.fillStyle=edge;ctx.fillRect(x1+4,Math.max(top+2,yTop+4),labelW,17);
+   ctx.fillStyle="#061321";ctx.textAlign="left";ctx.fillText(label,x1+10,Math.max(top+14,yTop+16),labelW-8);
+  }
+  // Small right-edge level markers mirror the upper, midpoint and lower guides in the reference.
+  [[trendBox.high,edge],[trendBox.mid,"#d7e6f5"],[trendBox.low,lower]].forEach(([v,c])=>{
+   const py=y(v);ctx.beginPath();ctx.fillStyle=c;ctx.arc(x2,py,3.5,0,Math.PI*2);ctx.fill();
+  });
+  if(trendBox.breakout){
+   const bx=left+trendBox.lastIndex*step+step/2,by=y(+candles[trendBox.lastIndex].close);
+   ctx.beginPath();ctx.fillStyle=edge;ctx.arc(bx,by,5,0,Math.PI*2);ctx.fill();
+   ctx.strokeStyle="#071321";ctx.lineWidth=1.5;ctx.stroke();
+  }
+  ctx.restore();
+ }
  candles.forEach((c,i)=>{
   const x=left+i*step+step/2,up=c.close>=c.open,color=up?"#38efb1":"#ff6688";
   ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=1.2;
@@ -983,6 +1055,8 @@ function drawChart(){
  [0,Math.floor(candles.length/2),candles.length-1].forEach(i=>{const d=new Date(candles[i].timeMs);ctx.fillText(d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}),left+i*step+step/2,h-5)});
  $("chartCaption").textContent=`${ASSETS.find(a=>a.id===id)?.name||id} · ${candles.length} candles · candle history · latest ${fmt(livePrice>0?livePrice:last.close)}`;
  $("chartMeta").textContent=`LIVE ticks · MACD only · ${chartTimeframe===1?"60-second":chartTimeframe+"-minute"} view`;
+ const boxStatus=$("trendBoxStatus"),box=apexDetectTrendBox(candles);
+ if(boxStatus)boxStatus.textContent=box?`STRUCTURE: ${box.state} · HIGH ${fmt(box.high)} · LOW ${fmt(box.low)}`:"TREND BOX · NEED MORE CANDLES";
 }
 
 
