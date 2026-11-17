@@ -19,7 +19,7 @@ export default async (request) => {
   const upstream = new URL("https://otcharts.com/v1/candles");
   upstream.searchParams.set("venue", "otc");
   upstream.searchParams.set("symbol", symbol);
-  upstream.searchParams.set("tf", "30");
+  upstream.searchParams.set("tf", "60");
   upstream.searchParams.set("limit", "500");
 
   try {
@@ -73,8 +73,8 @@ export default async (request) => {
     return Response.json({
       success: true,
       symbol,
-      timeframe: 30,
-      interval: "30s",
+      timeframe: 60,
+      interval: "1m",
       count: candles.length,
       candles: candles.slice(-500),
       serverTime: Date.now()
@@ -91,4 +91,3 @@ export default async (request) => {
     }, { status: 502 });
   }
 };
-
