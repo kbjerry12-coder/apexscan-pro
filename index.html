@@ -1840,7 +1840,7 @@ function analyze(candles,asset){
     ?`WAIT · ${evidence}/5 directional checks align; need at least 3 matching confluences and a fresh quote.`
     :`${rawDirection==="CALL"?"Bullish":"Bearish"} close confirmed by ${confluences.slice(0,3).join(", ")}.`;
   const breakdown={trend:trend==="UP"?"MACD bullish":trend==="DOWN"?"MACD bearish":"MACD mixed",momentum:`MACD histogram ${macd?macd.histogram.toPrecision(5):"warming up"} · ${histShiftUp?"rising":histShiftDown?"falling":"flat"}`,volatility:`${(last.close?atr/last.close*100:0).toFixed(3)}% ATR`,price:shape.bull?"Bullish candle":shape.bear?"Bearish candle":"Doji / neutral",structure:`Support ${support??"—"} · Resistance ${resistance??"—"}`,feed:fresh?"Fresh provider data":"Stale / delayed"};
-  const result={direction:rawDirection,rawDirection,signalLevel:rawDirection==="WAIT"?"WAIT":"CONFIRMED",score,confidence_score:score,reason,fresh,age,trend,entry:+last.close,quality:shape.bodyPct,candleTime:last.time,candleTimeMs:Number(last.timeMs||0),atr,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,support,resistance,supportTouches:levels.support?.touches??0,resistanceTouches:levels.resistance?.touches??0,nearSupport:supportReject,nearResistance:resistanceReject,detected_patterns:names,macro_patterns:patterns.macro,confluences,evidence_count:evidence,recommended_expiry:expiry,breakdown};
+  const result={direction:rawDirection,rawDirection,signalLevel:rawDirection==="WAIT"?(weightedScore>=55?"EARLY":"WAIT"):(score>=80?"STRONG":score>=70?"QUALIFIED":"EARLY QUALIFIED"),score,confidence_score:score,reason,fresh,age,trend,entry:+last.close,quality:shape.bodyPct,candleTime:last.time,candleTimeMs:Number(last.timeMs||0),atr,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,support,resistance,supportTouches:levels.support?.touches??0,resistanceTouches:levels.resistance?.touches??0,nearSupport:supportReject,nearResistance:resistanceReject,detected_patterns:names,macro_patterns:patterns.macro,confluences,evidence_count:evidence,recommended_expiry:expiry,breakdown};
   result.structured={signal:rawDirection==="CALL"?"BUY":rawDirection==="PUT"?"SELL":"WAIT",confidence_score:score,detected_patterns:[...names,...patterns.macro,...(supportReject?["Support Bounce"]:[]),...(resistanceReject?["Resistance Rejection"]:[]),...(macdBull?["MACD Bullish Momentum Shift"]:macdBear?["MACD Bearish Momentum Shift"]:[])],recommended_expiry:expiry,reasoning:reason};
   window.APEX_LAST_ANALYSIS=result.structured;
   return result;
@@ -1921,7 +1921,7 @@ handleLiveTick=function(event){
 const signalCallout=$("signalCallout");
 if(signalCallout&&!$("apexIntelligentEngine")){
  const card=document.createElement("section");card.id="apexIntelligentEngine";
- card.innerHTML='<div class="apex-engine-head"><b>APEX INTELLIGENT ENGINE · 5M · UTC-10</b><span id="apexPhase">PHASE 1 · BUILDING ANALYSIS</span></div><div class="apex-engine-grid"><div><div class="apex-engine-signal wait" id="apexEngineSignal">WAIT</div><div class="apex-engine-meta"><span>AI evidence score</span><span>Expiry: <b id="apexEngineExpiry">5m</b></span></div></div><div id="apexEngineScore">0/100</div></div><div id="apexEnginePatterns">Waiting for completed candle patterns…</div><p id="apexEngineReason">At least three aligned technical confluences are required.</p>';
+ card.innerHTML='<div class="apex-engine-head"><b>APEX INTELLIGENT ENGINE · 5M · UTC-10</b><span id="apexPhase">PHASE 1 · BUILDING ANALYSIS</span></div><div class="apex-engine-grid"><div><div class="apex-engine-signal wait" id="apexEngineSignal">WAIT</div><div class="apex-engine-meta"><span>WEIGHTED SETUP SCORE</span><span>Expiry: <b id="apexEngineExpiry">5m</b></span></div></div><div id="apexEngineScore">0/100</div></div><div id="apexEnginePatterns">Waiting for completed candle patterns…</div><p id="apexEngineReason">At least three aligned technical confluences are required.</p>';
  signalCallout.parentNode.insertBefore(card,signalCallout);
 }
 apexRenderIntelligentPanel();
@@ -1980,21 +1980,35 @@ function apexLayerScore(bars,asset){
  const aligned=Math.max(bullish,bearish),dominant=bullish>bearish?"CALL":bearish>bullish?"PUT":"WAIT";
  const chop=bodyPct<.12||(!trendUp&&!trendDown&&Math.abs(momentum)<atr*.18),extreme=volatility>.18;
  const rsiExhausted=(dominant==="CALL"&&rsi>=76)||(dominant==="PUT"&&rsi<=24);
+ // Weighted directional evidence replaces the old hard requirement of 4 out of 6.
+ // MACD and raw price momentum stay in ONE combined bucket to avoid double-counting.
+ const weights={trend:20,momentum:20,rsi:20,candle:15,structure:15,levels:10};
+ const bullScore=(trendUp?weights.trend:0)+(momentumUp?weights.momentum:0)+(rsiUp?weights.rsi:0)+(bullCandle?weights.candle:0)+(structureUp?weights.structure:0)+(supportReject?weights.levels:0);
+ const bearScore=(trendDown?weights.trend:0)+(momentumDown?weights.momentum:0)+(rsiDown?weights.rsi:0)+(bearCandle?weights.candle:0)+(structureDown?weights.structure:0)+(resistanceReject?weights.levels:0);
+ const edge=Math.abs(bullScore-bearScore),weightedDirection=bullScore>bearScore?"CALL":bearScore>bullScore?"PUT":"WAIT";
+ const weightedScore=Math.max(bullScore,bearScore);
+ const weightedLayers=[
+  {name:"TREND · 20",value:trendUp?"BULL +20":trendDown?"BEAR +20":"NEUTRAL",bull:trendUp,bear:trendDown},
+  {name:"MACD + MOMENTUM · 20",value:momentumUp?"BULL +20":momentumDown?"BEAR +20":"NEUTRAL",bull:momentumUp,bear:momentumDown},
+  {name:"RSI 14 · 20",value:(Number.isFinite(rsi)?rsi.toFixed(1):"—")+" · "+(rsiUp?"BULL +20":rsiDown?"BEAR +20":"NEUTRAL"),bull:rsiUp,bear:rsiDown},
+  {name:"CANDLE ACTION · 15",value:bullCandle?"BULL +15":bearCandle?"BEAR +15":"NEUTRAL",bull:bullCandle,bear:bearCandle},
+  {name:"STRUCTURE · 15",value:structureUp?"BULL +15":structureDown?"BEAR +15":"NEUTRAL",bull:structureUp,bear:structureDown},
+  {name:"S/R REJECTION · 10",value:supportReject?"BULL +10":resistanceReject?"BEAR +10":"NEUTRAL",bull:supportReject,bear:resistanceReject}
+ ];
  if(!fresh)reason="WAIT · feed is stale; a fresh live tick or newly closed candle is required.";
  else if(chop)reason="WAIT · compression / indecision detected; avoid forcing a direction.";
  else if(extreme)reason="WAIT · volatility expansion is outside the configured risk band.";
- else if(rsiExhausted)reason=`WAIT · RSI ${rsi.toFixed(1)} is stretched; avoid chasing an exhausted move.`;
- else if(aligned>=4&&Math.abs(bullish-bearish)>=2&&dominant!=="WAIT"){
-  rawDirection=dominant;
-  const macdAligned=rawDirection==="CALL"?momentumUp:momentumDown;
-  score=Math.min(96,55+aligned*6+(bodyPct>.58?4:0)+(macdAligned?5:0)+((rawDirection==="CALL"?rsiUp:rsiDown)?3:0));
-  reason=`${rawDirection} confirmed by ${aligned}/6 independent evidence checks; RSI ${rsi.toFixed(1)}${rsiUp||rsiDown?" · directional":""}; ATR ${atr.toPrecision(4)}.`;
+ else if(rsiExhausted)reason="WAIT · RSI "+rsi.toFixed(1)+" is stretched; avoid chasing an exhausted move.";
+ else if(weightedDirection!=="WAIT"&&weightedScore>=65&&edge>=15){
+  rawDirection=weightedDirection;score=weightedScore;
+  const level=score>=80?"STRONG":score>=70?"QUALIFIED":"EARLY QUALIFIED";
+  reason=level+" "+rawDirection+" · weighted evidence "+score+"/100 with "+edge+"-point directional separation. RSI "+(Number.isFinite(rsi)?rsi.toFixed(1):"—")+"; MACD/momentum counted as one layer. Signal releases only after candle close + 5 seconds.";
  }else{
-  score=Math.min(69,25+aligned*6);
-  reason=`WAIT · ${aligned}/6 evidence checks align; stronger RSI, momentum and price-action agreement is required.`;
+  score=weightedScore;
+  reason="EARLY SETUP · "+(weightedDirection==="WAIT"?"no clear side":weightedDirection+" bias")+" at "+weightedScore+"/100; need 65 points and at least 15 points of directional separation. Continue monitoring.";
  }
  const entry=Number(last.close),stop=rawDirection==="CALL"?Math.min(Number(last.low),entry-atr):rawDirection==="PUT"?Math.max(Number(last.high),entry+atr):null,target=rawDirection==="CALL"?entry+(entry-stop)*1.5:rawDirection==="PUT"?entry-(stop-entry)*1.5:null;
- const result={direction:rawDirection,rawDirection,score,confidence_score:score,signalLevel:rawDirection==="WAIT"?"WAIT":"CONFIRMED",reason,fresh,age:Math.min(tickAge,candleAge),trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry,stopLoss:stop,takeProfit:target,candleTime:last.time,candleTimeMs:Number(last.timeMs),recommended_expiry:"30s",atr,rsi,previousRsi,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,support:levels.support?.price??null,resistance:levels.resistance?.price??null,detected_patterns:apexCandleRead(bars).patterns?.map(x=>x.name)||[],confluences:layers.filter(x=>rawDirection==="CALL"?x.bull:rawDirection==="PUT"?x.bear:false).map(x=>x.name),evidence_count:aligned,layers,breakdown:{trend:layers[0].value,momentum:layers[1].value,rsi:layers[2].value,price:layers[3].value,structure:layers[4].value,levels:layers[5].value,volatility:`ATR ${volatility.toFixed(4)}%`,feed:fresh?`FRESH · tick ${tickAge.toFixed(1)}s / candle ${candleAge.toFixed(1)}s`:`STALE · candle ${candleAge.toFixed(1)}s`}};
+ const result={direction:rawDirection,rawDirection,score,confidence_score:score,signalLevel:rawDirection==="WAIT"?(weightedScore>=55?"EARLY":"WAIT"):(score>=80?"STRONG":score>=70?"QUALIFIED":"EARLY QUALIFIED"),reason,fresh,age:Math.min(tickAge,candleAge),trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry,stopLoss:stop,takeProfit:target,candleTime:last.time,candleTimeMs:Number(last.timeMs),recommended_expiry:"30s",atr,rsi,previousRsi,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,support:levels.support?.price??null,resistance:levels.resistance?.price??null,detected_patterns:apexCandleRead(bars).patterns?.map(x=>x.name)||[],confluences:layers.filter(x=>rawDirection==="CALL"?x.bull:rawDirection==="PUT"?x.bear:false).map(x=>x.name),evidence_count:aligned,weighted_score:score,bull_score:bullScore,bear_score:bearScore,score_edge:edge,layers:weightedLayers,breakdown:{trend:weightedLayers[0].value,momentum:weightedLayers[1].value,rsi:weightedLayers[2].value,price:weightedLayers[3].value,structure:weightedLayers[4].value,levels:weightedLayers[5].value,volatility:`ATR ${volatility.toFixed(4)}%`,feed:fresh?`FRESH · tick ${tickAge.toFixed(1)}s / candle ${candleAge.toFixed(1)}s`:`STALE · candle ${candleAge.toFixed(1)}s`}};
  result.structured={signal:rawDirection==="CALL"?"BUY":rawDirection==="PUT"?"SELL":"WAIT",confidence_score:score,detected_patterns:[...result.detected_patterns,...result.confluences],recommended_expiry:"30s",reasoning:reason};return result;
 }
 analyze=function(candles,asset){return apexLayerScore(candles,asset);};
@@ -2003,7 +2017,7 @@ function apexRenderIntelligentPanel(){
  const phase=left<=2?"PHASE 2 · PRE-CLOSE SNAPSHOT":left<=8?"PHASE 2 · FINAL CONFIRMATION":"PHASE 1 · MARKET INTELLIGENCE";
  const phaseEl=$("apexPhase"),clockEl=$("candleCountdown");if(phaseEl)phaseEl.textContent=`${phase} · T-${String(left).padStart(2,"0")}s`;if(clockEl)clockEl.textContent=`00:${String(left).padStart(2,"0")}`;
  const side=a.direction==="CALL"?"BUY":a.direction==="PUT"?"SELL":"WAIT",sig=$("apexEngineSignal");if(sig){sig.textContent=side;sig.className="apex-engine-signal "+side.toLowerCase();}
- const score=$("apexEngineScore"),patterns=$("apexEnginePatterns"),reason=$("apexEngineReason"),expiry=$("apexEngineExpiry");if(score)score.textContent=`${Number(a.score)||0}/100`;if(patterns)patterns.textContent=(a.confluences||[]).join(" · ")||"Waiting for independent confirmations";if(reason)reason.textContent=a.reason||"Waiting for completed 30-second candle.";if(expiry)expiry.textContent="30s";
+ const score=$("apexEngineScore"),patterns=$("apexEnginePatterns"),reason=$("apexEngineReason"),expiry=$("apexEngineExpiry");if(score)score.textContent=`${Number(a.score)||0}/100`;if(patterns)patterns.textContent=(a.confluences||[]).join(" · ")||"Weighted evidence · 65/100 to qualify";if(reason)reason.textContent=a.reason||"Waiting for completed 30-second candle.";if(expiry)expiry.textContent="30s";
  const phaseLabel=$("apexPhase");if(phaseLabel)phaseLabel.title=`30-second candle countdown: ${left}s`;
  const grid=$("apexLayerGrid");if(grid){grid.innerHTML="";(a.layers||[]).forEach(layer=>{const item=document.createElement("div");item.className="apex-layer-item";const name=document.createElement("small");name.textContent=layer.name;const value=document.createElement("b");value.textContent=layer.value;item.append(name,value);grid.appendChild(item);});}
  const stamp=$("apexLastClosed");if(stamp)stamp.textContent=a.candleTimeMs?new Date(a.candleTimeMs).toLocaleTimeString("en-US",{timeZone:"Etc/GMT+10",hour12:false}):"—";
@@ -2031,8 +2045,8 @@ function apexStartScheduler(){clearInterval(cycle);running=true;apexClosedDecisi
 function apexPauseScheduler(){running=false;clearInterval(cycle);cycle=null;$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED");}
 $("startBtn").onclick=apexStartScheduler;$("pauseBtn").onclick=apexPauseScheduler;
 $("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";$("interval").onchange=()=>{$("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";saveState();};
-const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · six directional evidence checks including RSI 14 · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
-const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · six-check confluence including RSI 14 · +5s post-close signal release · UTC-10 chart display.";
+const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · weighted 6-layer score (65/100 entry threshold) · MACD and momentum counted once · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
+const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · weighted evidence score · 65/100 entry threshold · +5s post-close signal release · UTC-10 chart display.";
 const hero=$("heroLiveLabel");if(hero)hero.textContent="30-second market intelligence · next-candle callouts";
 const tfNote=$("tfNote");if(tfNote)tfNote.textContent="30-second native OTC candles · scanner locked";
 const ci=$("candleIntel");if(ci)ci.innerHTML=ci.innerHTML.replaceAll("5M CLOSED BAR","30S CLOSED BAR").replaceAll("1M CLOSED BAR","30S CLOSED BAR");
@@ -2053,7 +2067,7 @@ renderCandleIntel=function(r){
  const rsiText=Number.isFinite(Number(a.rsi))?Number(a.rsi).toFixed(1):"—",atrText=Number.isFinite(Number(a.atr))?Number(a.atr).toPrecision(4):"—";
  const directionText=raw==="CALL"?"Original analysis: BUY":raw==="PUT"?"Original analysis: SELL":"Original analysis: WAIT";
  const reverseText=a.reverseMode&&raw!=="WAIT"?` · Reverse mode final: ${badge}`:"";
- host.innerHTML='<div class="ci-head"><div class="ci-title">CANDLE INTELLIGENCE · 30S CLOSED BAR</div><span class="ci-pill '+cls+'">'+badge+'</span></div><div class="ci-reading">'+read.label+'</div><div class="ci-detail">'+read.detail+'</div><div class="ci-patterns">'+(patterns.length?patterns.join(' · '):'No confirmed pattern')+'</div><div class="ci-grid"><div><small>RSI · 14</small><b>'+rsiText+'</b></div><div><small>ATR · 14</small><b>'+atrText+'</b></div><div><small>MACD HISTOGRAM</small><b>'+ (Number.isFinite(Number(a.macdHistogram))?Number(a.macdHistogram).toPrecision(5):"—") +'</b></div><div><small>EVIDENCE CHECKS</small><b>'+Number(a.evidence_count||0)+'/6 aligned</b></div></div><div class="ci-detail">'+directionText+reverseText+'</div><div class="ci-detail">'+(a.reason||'Waiting for next candle confirmation.')+'</div>';
+ host.innerHTML='<div class="ci-head"><div class="ci-title">CANDLE INTELLIGENCE · 30S CLOSED BAR</div><span class="ci-pill '+cls+'">'+badge+'</span></div><div class="ci-reading">'+read.label+'</div><div class="ci-detail">'+read.detail+'</div><div class="ci-patterns">'+(patterns.length?patterns.join(' · '):'No confirmed pattern')+'</div><div class="ci-grid"><div><small>RSI · 14</small><b>'+rsiText+'</b></div><div><small>ATR · 14</small><b>'+atrText+'</b></div><div><small>MACD HISTOGRAM</small><b>'+ (Number.isFinite(Number(a.macdHistogram))?Number(a.macdHistogram).toPrecision(5):"—") +'</b></div><div><small>WEIGHTED SCORE</small><b>'+Number(a.score||0)+'/100 weighted</b></div></div><div class="ci-detail">'+directionText+reverseText+'</div><div class="ci-detail">'+(a.reason||'Waiting for next candle confirmation.')+'</div>';
 };
 })();
 
