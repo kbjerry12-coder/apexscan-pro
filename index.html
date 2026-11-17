@@ -627,6 +627,14 @@ let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={}
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6});
 // Display all dashboard/chart wall-clock times in fixed UTC-10 (Etc/GMT+10).
 // Candle timestamps and 30-second boundary calculations remain UTC epoch-based.
+// Compatibility guard for legacy chart/UI callbacks that reference aligned globally.
+window.aligned = window.aligned || function(values, side, lookback=6){
+ const a=(Array.isArray(values)?values:[]).map(Number).filter(Number.isFinite);
+ const sample=a.slice(-Math.max(2,Number(lookback)||6));
+ if(sample.length<2)return 0;
+ const moves=sample.slice(1).map((v,i)=>Math.sign(v-sample[i])).filter(Boolean);
+ return moves.length?moves.filter(v=>v===Number(side)).length/moves.length:0;
+};
 const APEX_DISPLAY_TZ="Etc/GMT+10";
 const apexTimeFormatter=new Intl.DateTimeFormat("en-GB",{timeZone:APEX_DISPLAY_TZ,hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"});
 const apexDateFormatter=new Intl.DateTimeFormat("en-CA",{timeZone:APEX_DISPLAY_TZ,year:"numeric",month:"2-digit",day:"2-digit"});
@@ -978,7 +986,7 @@ async function otcData(symbol){
   else if(typeof raw==="string"&&/^\d+(?:\.\d+)?$/.test(raw.trim()))ms=Number(raw);
   else ms=Date.parse(raw);
   if(Number.isFinite(ms)&&ms>0&&ms<1e12)ms*=1000;
-  if(Number.isFinite(ms)&&ms>0)ms-=7200000; // Pocket Option OTC timestamps are UTC+2
+  // Preserve absolute provider timestamps; ISO timezone offsets are already handled by Date.parse.
   if(!Number.isFinite(ms)||ms<=0)throw Error(`OTC candle ${index+1} has an invalid timestamp: ${String(raw)}`);
   const open=Number(v.open??v.o),high=Number(v.high??v.h),low=Number(v.low??v.l),close=Number(v.close??v.c);
   if(![open,high,low,close].every(Number.isFinite))throw Error(`OTC candle ${index+1} has invalid OHLC values`);
@@ -1058,8 +1066,9 @@ function drawChart(){
  for(let i=0;i<=4;i++){const y=top+plotH*i/4;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(w-right,y);ctx.stroke();}
  if(candles.length<2){
   ctx.fillStyle="#8ea4c2";ctx.font="13px system-ui";ctx.textAlign="center";
-  ctx.fillText(result?.analysis?.reason||"Waiting for candle history · press Scan",w/2,h/2);
-  $("chartCaption").textContent=result?.analysis?.fresh?"Loading chart…":result?"No candle history returned · check data connection":"Waiting for candles";
+  const chartMessage=result?.lastError||result?.analysis?.reason||"Waiting for candle history · press Scan";
+  ctx.fillText(String(chartMessage).slice(0,100),w/2,h/2);
+  $("chartCaption").textContent=result?.lastError?("FEED ERROR · "+String(result.lastError).slice(0,140)):result?.analysis?.fresh?"Loading chart…":result?"No candle history returned · check data connection":"Waiting for candles";
   return;
  }
  const lo=Math.min(...candles.map(c=>c.low)),hi=Math.max(...candles.map(c=>c.high)),pad=(hi-lo)*.08||Math.abs(hi)*.0002||1;
@@ -1076,7 +1085,9 @@ function drawChart(){
  });
  const step=plotW/candles.length,cw=Math.max(2,Math.min(10,step*.62));
  // Draw the detected structure zone behind the candles, in the style of the supplied reference.
- const trendBox=apexDetectTrendBox(candles);
+ let trendBox=null;
+ try{trendBox=typeof apexDetectTrendBox==="function"?apexDetectTrendBox(candles):null;}
+ catch(overlayError){console.warn("APEX trend overlay skipped:",overlayError);}
  if(trendBox){
   const x1=left+trendBox.start*step+step*.12;
   const x2=Math.min(w-right,left+(trendBox.lastIndex+1)*step-step*.12);
