@@ -1969,6 +1969,8 @@ function apexLayerScore(bars,asset){
  const volatilityExpansion=medianAtr>0?atr/medianAtr:1;
  const bullish=[trendUp,momentumUp,rsiUp,bullCandle,structureUp,supportReject].filter(Boolean).length;
  const bearish=[trendDown,momentumDown,rsiDown,bearCandle,structureDown,resistanceReject].filter(Boolean).length;
+ // Evidence count must be defined in this scoring scope; V10 previously threw a ReferenceError here.
+ const aligned=Math.max(bullish,bearish);
  const layers=[
   {name:"TREND REGIME",value:trendUp?"UPTREND":trendDown?"DOWNTREND":"MIXED",bull:trendUp,bear:trendDown},
   {name:"MACD + MOMENTUM",value:momentumUp?"BULLISH CONFIRMATION":momentumDown?"BEARISH CONFIRMATION":"NO ALIGNMENT",bull:momentumUp,bear:momentumDown},
