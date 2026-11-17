@@ -520,6 +520,7 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
  <section class="mobile-command" id="marketControls" aria-label="Market controls">
   <div class="market-tabs" role="group" aria-label="Market category">
    <button type="button" class="market-tab active" data-market-category="currencies">Currencies</button>
+   <button type="button" class="market-tab" data-market-category="stocks">Stocks</button>
    
   </div>
   <div class="mobile-control-row">
@@ -684,7 +685,34 @@ const ASSETS=[
  {id:"OTC:USD/THB",name:"USD/THB OTC",kind:"otc",symbol:"USDTHB_otc",default:false},
  {id:"OTC:KES/USD",name:"KES/USD OTC",kind:"otc",symbol:"KESUSD_otc",default:false},
  {id:"OTC:USD/MYR",name:"USD/MYR OTC",kind:"otc",symbol:"USDMYR_otc",default:false},
- {id:"OTC:SAR/CNY",name:"SAR/CNY OTC",kind:"otc",symbol:"SARCNY_otc",default:false}
+ {id:"OTC:SAR/CNY",name:"SAR/CNY OTC",kind:"otc",symbol:"SARCNY_otc",default:false},
+ // Additional currency pairs from the supplied Pocket Option asset list.
+ // CHF/JPY, EUR/CHF and SAR/CNY were already present above.
+ {id:"OTC:AED/CNY",name:"AED/CNY OTC",kind:"otc",symbol:"AEDCNY_otc",default:false},
+ {id:"OTC:BHD/CNY",name:"BHD/CNY OTC",kind:"otc",symbol:"BHDCNY_otc",default:false},
+ {id:"OTC:CAD/CHF",name:"CAD/CHF OTC",kind:"otc",symbol:"CADCHF_otc",default:false},
+ {id:"OTC:CHF/NOK",name:"CHF/NOK OTC",kind:"otc",symbol:"CHFNOK_otc",default:false},
+ {id:"OTC:EUR/RUB",name:"EUR/RUB OTC",kind:"otc",symbol:"EURRUB_otc",default:false},
+ {id:"OTC:GBP/JPY",name:"GBP/JPY OTC",kind:"otc",symbol:"GBPJPY_otc",default:false},
+ {id:"OTC:LBP/USD",name:"LBP/USD OTC",kind:"otc",symbol:"LBPUSD_otc",default:false},
+ {id:"OTC:NGN/USD",name:"NGN/USD OTC",kind:"otc",symbol:"NGNUSD_otc",default:false},
+ {id:"OTC:NZD/JPY",name:"NZD/JPY OTC",kind:"otc",symbol:"NZDJPY_otc",default:false},
+ {id:"OTC:USD/EGP",name:"USD/EGP OTC",kind:"otc",symbol:"USDEGP_otc",default:false},
+ {id:"OTC:USD/MXN",name:"USD/MXN OTC",kind:"otc",symbol:"USDMXN_otc",default:false},
+ // Pocket Option stock OTC symbols use the provider's #TICKER_otc format.
+ {id:"OTC:APPLE",name:"Apple OTC",kind:"otc",symbol:"#AAPL_otc",default:false},
+ {id:"OTC:AMEX",name:"American Express OTC",kind:"otc",symbol:"#AXP_otc",default:false},
+ {id:"OTC:BOEING",name:"Boeing Company OTC",kind:"otc",symbol:"#BA_otc",default:false},
+ {id:"OTC:MCDONALDS",name:"McDonald's OTC",kind:"otc",symbol:"#MCD_otc",default:false},
+ {id:"OTC:MICROSOFT",name:"Microsoft OTC",kind:"otc",symbol:"#MSFT_otc",default:false},
+ {id:"OTC:PFIZER",name:"Pfizer Inc OTC",kind:"otc",symbol:"#PFE_otc",default:false},
+ {id:"OTC:AMD",name:"Advanced Micro Devices OTC",kind:"otc",symbol:"#AMD_otc",default:false},
+ {id:"OTC:AMAZON",name:"Amazon OTC",kind:"otc",symbol:"#AMZN_otc",default:false},
+ {id:"OTC:VIX",name:"VIX OTC",kind:"otc",symbol:"#VIX_otc",default:false},
+ {id:"OTC:NETFLIX",name:"Netflix OTC",kind:"otc",symbol:"#NFLX_otc",default:false},
+ {id:"OTC:INTEL",name:"Intel OTC",kind:"otc",symbol:"#INTC_otc",default:false},
+ {id:"OTC:MARATHON",name:"Marathon Digital Holdings OTC",kind:"otc",symbol:"#MARA_otc",default:false},
+ {id:"OTC:TESLA",name:"Tesla OTC",kind:"otc",symbol:"#TSLA_otc",default:false}
 ];
 const lastAnalyzedClosedCandleByAsset=new Map();
 let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
@@ -718,7 +746,7 @@ function loadState(){
   if(!watch.has(selectedChart))selectedChart=[...watch][0]||"OTC:EUR/USD";
  }catch(e){console.warn("Saved settings could not be loaded",e)}
 }
-function assetCategory(a){return a.id==="BTC/USD"||a.id==="ETH/USD"?"crypto":"currencies"}
+function assetCategory(a){return a.symbol?.startsWith("#")?"stocks":a.id==="BTC/USD"||a.id==="ETH/USD"?"crypto":"currencies"}
 
 function updateChartOptions(){
  const categoryAssets=ASSETS.filter(a=>a.kind==="otc");
@@ -744,7 +772,7 @@ function updateMobileMarketLabel(){
 }
 function renderWatch(){
  let box=$("watchChecks");box.innerHTML="";
- let visible=ASSETS.filter(a=>a.kind==="otc");
+ let visible=ASSETS.filter(a=>a.kind==="otc"&&assetCategory(a)===activeMarketCategory);
  if(!visible.length){box.innerHTML='<div class="empty">No OTC symbols are configured.</div>'}
  visible.forEach(a=>{let lab=document.createElement("label");lab.className="check";lab.dataset.category=assetCategory(a);let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState();if([...watch].some(id=>ASSETS.find(x=>x.id===id)?.kind==="otc"))connectLiveStream();else stopLiveStream();updateChartOptions()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});
  let note=$("categoryNote");if(note){note.style.display="none";note.textContent="OTC currency markets use your existing Netlify OTCharts function."}
@@ -1198,7 +1226,7 @@ function drawChart(){
 
 // One browser EventSource owns the selected-pair OTCharts stream; the scanner can select from the full OTC pair list.
 let liveStream=null,liveStreamState="CONNECTING",liveTicks={};
-const OTC_SYMBOLS={EURUSD_otc:"OTC:EUR/USD",GBPUSD_otc:"OTC:GBP/USD",USDJPY_otc:"OTC:USD/JPY",AUDCAD_otc:"OTC:AUD/CAD",AUDCHF_otc:"OTC:AUD/CHF",CHFJPY_otc:"OTC:CHF/JPY",EURCHF_otc:"OTC:EUR/CHF",EURNZD_otc:"OTC:EUR/NZD",GBPAUD_otc:"OTC:GBP/AUD",UAHUSD_otc:"OTC:UAH/USD",USDARS_otc:"OTC:USD/ARS",USDBDT_otc:"OTC:USD/BDT",USDCLP_otc:"OTC:USD/CLP",USDPKR_otc:"OTC:USD/PKR",USDTHB_otc:"OTC:USD/THB",KESUSD_otc:"OTC:KES/USD",USDMYR_otc:"OTC:USD/MYR",SARCNY_otc:"OTC:SAR/CNY"};
+const OTC_SYMBOLS=Object.fromEntries(ASSETS.filter(a=>a.kind==="otc").map(a=>[a.symbol,a.id]));
 function setLiveStreamState(message,ok=false){
  liveStreamState=message;
  const el=$("liveStreamStatus");
@@ -2121,37 +2149,6 @@ const apexOriginalCountdownsV30=updateCountdowns;updateCountdowns=function(){ape
 function apexStartScheduler(){clearInterval(cycle);running=true;apexClosedDecisionKey=String(Math.floor(apexServerNow()/APEX_BAR_MS));$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="SUPER INTELLIGENCE ACTIVE";status("30-SECOND AUTO SCAN · NEXT CLOSE + 5S",true);apex30State.phase="WAITING FOR NEXT 30S CLOSE";apex30State.detail="Automatic analysis is armed. The next signal scan runs five seconds after the next completed 30-second candle.";cycle=setInterval(apexIntelligentHeartbeat,200);}
 function apexPauseScheduler(){running=false;clearInterval(cycle);cycle=null;$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED");}
 $("startBtn").onclick=apexStartScheduler;$("pauseBtn").onclick=apexPauseScheduler;
-// V9.1 scan reliability patch: serialize all scan requests and always release the UI lock.
-const apexOriginalScanV91=scan;
-let apexScanPromiseV91=null;
-scan=async function(){
- if(apexScanPromiseV91)return apexScanPromiseV91;
- apexScanPromiseV91=(async()=>{
-  try{return await apexOriginalScanV91();}
-  finally{
-   busy=false;
-   const button=$("scanNow");
-   if(button)button.disabled=false;
-  }
- })();
- try{return await apexScanPromiseV91;}
- finally{apexScanPromiseV91=null;}
-};
-// Manual scans use the same protected scan path; when auto mode is active,
-// count this candle as handled so the heartbeat does not immediately repeat it.
-$("scanNow").onclick=async()=>{
- const button=$("scanNow");
- if(apexScanPromiseV91)return;
- if(running){const manualNow=apexServerNow();if(manualNow%APEX_BAR_MS>=5000)apexClosedDecisionKey=String(Math.floor(manualNow/APEX_BAR_MS));}
- button.disabled=true;button.textContent="⚡ INTELLIGENCE ENGINE RUNNING…";
- try{await scan();}
- catch(error){status("APEX SCAN ERROR");$("progressText").textContent="Scan failed: "+(error?.message||"unknown error");}
- finally{button.disabled=false;button.textContent="⚡ RUN SUPER INTELLIGENCE SCAN";}
-};
-// Wake the existing 30-second scheduler after iOS/browser tab suspension.
-// The candle key prevents duplicate scans when focus and visibility fire together.
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&running)apexIntelligentHeartbeat();});
-window.addEventListener("focus",()=>{if(running)apexIntelligentHeartbeat();});
 $("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";$("interval").onchange=()=>{$("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";saveState();};
 const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · adaptive EARLY BUY/SELL heads-up from 35/100 with 2 aligned layers · confirmed entries remain 65/100 + 15-point edge · MACD and momentum counted once · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
 const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · EARLY opportunity alerts · confirmed entry 65/100 · +5s post-close scan · UTC-10 chart display.";
