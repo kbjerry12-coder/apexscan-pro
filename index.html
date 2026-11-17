@@ -576,7 +576,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
      <div class="field"><label>Auto scan interval</label><select id="interval"><option value="5000">5 seconds</option><option value="10000">10 seconds</option><option value="15000" selected>15 seconds</option><option value="30000">30 seconds</option></select></div>
      <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. OTC intelligence runs on completed 30-second candles. The engine evaluates each closed bar once and releases a signal only after the next 30-second bar opens.</div></div>
      <div class="field"><label>Scanner mode</label><select id="scanMode"><option value="aggressive" selected>Aggressive · early setups</option><option value="balanced">Balanced · confirmed only</option></select></div>
-     <div class="field"><label>Signal threshold</label><select id="threshold"><option value="15" selected>15 · Very sensitive</option><option value="30">30 · More sensitive</option><option value="70">70 · Active</option><option value="75">75 · Balanced</option><option value="80">80 · Selective</option><option value="85">85 · Strict</option></select></div>
+     <div class="field"><label>Signal threshold</label><select id="threshold"><option value="60" selected>60 · Fast / active</option><option value="65">65 · Balanced</option><option value="70">70 · Selective</option><option value="75">75 · Strict</option><option value="80">80 · Very strict</option></select></div>
      <div class="field"><label>Paper stake ($)</label><input id="stake" type="number" min="1" max="100000" value="10"></div>
      <div class="field"><label>Payout (%)</label><input id="payout" type="number" min="1" max="100" value="85"></div>
      <div class="field wide"><label>Paper-trade quote validation</label><input value="Paper trades require a current quote; directional callouts still display from candle analysis" disabled></div>
@@ -585,7 +585,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
    </div>
    <div class="panel" id="enginePanel">
     <div class="panel-head"><h2>MACD SIGNAL ENGINE + SUPPORT / RESISTANCE</h2><span class="pill">MACD ONLY</span></div>
-    <div class="tiny">Directional signals use MACD (12 / 26 / 9) plus completed-candle direction only. Support and resistance are calculated from recent swing highs and lows and shown as nearby reference levels; they are context, not a guaranteed reversal or a separate signal trigger. Reverse mode remains enabled, so the displayed and paper-trade direction is the opposite of the MACD source direction. Confidence scores are technical confluence ratings, not win probabilities.</div><div id="analysisBreakdown" class="analysis-breakdown"><div><span>Trend structure</span><b>Awaiting scan</b></div><div><span>Momentum</span><b>Awaiting scan</b></div><div><span>Volatility</span><b>Awaiting scan</b></div><div><span>Price action</span><b>Awaiting scan</b></div><div><span>Market structure</span><b>Awaiting scan</b></div><div><span>Feed integrity</span><b>Awaiting scan</b></div></div><div class="tiny" style="margin-top:8px">Indicator values are calculated from available OHLC candles; SAR, Alligator, Ichimoku, STC, ZigZag and Fractal Chaos entries are simplified approximations. Volume is not scored when OTCharts does not provide volume.</div>
+    <div class="tiny">Directional signals use MACD (12 / 26 / 9) plus completed-candle direction only. Support and resistance are calculated from recent swing highs and lows and shown as nearby reference levels; they are context, not a guaranteed reversal or a separate signal trigger. The displayed direction follows the completed-candle technical evidence; no automatic reverse flip is applied. Confidence scores are technical confluence ratings, not win probabilities.</div><div id="analysisBreakdown" class="analysis-breakdown"><div><span>Trend structure</span><b>Awaiting scan</b></div><div><span>Momentum</span><b>Awaiting scan</b></div><div><span>Volatility</span><b>Awaiting scan</b></div><div><span>Price action</span><b>Awaiting scan</b></div><div><span>Market structure</span><b>Awaiting scan</b></div><div><span>Feed integrity</span><b>Awaiting scan</b></div></div><div class="tiny" style="margin-top:8px">Indicator values are calculated from available OHLC candles; SAR, Alligator, Ichimoku, STC, ZigZag and Fractal Chaos entries are simplified approximations. Volume is not scored when OTCharts does not provide volume.</div>
     <div style="margin-top:10px" class="metricrow"><div class="metricbox"><small>Signal</small><b>MACD only</b></div><div class="metricbox"><small>Momentum</small><b>MACD histogram</b></div><div class="metricbox"><small>Levels</small><b>Support / resistance</b></div><div class="metricbox"><small>Quality</small><b>Candle</b></div></div>
    </div>
   
@@ -1304,12 +1304,11 @@ function lockedCandleDirection(r){
 function applyReverseSignal(r){
  if(!r?.analysis)return "WAIT";
  const sourceSide=lockedCandleDirection(r);
- const effectiveSide=sourceSide==="CALL"?"PUT":sourceSide==="PUT"?"CALL":"WAIT";
+ const effectiveSide=sourceSide;
  r.analysis.rawDirection=sourceSide;
  r.analysis.direction=effectiveSide;
- r.analysis.reverseMode=true;
- r.analysis.reverseLabel=sourceSide==="CALL"?"Original BUY → Reverse SELL":
-  sourceSide==="PUT"?"Original SELL → Reverse BUY":"Waiting for original BUY/SELL setup";
+ r.analysis.reverseMode=false;
+ r.analysis.reverseLabel="Direct technical direction · no forced inversion";
  return effectiveSide;
 }
 const AI_HOLD_OPTIONS=[30];
@@ -1960,29 +1959,32 @@ function apexLayerScore(bars,asset){
  const histUp=!!macd&&macd.histogram>(macd.previousHistogram??-Infinity),histDown=!!macd&&macd.histogram<(macd.previousHistogram??Infinity);
  const recent=closes.slice(-6),momentum=recent.at(-1)-recent[0],momUp=momentum>atr*.3,momDown=momentum< -atr*.3;
  const momentumUp=(macdUp&&(momUp||histUp)),momentumDown=(macdDown&&(momDown||histDown));
- const rsiUp=Number.isFinite(rsi)&&Number.isFinite(previousRsi)&&rsi>=50.5&&rsi>previousRsi+.15&&rsi<74;
- const rsiDown=Number.isFinite(rsi)&&Number.isFinite(previousRsi)&&rsi<=49.5&&rsi<previousRsi-.15&&rsi>26;
+ const rsiUp=Number.isFinite(rsi)&&Number.isFinite(previousRsi)&&rsi>=50&&rsi>previousRsi+.08&&rsi<78;
+ const rsiDown=Number.isFinite(rsi)&&Number.isFinite(previousRsi)&&rsi<=50&&rsi<previousRsi-.08&&rsi>22;
  const structureUp=closes.at(-1)>closes.at(-4)&&highs.at(-1)>=Math.max(...highs.slice(-4,-1))&&lows.at(-1)>=Math.min(...lows.slice(-4,-1));
  const structureDown=closes.at(-1)<closes.at(-4)&&lows.at(-1)<=Math.min(...lows.slice(-4,-1))&&highs.at(-1)<=Math.max(...highs.slice(-4,-1));
  const tick=liveTicks[asset.id],tickAge=tick?Math.max(0,(Date.now()-Number(tick.receivedAt||0))/1000):Infinity,candleAge=Math.max(0,(Date.now()-(Number(last.timeMs)+APEX_BAR_MS))/1000),fresh=tickAge<=8||candleAge<=38;
  const volatility=atr/Math.max(Math.abs(Number(last.close)),1e-12)*100;
+ const recentAtr=trueRanges.slice(-30).sort((a,b)=>a-b),medianAtr=recentAtr.length?recentAtr[Math.floor(recentAtr.length/2)]:atr;
+ const volatilityExpansion=medianAtr>0?atr/medianAtr:1;
  const bullish=[trendUp,momentumUp,rsiUp,bullCandle,structureUp,supportReject].filter(Boolean).length;
  const bearish=[trendDown,momentumDown,rsiDown,bearCandle,structureDown,resistanceReject].filter(Boolean).length;
  const layers=[
   {name:"TREND REGIME",value:trendUp?"UPTREND":trendDown?"DOWNTREND":"MIXED",bull:trendUp,bear:trendDown},
   {name:"MACD + MOMENTUM",value:momentumUp?"BULLISH CONFIRMATION":momentumDown?"BEARISH CONFIRMATION":"NO ALIGNMENT",bull:momentumUp,bear:momentumDown},
-  {name:"RSI 14",value:`${Number.isFinite(rsi)?rsi.toFixed(1):"—"} · ${rsiUp?"RISING ABOVE 50":rsiDown?"FALLING BELOW 50":"NO DIRECTIONAL CONFIRMATION"}`,bull:rsiUp,bear:rsiDown},
+  {name:"RSI 14",value:(Number.isFinite(rsi)?rsi.toFixed(1):"—")+" · "+(rsiUp?"RISING THROUGH 50":rsiDown?"FALLING THROUGH 50":"NO DIRECTIONAL CONFIRMATION"),bull:rsiUp,bear:rsiDown},
   {name:"CANDLE ACTION",value:bullCandle?"BULLISH CLOSE":bearCandle?"BEARISH CLOSE":"INDECISION",bull:bullCandle,bear:bearCandle},
   {name:"MARKET STRUCTURE",value:structureUp?"HIGHER SWING":structureDown?"LOWER SWING":"NO BREAK",bull:structureUp,bear:structureDown},
   {name:"SUPPORT / RESISTANCE",value:supportReject?"SUPPORT REJECTION":resistanceReject?"RESISTANCE REJECTION":"NO LEVEL REJECTION",bull:supportReject,bear:resistanceReject}
  ];
  let rawDirection="WAIT",score=0,reason="No directional edge: wait for the next completed candle.";
- const aligned=Math.max(bullish,bearish),dominant=bullish>bearish?"CALL":bearish>bullish?"PUT":"WAIT";
- const chop=bodyPct<.12||(!trendUp&&!trendDown&&Math.abs(momentum)<atr*.18),extreme=volatility>.18;
- const rsiExhausted=(dominant==="CALL"&&rsi>=76)||(dominant==="PUT"&&rsi<=24);
- // Weighted directional evidence replaces the old hard requirement of 4 out of 6.
- // MACD and raw price momentum stay in ONE combined bucket to avoid double-counting.
- const weights={trend:20,momentum:20,rsi:20,candle:15,structure:15,levels:10};
+ const dominant=bullish>bearish?"CALL":bearish>bullish?"PUT":"WAIT";
+ const doji=bodyPct<.075&&!structureUp&&!structureDown&&!supportReject&&!resistanceReject;
+ const flatMarket=!trendUp&&!trendDown&&Math.abs(momentum)<atr*.12&&bullish<2&&bearish<2;
+ const chop=doji||flatMarket;
+ const extreme=volatilityExpansion>2.8&&volatility>.08;
+ const rsiExhausted=(dominant==="CALL"&&rsi>=82&&upper/range>.42)||(dominant==="PUT"&&rsi<=18&&lower/range>.42);
+ const weights={trend:20,momentum:20,rsi:15,candle:20,structure:15,levels:10};
  const bullScore=(trendUp?weights.trend:0)+(momentumUp?weights.momentum:0)+(rsiUp?weights.rsi:0)+(bullCandle?weights.candle:0)+(structureUp?weights.structure:0)+(supportReject?weights.levels:0);
  const bearScore=(trendDown?weights.trend:0)+(momentumDown?weights.momentum:0)+(rsiDown?weights.rsi:0)+(bearCandle?weights.candle:0)+(structureDown?weights.structure:0)+(resistanceReject?weights.levels:0);
  const edge=Math.abs(bullScore-bearScore),weightedDirection=bullScore>bearScore?"CALL":bearScore>bullScore?"PUT":"WAIT";
@@ -1990,22 +1992,25 @@ function apexLayerScore(bars,asset){
  const weightedLayers=[
   {name:"TREND · 20",value:trendUp?"BULL +20":trendDown?"BEAR +20":"NEUTRAL",bull:trendUp,bear:trendDown},
   {name:"MACD + MOMENTUM · 20",value:momentumUp?"BULL +20":momentumDown?"BEAR +20":"NEUTRAL",bull:momentumUp,bear:momentumDown},
-  {name:"RSI 14 · 20",value:(Number.isFinite(rsi)?rsi.toFixed(1):"—")+" · "+(rsiUp?"BULL +20":rsiDown?"BEAR +20":"NEUTRAL"),bull:rsiUp,bear:rsiDown},
-  {name:"CANDLE ACTION · 15",value:bullCandle?"BULL +15":bearCandle?"BEAR +15":"NEUTRAL",bull:bullCandle,bear:bearCandle},
+  {name:"RSI 14 · 15",value:(Number.isFinite(rsi)?rsi.toFixed(1):"—")+" · "+(rsiUp?"BULL +15":rsiDown?"BEAR +15":"NEUTRAL"),bull:rsiUp,bear:rsiDown},
+  {name:"CANDLE ACTION · 20",value:bullCandle?"BULL +20":bearCandle?"BEAR +20":"NEUTRAL",bull:bullCandle,bear:bearCandle},
   {name:"STRUCTURE · 15",value:structureUp?"BULL +15":structureDown?"BEAR +15":"NEUTRAL",bull:structureUp,bear:structureDown},
   {name:"S/R REJECTION · 10",value:supportReject?"BULL +10":resistanceReject?"BEAR +10":"NEUTRAL",bull:supportReject,bear:resistanceReject}
  ];
+ const hasDirectionalEvidence=weightedDirection==="CALL"?(trendUp||momentumUp||rsiUp):(weightedDirection==="PUT"?(trendDown||momentumDown||rsiDown):false);
+ const hasPriceEvidence=weightedDirection==="CALL"?(bullCandle||structureUp||supportReject):(weightedDirection==="PUT"?(bearCandle||structureDown||resistanceReject):false);
+ const mode=$("scanMode")?.value||"aggressive",minScore=Math.max(mode==="balanced"?68:60,Number($("threshold")?.value)||60),minEdge=mode==="balanced"?18:12;
  if(!fresh)reason="WAIT · feed is stale; a fresh live tick or newly closed candle is required.";
- else if(chop)reason="WAIT · compression / indecision detected; avoid forcing a direction.";
- else if(extreme)reason="WAIT · volatility expansion is outside the configured risk band.";
- else if(rsiExhausted)reason="WAIT · RSI "+rsi.toFixed(1)+" is stretched; avoid chasing an exhausted move.";
- else if(weightedDirection!=="WAIT"&&weightedScore>=65&&edge>=15){
+ else if(chop)reason="WAIT · low-energy / indecision conditions; wait for structure or momentum to develop.";
+ else if(extreme)reason="WAIT · volatility has expanded sharply versus its recent baseline; avoid chasing the spike.";
+ else if(rsiExhausted)reason="WAIT · extreme RSI plus rejection wick suggests the move may be exhausted.";
+ else if(weightedDirection!=="WAIT"&&weightedScore>=minScore&&edge>=minEdge&&hasDirectionalEvidence&&hasPriceEvidence){
   rawDirection=weightedDirection;score=weightedScore;
   const level=score>=80?"STRONG":score>=70?"QUALIFIED":"EARLY QUALIFIED";
-  reason=level+" "+rawDirection+" · weighted evidence "+score+"/100 with "+edge+"-point directional separation. RSI "+(Number.isFinite(rsi)?rsi.toFixed(1):"—")+"; MACD/momentum counted as one layer. Signal releases only after candle close + 5 seconds.";
+  reason=level+" "+rawDirection+" · "+score+"/100 weighted evidence, "+edge+"-point directional edge. Indicator and price-action evidence agree; MACD/momentum counted once. Released after candle close + 5 seconds.";
  }else{
   score=weightedScore;
-  reason="EARLY SETUP · "+(weightedDirection==="WAIT"?"no clear side":weightedDirection+" bias")+" at "+weightedScore+"/100; need 65 points and at least 15 points of directional separation. Continue monitoring.";
+  reason="EARLY SETUP · "+(weightedDirection==="WAIT"?"no clear side":weightedDirection+" bias")+" at "+weightedScore+"/100; needs "+minScore+" points, "+minEdge+" edge, and both indicator + price-action support.";
  }
  const entry=Number(last.close),stop=rawDirection==="CALL"?Math.min(Number(last.low),entry-atr):rawDirection==="PUT"?Math.max(Number(last.high),entry+atr):null,target=rawDirection==="CALL"?entry+(entry-stop)*1.5:rawDirection==="PUT"?entry-(stop-entry)*1.5:null;
  const result={direction:rawDirection,rawDirection,score,confidence_score:score,signalLevel:rawDirection==="WAIT"?(weightedScore>=55?"EARLY":"WAIT"):(score>=80?"STRONG":score>=70?"QUALIFIED":"EARLY QUALIFIED"),reason,fresh,age:Math.min(tickAge,candleAge),trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry,stopLoss:stop,takeProfit:target,candleTime:last.time,candleTimeMs:Number(last.timeMs),recommended_expiry:"30s",atr,rsi,previousRsi,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,support:levels.support?.price??null,resistance:levels.resistance?.price??null,detected_patterns:apexCandleRead(bars).patterns?.map(x=>x.name)||[],confluences:layers.filter(x=>rawDirection==="CALL"?x.bull:rawDirection==="PUT"?x.bear:false).map(x=>x.name),evidence_count:aligned,weighted_score:score,bull_score:bullScore,bear_score:bearScore,score_edge:edge,layers:weightedLayers,breakdown:{trend:weightedLayers[0].value,momentum:weightedLayers[1].value,rsi:weightedLayers[2].value,price:weightedLayers[3].value,structure:weightedLayers[4].value,levels:weightedLayers[5].value,volatility:`ATR ${volatility.toFixed(4)}%`,feed:fresh?`FRESH · tick ${tickAge.toFixed(1)}s / candle ${candleAge.toFixed(1)}s`:`STALE · candle ${candleAge.toFixed(1)}s`}};
@@ -2017,7 +2022,7 @@ function apexRenderIntelligentPanel(){
  const phase=left<=2?"PHASE 2 · PRE-CLOSE SNAPSHOT":left<=8?"PHASE 2 · FINAL CONFIRMATION":"PHASE 1 · MARKET INTELLIGENCE";
  const phaseEl=$("apexPhase"),clockEl=$("candleCountdown");if(phaseEl)phaseEl.textContent=`${phase} · T-${String(left).padStart(2,"0")}s`;if(clockEl)clockEl.textContent=`00:${String(left).padStart(2,"0")}`;
  const side=a.direction==="CALL"?"BUY":a.direction==="PUT"?"SELL":"WAIT",sig=$("apexEngineSignal");if(sig){sig.textContent=side;sig.className="apex-engine-signal "+side.toLowerCase();}
- const score=$("apexEngineScore"),patterns=$("apexEnginePatterns"),reason=$("apexEngineReason"),expiry=$("apexEngineExpiry");if(score)score.textContent=`${Number(a.score)||0}/100`;if(patterns)patterns.textContent=(a.confluences||[]).join(" · ")||"Weighted evidence · 65/100 to qualify";if(reason)reason.textContent=a.reason||"Waiting for completed 30-second candle.";if(expiry)expiry.textContent="30s";
+ const score=$("apexEngineScore"),patterns=$("apexEnginePatterns"),reason=$("apexEngineReason"),expiry=$("apexEngineExpiry");if(score)score.textContent=`${Number(a.score)||0}/100`;if(patterns)patterns.textContent=(a.confluences||[]).join(" · ")||"Adaptive weighted evidence · 60 aggressive / 68 balanced";if(reason)reason.textContent=a.reason||"Waiting for completed 30-second candle.";if(expiry)expiry.textContent="30s";
  const phaseLabel=$("apexPhase");if(phaseLabel)phaseLabel.title=`30-second candle countdown: ${left}s`;
  const grid=$("apexLayerGrid");if(grid){grid.innerHTML="";(a.layers||[]).forEach(layer=>{const item=document.createElement("div");item.className="apex-layer-item";const name=document.createElement("small");name.textContent=layer.name;const value=document.createElement("b");value.textContent=layer.value;item.append(name,value);grid.appendChild(item);});}
  const stamp=$("apexLastClosed");if(stamp)stamp.textContent=a.candleTimeMs?new Date(a.candleTimeMs).toLocaleTimeString("en-US",{timeZone:"Etc/GMT+10",hour12:false}):"—";
@@ -2031,10 +2036,15 @@ function apexIntelligentHeartbeat(){
  }
  // One scan per newly closed candle, exactly after the five-second provider-settle window.
  if(within>=5000&&apexClosedDecisionKey!==key&&running&&!busy){
-  apexClosedDecisionKey=key;
   apex30State.phase="POST-CLOSE SCAN · +5s";
   apex30State.detail="Five seconds have elapsed since the 30-second close. Fetching and validating the completed candle before scoring.";
-  scan();
+  const expectedClosedStart=bucket*APEX_BAR_MS-APEX_BAR_MS;
+  scan().then(()=>{
+   const id=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
+   const latest=results[id]?.analysis;
+   if(Number(latest?.candleTimeMs)>=expectedClosedStart)apexClosedDecisionKey=key;
+   else{apex30State.phase="FEED RETRY · WAITING FOR CLOSED BAR";apex30State.detail="The provider did not return the expected closed candle. The engine will retry instead of silently skipping it.";}
+  }).catch(()=>{});
  }
 }
 // Keep the selected chart locked to the native 30-second feed.
@@ -2045,8 +2055,8 @@ function apexStartScheduler(){clearInterval(cycle);running=true;apexClosedDecisi
 function apexPauseScheduler(){running=false;clearInterval(cycle);cycle=null;$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED");}
 $("startBtn").onclick=apexStartScheduler;$("pauseBtn").onclick=apexPauseScheduler;
 $("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";$("interval").onchange=()=>{$("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";saveState();};
-const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · weighted 6-layer score (65/100 entry threshold) · MACD and momentum counted once · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
-const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · weighted evidence score · 65/100 entry threshold · +5s post-close signal release · UTC-10 chart display.";
+const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · adaptive 6-layer score (60 aggressive / 68 balanced) · indicator + price-action agreement · MACD and momentum counted once · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
+const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · weighted evidence score · 60/100 aggressive / 68 balanced · +5s post-close signal release · UTC-10 chart display.";
 const hero=$("heroLiveLabel");if(hero)hero.textContent="30-second market intelligence · next-candle callouts";
 const tfNote=$("tfNote");if(tfNote)tfNote.textContent="30-second native OTC candles · scanner locked";
 const ci=$("candleIntel");if(ci)ci.innerHTML=ci.innerHTML.replaceAll("5M CLOSED BAR","30S CLOSED BAR").replaceAll("1M CLOSED BAR","30S CLOSED BAR");
