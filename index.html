@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="9.0-intelligent-1m-pattern-confluence-engine">
-<title>APEXSCAN PRO · V9.0 INTELLIGENT ENGINE</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="9.1-adaptive-early-alerts-confirmed-entry">
+<title>APEXSCAN PRO · V9.1 ADAPTIVE EARLY ALERTS</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -1371,6 +1371,9 @@ function applyReverseSignal(r){
  const effectiveSide=sourceSide==="CALL"?"PUT":sourceSide==="PUT"?"CALL":"WAIT";
  r.analysis.rawDirection=sourceSide;
  r.analysis.direction=effectiveSide;
+ const earlySource=r.analysis.earlyRawDirection||r.analysis.earlyDirection||"WAIT";
+ r.analysis.earlyRawDirection=earlySource;
+ r.analysis.earlyDirection=earlySource==="CALL"?"PUT":earlySource==="PUT"?"CALL":"WAIT";
  r.analysis.reverseMode=true;
  r.analysis.reverseLabel=sourceSide==="CALL"?"Original BUY → Reverse SELL":
   sourceSide==="PUT"?"Original SELL → Reverse BUY":"Waiting for original BUY/SELL setup";
@@ -1434,6 +1437,10 @@ function updateTop(rows){
    banner.className="signal-callout "+(side==="BUY"?"buy":"sell");
    const duration=candleDurationSeconds(r);
    banner.innerHTML=`<strong style="display:block;font-size:1.18em">${side} SIGNAL · ${r.name}</strong><small style="display:block;margin-top:4px">${s.signalLevel||"DIRECTIONAL"}</small><span style="display:block;margin-top:7px;font-size:1.12em">AI HOLD: ${formatHold(duration)}</span><small style="display:block;margin-top:5px">ENTRY ${fmt(r.livePrice??r.price)} · SCORE ${s.score}/100</small>`;
+  }else if(r&&["CALL","PUT"].includes(s?.earlyDirection)&&s?.fresh){
+   const earlySide=s.earlyDirection==="CALL"?"BUY":"SELL";
+   banner.className="signal-callout neutral";
+   banner.innerHTML=`<strong style="display:block;font-size:1.12em;color:#ffd078">EARLY ${earlySide} OPPORTUNITY · ${r.name}</strong><small style="display:block;margin-top:4px">${s.earlyScore}/100 · ${s.earlyEdge}-POINT EDGE</small><small style="display:block;margin-top:5px">Heads-up only — confirmed entry rules have not triggered.</small>`;
   }else{
    banner.className="signal-callout neutral";
    banner.textContent=!r?"SELECT AN OTC PAIR TO START":
@@ -1441,13 +1448,14 @@ function updateTop(rows){
     `SCANNING · ${r.name} · LOOKING FOR BUY / SELL MOMENTUM`;
   }
  }
- $("topDirection").textContent=candidate?(dir==="CALL"?"BUY":"SELL"):"SCANNING";
- $("topDirection").style.color=candidate?(dir==="CALL"?"var(--green)":"var(--red)"):"";
- $("topScore").textContent=candidate?(s.signalLevel==="CONFIRMED"?"CONFIRMED":s.signalLevel==="EARLY REVERSAL"?"EARLY REVERSAL":"DIRECTIONAL")+" · "+s.score+" / 100":
+ const earlySide=!candidate&&r&&s?.fresh&&["CALL","PUT"].includes(s.earlyDirection)?s.earlyDirection:"WAIT";
+ $("topDirection").textContent=candidate?(dir==="CALL"?"BUY":"SELL"):earlySide!=="WAIT"?"EARLY "+(earlySide==="CALL"?"BUY":"SELL"):"SCANNING";
+ $("topDirection").style.color=candidate?(dir==="CALL"?"var(--green)":"var(--red)"):earlySide!=="WAIT"?"#ffd078":"";
+ $("topScore").textContent=candidate?(s.signalLevel==="CONFIRMED"?"CONFIRMED":s.signalLevel==="EARLY REVERSAL"?"EARLY REVERSAL":"DIRECTIONAL")+" · "+s.score+" / 100":earlySide!=="WAIT"?"EARLY OPPORTUNITY · "+s.earlyScore+" / 100":
   !r?"NO PAIR":!r.candles?.length?"NO DATA":`BUILDING ANALYSIS · ${s.score??0}/100`;
  $("topReason").textContent=!r?"Select an OTC pair to load candle history.":
   !r.candles?.length?(s?.reason||r.lastError||"OTC candle request did not return usable history."):
-  candidate?`${s.reverseLabel||"Reverse mode active"} · Original analysis: ${s.reason}`:s?.reason||"Directional momentum is being evaluated.";
+  candidate?`${s.reverseLabel||"Reverse mode active"} · Original analysis: ${s.reason}`:earlySide!=="WAIT"?s.earlyReason:s?.reason||"Directional momentum is being evaluated.";
  $("signalStatusLine").textContent=!r?"DATA NOT LOADED":
   !r.candles?.length?"FEED ERROR · ENTRY AND MACD UNAVAILABLE":
   candidate?`${dir==="CALL"?"BUY":"SELL"} ${s.signalLevel||"DIRECTIONAL"} · ${fresh?"FRESH DATA · PAPER TRADE "+(autoPaperEnabled?"ENABLED":"PAUSED"):"STALE DATA · PAPER ENTRY BLOCKED"}`:
@@ -2051,6 +2059,10 @@ function apexLayerScore(bars,asset){
  const bearScore=(trendDown?weights.trend:0)+(momentumDown?weights.momentum:0)+(rsiDown?weights.rsi:0)+(bearCandle?weights.candle:0)+(structureDown?weights.structure:0)+(resistanceReject?weights.levels:0);
  const edge=Math.abs(bullScore-bearScore),weightedDirection=bullScore>bearScore?"CALL":bearScore>bullScore?"PUT":"WAIT";
  const weightedScore=Math.max(bullScore,bearScore);
+ // EARLY opportunities are heads-up alerts only: lower threshold, but still require
+ // fresh data, two aligned evidence layers, directional separation and no risk veto.
+ const earlyEdge=edge>=10,earlyEligible=fresh&&!chop&&!extreme&&!rsiExhausted&&weightedDirection!=="WAIT"&&weightedScore>=35&&earlyEdge&&aligned>=2;
+ const earlyRawDirection=earlyEligible?weightedDirection:"WAIT";
  const weightedLayers=[
   {name:"TREND · 20",value:trendUp?"BULL +20":trendDown?"BEAR +20":"NEUTRAL",bull:trendUp,bear:trendDown},
   {name:"MACD + MOMENTUM · 20",value:momentumUp?"BULL +20":momentumDown?"BEAR +20":"NEUTRAL",bull:momentumUp,bear:momentumDown},
@@ -2072,7 +2084,7 @@ function apexLayerScore(bars,asset){
   reason="EARLY SETUP · "+(weightedDirection==="WAIT"?"no clear side":weightedDirection+" bias")+" at "+weightedScore+"/100; need 65 points and at least 15 points of directional separation. Continue monitoring.";
  }
  const entry=Number(last.close),stop=rawDirection==="CALL"?Math.min(Number(last.low),entry-atr):rawDirection==="PUT"?Math.max(Number(last.high),entry+atr):null,target=rawDirection==="CALL"?entry+(entry-stop)*1.5:rawDirection==="PUT"?entry-(stop-entry)*1.5:null;
- const result={direction:rawDirection,rawDirection,score,confidence_score:score,signalLevel:rawDirection==="WAIT"?(weightedScore>=55?"EARLY":"WAIT"):(score>=80?"STRONG":score>=70?"QUALIFIED":"EARLY QUALIFIED"),reason,fresh,age:Math.min(tickAge,candleAge),trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry,stopLoss:stop,takeProfit:target,candleTime:last.time,candleTimeMs:Number(last.timeMs),recommended_expiry:"30s",atr,rsi,previousRsi,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,support:levels.support?.price??null,resistance:levels.resistance?.price??null,detected_patterns:apexCandleRead(bars).patterns?.map(x=>x.name)||[],confluences:layers.filter(x=>rawDirection==="CALL"?x.bull:rawDirection==="PUT"?x.bear:false).map(x=>x.name),evidence_count:aligned,weighted_score:score,bull_score:bullScore,bear_score:bearScore,score_edge:edge,layers:weightedLayers,breakdown:{trend:weightedLayers[0].value,momentum:weightedLayers[1].value,rsi:weightedLayers[2].value,price:weightedLayers[3].value,structure:weightedLayers[4].value,levels:weightedLayers[5].value,volatility:`ATR ${volatility.toFixed(4)}%`,feed:fresh?`FRESH · tick ${tickAge.toFixed(1)}s / candle ${candleAge.toFixed(1)}s`:`STALE · candle ${candleAge.toFixed(1)}s`}};
+ const result={direction:rawDirection,rawDirection,earlyRawDirection,earlyDirection:earlyRawDirection,earlyScore:earlyEligible?weightedScore:0,earlyEdge:earlyEligible?edge:0,earlyReason:earlyEligible?`Early ${earlyRawDirection} setup · ${weightedScore}/100 with ${edge}-point separation. Heads-up only; wait for confirmed entry.`:"No early opportunity currently qualifies.",score,confidence_score:score,signalLevel:rawDirection==="WAIT"?(earlyEligible?"EARLY OPPORTUNITY":weightedScore>=55?"EARLY":"WAIT"):(score>=80?"STRONG":score>=70?"QUALIFIED":"EARLY QUALIFIED"),reason,fresh,age:Math.min(tickAge,candleAge),trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry,stopLoss:stop,takeProfit:target,candleTime:last.time,candleTimeMs:Number(last.timeMs),recommended_expiry:"30s",atr,rsi,previousRsi,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,support:levels.support?.price??null,resistance:levels.resistance?.price??null,detected_patterns:apexCandleRead(bars).patterns?.map(x=>x.name)||[],confluences:layers.filter(x=>rawDirection==="CALL"?x.bull:rawDirection==="PUT"?x.bear:false).map(x=>x.name),evidence_count:aligned,weighted_score:score,bull_score:bullScore,bear_score:bearScore,score_edge:edge,layers:weightedLayers,breakdown:{trend:weightedLayers[0].value,momentum:weightedLayers[1].value,rsi:weightedLayers[2].value,price:weightedLayers[3].value,structure:weightedLayers[4].value,levels:weightedLayers[5].value,volatility:`ATR ${volatility.toFixed(4)}%`,feed:fresh?`FRESH · tick ${tickAge.toFixed(1)}s / candle ${candleAge.toFixed(1)}s`:`STALE · candle ${candleAge.toFixed(1)}s`}};
  result.structured={signal:rawDirection==="CALL"?"BUY":rawDirection==="PUT"?"SELL":"WAIT",confidence_score:score,detected_patterns:[...result.detected_patterns,...result.confluences],recommended_expiry:"30s",reasoning:reason};return result;
 }
 analyze=function(candles,asset){return apexLayerScore(candles,asset);};
@@ -2080,8 +2092,9 @@ function apexRenderIntelligentPanel(){
  const id=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart,r=results[id],a=r?.analysis||{},left=apexCandleCountdown(),sec=30-left;
  const phase=left<=2?"PHASE 2 · PRE-CLOSE SNAPSHOT":left<=8?"PHASE 2 · FINAL CONFIRMATION":"PHASE 1 · MARKET INTELLIGENCE";
  const phaseEl=$("apexPhase"),clockEl=$("candleCountdown");if(phaseEl)phaseEl.textContent=`${phase} · T-${String(left).padStart(2,"0")}s`;if(clockEl)clockEl.textContent=`00:${String(left).padStart(2,"0")}`;
- const side=a.direction==="CALL"?"BUY":a.direction==="PUT"?"SELL":"WAIT",sig=$("apexEngineSignal");if(sig){sig.textContent=side;sig.className="apex-engine-signal "+side.toLowerCase();}
- const score=$("apexEngineScore"),patterns=$("apexEnginePatterns"),reason=$("apexEngineReason"),expiry=$("apexEngineExpiry");if(score)score.textContent=`${Number(a.score)||0}/100`;if(patterns)patterns.textContent=(a.confluences||[]).join(" · ")||"Weighted evidence · 65/100 to qualify";if(reason)reason.textContent=a.reason||"Waiting for completed 30-second candle.";if(expiry)expiry.textContent="30s";
+ const earlySide=a.earlyDirection||"WAIT";
+ const side=a.direction==="CALL"?"BUY":a.direction==="PUT"?"SELL":earlySide==="CALL"?"EARLY BUY":earlySide==="PUT"?"EARLY SELL":"WAIT",sig=$("apexEngineSignal");if(sig){sig.textContent=side;sig.className="apex-engine-signal "+(side.includes("BUY")?"buy":side.includes("SELL")?"sell":"wait");}
+ const score=$("apexEngineScore"),patterns=$("apexEnginePatterns"),reason=$("apexEngineReason"),expiry=$("apexEngineExpiry");if(score)score.textContent=`${Number(a.score)||0}/100`;if(patterns)patterns.textContent=(a.confluences||[]).join(" · ")||"Weighted evidence · 65/100 to qualify";if(reason)reason.textContent=(a.direction==="WAIT"&&["CALL","PUT"].includes(earlySide)&&a.fresh?(a.earlyReason+" Confirmed entries remain separate."):a.reason)||"Waiting for completed 30-second candle.";if(expiry)expiry.textContent="30s";
  const phaseLabel=$("apexPhase");if(phaseLabel)phaseLabel.title=`30-second candle countdown: ${left}s`;
  const grid=$("apexLayerGrid");if(grid){grid.innerHTML="";(a.layers||[]).forEach(layer=>{const item=document.createElement("div");item.className="apex-layer-item";const name=document.createElement("small");name.textContent=layer.name;const value=document.createElement("b");value.textContent=layer.value;item.append(name,value);grid.appendChild(item);});}
  const stamp=$("apexLastClosed");if(stamp)stamp.textContent=a.candleTimeMs?new Date(a.candleTimeMs).toLocaleTimeString("en-US",{timeZone:"Etc/GMT+10",hour12:false}):"—";
@@ -2109,8 +2122,8 @@ function apexStartScheduler(){clearInterval(cycle);running=true;apexClosedDecisi
 function apexPauseScheduler(){running=false;clearInterval(cycle);cycle=null;$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED");}
 $("startBtn").onclick=apexStartScheduler;$("pauseBtn").onclick=apexPauseScheduler;
 $("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";$("interval").onchange=()=>{$("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";saveState();};
-const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · weighted 6-layer score (65/100 entry threshold) · MACD and momentum counted once · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
-const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · weighted evidence score · 65/100 entry threshold · +5s post-close signal release · UTC-10 chart display.";
+const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · adaptive EARLY BUY/SELL heads-up from 35/100 with 2 aligned layers · confirmed entries remain 65/100 + 15-point edge · MACD and momentum counted once · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
+const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · EARLY opportunity alerts · confirmed entry 65/100 · +5s post-close scan · UTC-10 chart display.";
 const hero=$("heroLiveLabel");if(hero)hero.textContent="30-second market intelligence · next-candle callouts";
 const tfNote=$("tfNote");if(tfNote)tfNote.textContent="30-second native OTC candles · scanner locked";
 const ci=$("candleIntel");if(ci)ci.innerHTML=ci.innerHTML.replaceAll("5M CLOSED BAR","30S CLOSED BAR").replaceAll("1M CLOSED BAR","30S CLOSED BAR");
