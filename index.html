@@ -369,6 +369,13 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
  .paper-live-board .paper-position{font-size:10px}
 }
 
+
+.candle-intel{margin:10px 0;padding:12px;border:1px solid #29486b;border-radius:11px;background:linear-gradient(145deg,#07182b,#0b1428);color:#dceaff}
+.ci-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.ci-title{font-size:9px;letter-spacing:.13em;font-weight:1000;color:#83c9ff}.ci-pill{font-size:10px;font-weight:1000;border-radius:20px;padding:5px 9px}.ci-buy{color:#4af0b6;background:#0b3b35}.ci-sell{color:#ff8098;background:#401b2a}.ci-wait{color:#ffd47c;background:#3b3017}
+.ci-reading{font-size:14px;font-weight:1000;margin-top:9px}.ci-detail{font-size:10px;line-height:1.45;color:#a9bfdc;margin-top:5px}
+.ci-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.ci-grid>div{min-width:0;padding:8px;border:1px solid #203b5b;border-radius:8px;background:#081426}.ci-grid small{display:block;color:#7f9ab9;font-size:8px;letter-spacing:.09em}.ci-grid b{display:block;margin-top:4px;color:#e4efff;font-size:10px;overflow-wrap:anywhere}
+.ci-patterns{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}.ci-patterns span{font-size:8px;color:#b8d5f5;border:1px solid #29496b;border-radius:20px;padding:4px 7px;background:#0b1c31}.ci-foot{font-size:9px;color:#7996b8;margin-top:9px;line-height:1.4}.ci-muted{font-size:10px;color:#91a8c7;margin-top:7px}
+
 </style>
 <style id="apex-live-ai-styles">
 #aiForecastPanel{margin-top:12px;padding:13px;border:1px solid #31578e;border-radius:13px;background:linear-gradient(155deg,#101f42,#08152b);box-shadow:0 12px 28px #0004}
@@ -480,7 +487,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
      <div class="mini"><label>Early setups</label><b id="staleCount">0</b></div>
     </div>
     <div class="scan-table-wrap"><table><thead><tr><th>Market</th><th>Price</th><th>Change</th><th>Trend</th><th>MACD HIST.</th><th>Score</th><th>Signal</th><th>Setup</th></tr></thead><tbody id="scannerBody"><tr><td colspan="8" class="empty">Connect a data provider, choose markets, then scan.</td></tr></tbody></table></div>
-    <div class="chartfoot"><span id="scanFoot">MACD(12,26,9) and candle direction are evaluated on completed candles; signal is latched at the next candle open.</span><span id="lastUpdated">—</span></div>
+    <div class="chartfoot"><span id="scanFoot">One scan per newly closed 1-minute candle · candle patterns + MACD + support/resistance · signal released for next candle.</span><span id="lastUpdated">—</span></div>
    </div>
    <div class="panel" id="chartPanel">
     <div class="panel-head chart-head"><h2>LIVE OTC CANDLE CHART</h2><select id="chartAsset" style="max-width:170px;background:#091321;color:white;border:1px solid var(--line);padding:7px;border-radius:7px"></select></div>
@@ -526,7 +533,8 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
    <div class="panel" id="signalPanel">
     <div class="panel-head"><h2>LIVE OTC SIGNAL</h2><div class="signal-tools"><span class="pill">REVERSE MODE ON · SIGNALS INVERTED</span><button type="button" id="alertToggle" class="small" aria-pressed="false">🔔 Enable callouts</button></div></div>
     <div id="signalCallout" class="signal-callout" role="status" aria-live="assertive">Scan a loaded OTC pair to generate a BUY or SELL directional bias</div>
-    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Technical engine is checking trend, momentum and candle structure</p><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>MACD</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>MACD 12/26/9</span><span>Histogram confirmation</span><span>Support / resistance</span><span>Closed candle</span><span>Reverse mode ON</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · Each fresh BUY/SELL direction can open one simulated trade per candle</span></div>
+    <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Technical engine is checking trend, momentum and candle structure</p>
+    <div id="candleIntel" class="candle-intel"><div class="ci-title">CANDLE INTELLIGENCE · 1M CLOSED BAR</div><div class="ci-muted">Waiting for completed candle data.</div></div><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>MACD</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>MACD 12/26/9</span><span>Histogram confirmation</span><span>Support / resistance</span><span>Closed candle</span><span>Reverse mode ON</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · Each fresh BUY/SELL direction can open one simulated trade per candle</span></div>
      <div id="paperLiveBoard" class="paper-live-board" aria-live="polite"><b>LIVE PAPER POSITIONS</b><span>No open paper trades yet · waiting for the next directional signal.</span></div>
      <div class="countdown-grid">
       <div><small>BUY / SELL VALID FOR</small><b id="signalCountdown">--:--</b></div>
@@ -665,6 +673,7 @@ const ASSETS=[
  {id:"OTC:USD/MYR",name:"USD/MYR OTC",kind:"otc",symbol:"USDMYR_otc",default:false},
  {id:"OTC:SAR/CNY",name:"SAR/CNY OTC",kind:"otc",symbol:"SARCNY_otc",default:false}
 ];
+const lastAnalyzedClosedCandleByAsset=new Map();
 let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6}),clock=()=>new Date().toLocaleTimeString();
 function status(t,ok=false){$("statusText").textContent=t;$("statusLed").style.background=ok?"var(--green)":"var(--amber)"}
@@ -825,6 +834,92 @@ function findSupportResistance(candles){
  }
  return {support:cluster(lows,"support"),resistance:cluster(highs,"resistance"),atr};
 }
+
+// APEXSCAN Candle Intelligence: run only against fully closed 1-minute bars.
+function apexCandleRead(bars){
+ const n=bars.length;if(!n)return {label:"WAITING",detail:"Waiting for a completed candle",pattern:"—",direction:"WAIT",patterns:[]};
+ const c=bars[n-1],p=bars[n-2]||c,pp=bars[n-3]||p;
+ const range=Math.max(1e-12,c.high-c.low),body=Math.abs(c.close-c.open);
+ const upper=c.high-Math.max(c.open,c.close),lower=Math.min(c.open,c.close)-c.low;
+ const bodyPct=body/range,green=c.close>c.open,red=c.close<c.open;
+ const patterns=[];
+ const add=(name,direction,why)=>patterns.push({name,direction,why});
+ if(bodyPct<.12)add("DOJI","WAIT","Small real body shows indecision; wait for confirmation.");
+ if(lower>=Math.max(body*2,range*.38)&&upper<=Math.max(body*.7,range*.12)&&green)add("HAMMER / BULLISH PIN BAR","BULLISH","Long lower wick with bullish close; buyers rejected lower prices.");
+ if(upper>=Math.max(body*2,range*.38)&&lower<=Math.max(body*.7,range*.12)&&red)add("BEARISH PIN BAR","BEARISH","Long upper wick with bearish close; sellers rejected higher prices.");
+ if(p.close<p.open&&green&&c.open<=p.close&&c.close>=p.open)add("BULLISH ENGULFING","BULLISH","Bullish body engulfs the prior bearish body.");
+ if(p.close>p.open&&red&&c.open>=p.close&&c.close<=p.open)add("BEARISH ENGULFING","BEARISH","Bearish body engulfs the prior bullish body.");
+ const priorMid=(p.open+p.close)/2;
+ if(p.close<p.open&&green&&c.open<p.low&&c.close>priorMid&&c.close<p.open)add("PIERCING LINE","BULLISH","Bullish close recovers above the prior bearish midpoint.");
+ if(p.close>p.open&&red&&c.open>p.high&&c.close<priorMid&&c.close>p.open)add("DARK CLOUD COVER","BEARISH","Bearish close falls below the prior bullish midpoint.");
+ if(upper>=Math.max(body*2,range*.38)&&lower<=Math.max(body*.7,range*.12)&&green)add("INVERTED HAMMER","BULLISH","Long upper shadow after weakness; requires follow-through.");
+ if(pp.close<pp.open&&Math.abs(p.close-p.open)<(pp.high-pp.low)*.35&&green&&c.close>(pp.open+pp.close)/2)add("MORNING STAR","BULLISH","Pause candle followed by a bullish recovery above the first candle midpoint.");
+ if(pp.close>pp.open&&Math.abs(p.close-p.open)<(pp.high-pp.low)*.35&&red&&c.close<(pp.open+pp.close)/2)add("EVENING STAR","BEARISH","Pause candle followed by a bearish reversal below the first candle midpoint.");
+ if(n>=3){
+  const q=bars.slice(-3),bull=q.every(x=>x.close>x.open),bear=q.every(x=>x.close<x.open);
+  if(bull&&q[0].close<q[1].close&&q[1].close<q[2].close&&q.every(x=>Math.abs(x.close-x.open)/Math.max(x.high-x.low,1e-12)>.5))add("THREE WHITE SOLDIERS","BULLISH","Three strong rising bullish closes.");
+  if(bear&&q[0].close>q[1].close&&q[1].close>q[2].close&&q.every(x=>Math.abs(x.close-x.open)/Math.max(x.high-x.low,1e-12)>.5))add("THREE BLACK CROWS","BEARISH","Three strong falling bearish closes.");
+ }
+ if(n>=5){
+  const q=bars.slice(-5),first=q[0],last=q[4],middle=q.slice(1,4);
+  const inside=middle.every(x=>x.high<first.high&&x.low>first.low);
+  if(first.close>first.open&&Math.abs(first.close-first.open)>(first.high-first.low)*.55&&middle.every(x=>x.close<x.open)&&inside&&last.close>last.open&&last.close>first.close)
+   add("RISING THREE METHODS","BULLISH","Three-bar pullback stays inside the first bullish candle before a bullish continuation close.");
+  if(first.close<first.open&&Math.abs(first.close-first.open)>(first.high-first.low)*.55&&middle.every(x=>x.close>x.open)&&inside&&last.close<last.open&&last.close<first.close)
+   add("FALLING THREE METHODS","BEARISH","Three-bar bounce stays inside the first bearish candle before a bearish continuation close.");
+ }
+ const primary=patterns.find(x=>x.direction!=="WAIT")||patterns[0]||null;
+ const label=bodyPct<.12?"DOJI / INDECISION":green?(bodyPct>=.65?"STRONG GREEN / BUYERS CONTROL":"GREEN / BULLISH CLOSE"):red?(bodyPct>=.65?"STRONG RED / SELLERS CONTROL":"RED / BEARISH CLOSE"):"NEUTRAL";
+ const wick=lower>upper*1.35&&lower>body*1.4?"LOWER-WICK REJECTION":upper>lower*1.35&&upper>body*1.4?"UPPER-WICK REJECTION":"NO CLEAR WICK REJECTION";
+ return {label,detail:`Body ${Math.round(bodyPct*100)}% of range · ${wick}`,pattern:primary?.name||"No named pattern",direction:primary?.direction||(green?"BULLISH":red?"BEARISH":"WAIT"),patterns};
+}
+function apexChartCandidates(bars){
+ if(bars.length<20)return [];
+ const tail=bars.slice(-50),hi=[],lo=[];
+ for(let i=2;i<tail.length-2;i++){
+  const x=tail[i];
+  if(x.high>tail[i-1].high&&x.high>tail[i-2].high&&x.high>tail[i+1].high&&x.high>tail[i+2].high)hi.push({i,v:x.high});
+  if(x.low<tail[i-1].low&&x.low<tail[i-2].low&&x.low<tail[i+1].low&&x.low<tail[i+2].low)lo.push({i,v:x.low});
+ }
+ const out=[],last=tail.at(-1),tol=Math.max(Math.abs(last.close)*.002,1e-9);
+ if(hi.length>=2&&Math.abs(hi.at(-1).v-hi.at(-2).v)<=tol&&last.close<Math.min(hi.at(-1).v,hi.at(-2).v))out.push({name:"DOUBLE TOP",direction:"BEARISH"});
+ if(lo.length>=2&&Math.abs(lo.at(-1).v-lo.at(-2).v)<=tol&&last.close>Math.max(lo.at(-1).v,lo.at(-2).v))out.push({name:"DOUBLE BOTTOM",direction:"BULLISH"});
+ if(hi.length>=3){
+  const h=hi.slice(-3);if(h[1].v>h[0].v&&h[1].v>h[2].v&&h[0].v>h[2].v&&lo.length&&last.close<lo.at(-1).v)out.push({name:"HEAD & SHOULDERS",direction:"BEARISH"});
+ }
+ if(hi.length>=2&&lo.length>=2){
+  const h=hi.slice(-2),l=lo.slice(-2),hs=(h[1].v-h[0].v)/(h[1].i-h[0].i),ls=(l[1].v-l[0].v)/(l[1].i-l[0].i);
+  if(Math.abs(hs)<tol*.08&&ls>tol*.08)out.push({name:"ASCENDING TRIANGLE",direction:"BULLISH"});
+  if(hs<-tol*.08&&Math.abs(ls)<tol*.08)out.push({name:"DESCENDING TRIANGLE",direction:"BEARISH"});
+  if(hs<0&&ls>0)out.push({name:"SYMMETRICAL TRIANGLE",direction:"WAIT"});
+  if(hs>0&&ls>0&&Math.abs(hs-ls)<tol*.2)out.push({name:"RISING WEDGE",direction:"BEARISH"});
+  if(hs<0&&ls<0&&Math.abs(hs-ls)<tol*.2)out.push({name:"FALLING WEDGE",direction:"BULLISH"});
+ }
+ const last12=tail.slice(-12),impulse=last12.slice(0,6).reduce((s,x)=>s+x.close-x.open,0),pull=last12.slice(6).reduce((s,x)=>s+x.close-x.open,0);
+ const width=Math.max(...last12.slice(6).map(x=>x.high))-Math.min(...last12.slice(6).map(x=>x.low));
+ if(Math.abs(impulse)>Math.abs(last.close)*.003&&width<Math.abs(impulse)*1.5){
+  if(impulse>0&&pull<0)out.push({name:"BULLISH FLAG",direction:"BULLISH"});
+  if(impulse<0&&pull>0)out.push({name:"BEARISH FLAG",direction:"BEARISH"});
+ }
+ return out;
+}
+function renderCandleIntel(r){
+ const host=$("candleIntel");if(!host)return;
+ if(!r?.candles?.length){host.innerHTML='<div class="ci-title">CANDLE INTELLIGENCE</div><div class="ci-muted">Waiting for completed 1-minute candle data.</div>';return;}
+ const closed=closedOneMinuteCandles(r.candles),read=apexCandleRead(closed),charts=apexChartCandidates(closed);
+ const a=r.analysis||{},pattern=read.pattern||"No named pattern";
+ const side=a.direction==="CALL"?"BUY":a.direction==="PUT"?"SELL":"WAIT";
+ const color=side==="BUY"?"ci-buy":side==="SELL"?"ci-sell":"ci-wait";
+ const names=[...read.patterns.map(x=>x.name),...charts.map(x=>x.name)].slice(0,5);
+ host.innerHTML=`<div class="ci-head"><div class="ci-title">CANDLE INTELLIGENCE · 1M CLOSED BAR</div><span class="ci-pill ${color}">${side}</span></div>
+ <div class="ci-reading">${read.label}</div><div class="ci-detail">${read.detail}</div>
+ <div class="ci-grid"><div><small>DETECTED PATTERN</small><b>${pattern}</b></div><div><small>MACD / FINAL SIDE</small><b>${a.trend||"—"} · ${side}</b></div>
+ <div><small>ENTRY REFERENCE</small><b>${Number.isFinite(a.entry)?fmt(a.entry):"—"}</b></div><div><small>STOP / TARGET</small><b>${Number.isFinite(a.stopLoss)?fmt(a.stopLoss):"—"} / ${Number.isFinite(a.takeProfit)?fmt(a.takeProfit):"—"}</b></div></div>
+ <div class="ci-patterns">${names.length?names.map(x=>`<span>${x}</span>`).join(""):"<span>No confirmed pattern on latest closed candle</span>"}</div>
+ <div class="ci-detail">${a.reason||"Waiting for MACD, candle structure and level confirmation."}</div>
+ <div class="ci-foot">Signal is evaluated once per newly completed candle. Entry reference is provisional until the next candle opens.</div>`;
+}
+
 function analyze(candles,asset){
  if(candles.length<35)return {direction:"WAIT",score:0,reason:"Building candle history · 35 completed candles are required",fresh:false,signalLevel:"WAIT"};
  const closes=candles.map(c=>Number(c.close)),last=candles.at(-1),prev=candles.at(-2);
@@ -844,8 +939,11 @@ function analyze(candles,asset){
  const macdBear=!!macd&&macd.line<macd.signal&&macd.histogram<0;
  const histRising=!!macd&&Number.isFinite(macd.previousHistogram)&&macd.histogram>macd.previousHistogram;
  const histFalling=!!macd&&Number.isFinite(macd.previousHistogram)&&macd.histogram<macd.previousHistogram;
- const bullCandle=last.close>last.open&&last.close>prev.close;
- const bearCandle=last.close<last.open&&last.close<prev.close;
+ const candleIntel=apexCandleRead(candles),chartCandidates=apexChartCandidates(candles);
+ const patternBull=candleIntel.direction==="BULLISH"||chartCandidates.some(x=>x.direction==="BULLISH");
+ const patternBear=candleIntel.direction==="BEARISH"||chartCandidates.some(x=>x.direction==="BEARISH");
+ const bullCandle=last.close>last.open&&(last.close>prev.close||patternBull);
+ const bearCandle=last.close<last.open&&(last.close<prev.close||patternBear);
  const levels=findSupportResistance(candles);
  let direction="WAIT",signalLevel="WAIT",score=0;
  const reasons=[];
@@ -853,10 +951,12 @@ function analyze(candles,asset){
   direction="CALL";signalLevel="MACD CONFIRMED";
   score=Math.min(90,58+(histRising?10:0)+(bodyRatio>=.55?8:0)+(fresh?8:0));
   reasons.push("MACD line above signal with positive histogram","bullish candle confirmation");
+  if(patternBull){reasons.push("Candlestick / chart pattern: "+(candleIntel.patterns.find(x=>x.direction==="BULLISH")?.name||chartCandidates.find(x=>x.direction==="BULLISH")?.name));score=Math.min(95,score+7);}
  }else if(macdBear&&bearCandle){
   direction="PUT";signalLevel="MACD CONFIRMED";
   score=Math.min(90,58+(histFalling?10:0)+(bodyRatio>=.55?8:0)+(fresh?8:0));
   reasons.push("MACD line below signal with negative histogram","bearish candle confirmation");
+  if(patternBear){reasons.push("Candlestick / chart pattern: "+(candleIntel.patterns.find(x=>x.direction==="BEARISH")?.name||chartCandidates.find(x=>x.direction==="BEARISH")?.name));score=Math.min(95,score+7);}
  }else{
   if(!macd)reasons.push("MACD warming up · more candle history required");
   else if(!macdBull&&!macdBear)reasons.push("MACD line, signal and histogram are not aligned");
@@ -876,8 +976,12 @@ function analyze(candles,asset){
   structure:`Support ${levels.support?levels.support.price.toPrecision(7):"—"} · Resistance ${levels.resistance?levels.resistance.price.toPrecision(7):"—"}`,
   feed:tickAge<=30?Math.round(tickAge)+"s · live tick":fresh?Math.round(candleAge)+"s · recent candle":"no recent data"
  };
+ const entry=last.close,stopLoss=direction==="CALL"?Math.min(last.low,entry-atr):direction==="PUT"?Math.max(last.high,entry+atr):null;
+ const takeProfit=direction==="CALL"?entry+(entry-stopLoss)*1.8:direction==="PUT"?entry-(stopLoss-entry)*1.8:null;
  return {
   direction,signalLevel,score,reason:reasons.join(" · "),fresh,age,
+  candleLabel:candleIntel.label,candlePattern:candleIntel.pattern,patterns:candleIntel.patterns,chartPatterns:chartCandidates,
+  entry,stopLoss,takeProfit,
   trend:macdBull?"UP":macdBear?"DOWN":"MIXED",entry:last.close,quality:bodyRatio,
   candleTime:last.time,candleTimeMs:Number(last.timeMs||0),atr,atrPct,
   macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,
@@ -929,7 +1033,7 @@ function setChartTimeframe(minutes){
  document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===chartTimeframe));
  const tfLabel=chartTimeframe===1?"60-second":chartTimeframe+"-minute";
  $("tfNote").textContent=tfLabel+" candles";
- $("chartMeta").textContent=`MACD (12,26,9) · support / resistance · ${tfLabel} candles`;
+ $("chartMeta").textContent=`MACD (12,26,9) · candle patterns · support / resistance · ${tfLabel} candles`;
  drawChart();
 }
 function aggregateCandles(candles,minutes){
@@ -1216,13 +1320,12 @@ function closedOneMinuteCandles(candles){
 }
 const lockedDirectionsByCandle=new Map();
 function lockedCandleDirection(r){
- if(!r?.analysis||!Array.isArray(r.candles)||!r.candles.length)return "WAIT";
- const current=r.candles.at(-1),currentStart=Number(current?.timeMs||0);
- const currentMinute=currentStart>0?Math.floor(currentStart/60000):0;
+ if(!r?.analysis)return "WAIT";
  const analysisTime=Number(r.analysis.candleTimeMs||0);
- // A signal belongs to the newly opened candle, never to the candle still being formed.
- if(!currentMinute||!analysisTime||currentMinute<=Math.floor(analysisTime/60000))return "WAIT";
- const key=`${r.id}|${currentMinute}`;
+ if(!analysisTime)return "WAIT";
+ // The scanner only writes analysis.candleTimeMs from closedOneMinuteCandles().
+ // Therefore the signal is released as soon as that candle is confirmed closed.
+ const key=`${r.id}|${analysisTime}`;
  if(lockedDirectionsByCandle.has(key))return lockedDirectionsByCandle.get(key);
  const sourceSide=["CALL","PUT"].includes(r.analysis.rawDirection||r.analysis.direction)
   ?(r.analysis.rawDirection||r.analysis.direction):"WAIT";
@@ -1437,12 +1540,9 @@ function persistAll(){saveState();renderTrades()}
 let calloutsEnabled=false,lastAnnouncedSignal="",autoPaperEnabled=true;
 const announcedCandleKeys=new Set();
 function signalCandleKey(r){
- const candle=r?.candles?.at(-1);
- const rawTime=Number(candle?.timeMs||0);
- // Normalize every forming 60-second candle to one stable key, even if
- // the provider refreshes its timestamp or sends many ticks per second.
- const minute=rawTime>0?Math.floor(rawTime/60000):Math.floor(Date.now()/60000);
- return `${r.id}|${minute}`;
+ const rawTime=Number(r?.analysis?.candleTimeMs||r?.candles?.filter(c=>Number(c.timeMs)+60000<=Date.now()-1000).at(-1)?.timeMs||0);
+ // Stable identity belongs to the completed signal candle, not the still-forming next candle.
+ return `${r.id}|${rawTime>0?rawTime:Math.floor(Date.now()/60000)*60000}`;
 }
 function announceSignal(r){
  const side=r.analysis.direction==="CALL"?"BUY":"SELL";
@@ -1487,12 +1587,22 @@ function addSignal(r){
   try{
    if(a.kind==="regular"&&!apiKey)throw Error("Twelve Data API key required for this regular-market symbol; OTC scanning continues.");
    let data=await fetchAsset(a);let old=results[id],price=data.at(-1).close;
-   const confirmedBars=closedOneMinuteCandles(data);
-   let analysis=confirmedBars.length>=35?analyze(confirmedBars,a):{direction:"WAIT",score:0,reason:"Waiting for at least 35 completed 1-minute candles · current candle is not confirmed",fresh:false,age:Infinity,signalLevel:"WAIT"};
+   const confirmedBars=closedOneMinuteCandles(data),lastClosed=confirmedBars.at(-1);
+   const closedKey=lastClosed?String(lastClosed.timeMs):"";
+   const isNewClosed=!!closedKey&&lastAnalyzedClosedCandleByAsset.get(id)!==closedKey;
+   let analysis=old?.analysis;
+   if(isNewClosed){
+    analysis=confirmedBars.length>=35?analyze(confirmedBars,a):{direction:"WAIT",score:0,reason:"Waiting for at least 35 completed 1-minute candles · current candle is not confirmed",fresh:false,age:Infinity,signalLevel:"WAIT",candleTimeMs:Number(lastClosed?.timeMs||0)};
+    lastAnalyzedClosedCandleByAsset.set(id,closedKey);
+   }else if(!analysis){
+    analysis=confirmedBars.length>=35?analyze(confirmedBars,a):{direction:"WAIT",score:0,reason:"Waiting for at least 35 completed 1-minute candles · current candle is not confirmed",fresh:false,age:Infinity,signalLevel:"WAIT"};
+   }
    let prior=old?.price??null,change=prior===null?null:price-prior;
-   results[id]={id,name:a.name,price,change,candles:data,analysis,scannedAt:Date.now()};
+   results[id]={...old,id,name:a.name,price,change,candles:data,analysis,scannedAt:Date.now()};
    if(liveTicks[id]){results[id].livePrice=liveTicks[id].price;results[id].liveChange=liveTicks[id].change;}
-   results[id].analysis={...results[id].analysis};applyReverseSignal(results[id]);
+   results[id].analysis={...results[id].analysis};
+   if(isNewClosed)applyReverseSignal(results[id]);
+   else if(results[id].analysis.rawDirection)applyReverseSignal(results[id]);
    if(results[id].analysis.direction!=="WAIT")addSignal(results[id]);
    if(selectedChart===id||!selectedChart){try{drawChart()}catch(chartError){console.error(chartError)}}
   }catch(e){
@@ -1500,20 +1610,19 @@ function addSignal(r){
    const previous=results[id];
    if(previous?.candles?.length>=35){
     // Keep the last verified history/chart; analyze() will naturally mark it stale as its timestamp ages.
-    const retained=previous.candles;
-    const confirmedBars=closedOneMinuteCandles(retained);
-    results[id]={...previous,analysis:confirmedBars.length>=35?analyze(confirmedBars,a):{direction:"WAIT",score:0,reason:"Waiting for completed candles · feed refresh failed",fresh:false,age:Infinity,signalLevel:"WAIT"},lastError:e.message,scannedAt:Date.now()};
-    results[id].analysis={...results[id].analysis};applyReverseSignal(results[id]);
+    results[id]={...previous,lastError:e.message,scannedAt:Date.now()};
+    results[id].analysis={...results[id].analysis,fresh:false,reason:(results[id].analysis.reason||"") + " · feed refresh failed; no new candle confirmation"};
+    if(results[id].analysis.rawDirection)applyReverseSignal(results[id]);
    }else{
     results[id]={id,name:a.name,price:NaN,change:null,candles:[],analysis:{direction:"WAIT",score:0,reason:e.message,fresh:false,age:Infinity},lastError:e.message};
    }
   }
   done++;$("scanProgress").style.width=(done/ids.length*100)+"%";$("progressText").textContent=`Scanned ${done} of ${ids.length} · ${errors} errors`;
-  renderScanner();
+  renderScanner();renderCandleIntel(results[selectedChart]||results[id]);
   // Avoid bursting the provider and stay within low-tier rate limits.
   if(done<ids.length)await new Promise(resolve=>setTimeout(resolve,900));
  }
- latestScan=Date.now();renderScanner();try{drawChart()}catch(chartError){console.error("Chart render:",chartError)}settleExpiredTrades();$("scanNow").disabled=false;busy=false;
+ latestScan=Date.now();renderScanner();renderCandleIntel(results[selectedChart]);try{drawChart()}catch(chartError){console.error("Chart render:",chartError)}settleExpiredTrades();$("scanNow").disabled=false;busy=false;
  let fresh=[...watch].filter(id=>results[id]?.analysis.fresh).length;status(fresh?"SCAN COMPLETE · DATA RECEIVED":"SCAN COMPLETE · CHECK DATA",fresh>0);
  $("connectionStatus").textContent=`Regular feed: ${apiKey?"API key saved; per-symbol requests":"not configured"}\nOTC history: ${errorDetails.length?"ERROR · "+errorDetails.join(" | "):"last request completed"}\nOTC live stream: ${liveStreamState}\nLast scan: ${clock()}`;
  $("progressText").textContent=`Complete · ${fresh} fresh markets · ${errors} errors`;saveState();
