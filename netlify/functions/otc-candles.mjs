@@ -7,29 +7,19 @@ export default async (request) => {
     }, { status: 500 });
   }
 
-  const url = new URL(request.url);
+  const params = new URL(request.url).searchParams;
+  const symbol = params.get("symbol") || "EURUSD_otc";
 
-  const symbol =
-    url.searchParams.get("symbol") || "EURUSD_otc";
-
-  // Only allow Pocket Option OTC symbols
   if (!/^[A-Z0-9#]+_otc$/.test(symbol)) {
     return Response.json({
       error: "Invalid OTC symbol."
     }, { status: 400 });
   }
 
-  const upstream = new URL(
-    "https://otcharts.com/v1/candles"
-  );
-
+  const upstream = new URL("https://otcharts.com/v1/candles");
   upstream.searchParams.set("venue", "otc");
   upstream.searchParams.set("symbol", symbol);
-
-  // Native 30-second timeframe
   upstream.searchParams.set("tf", "30");
-
-  // Candle history
   upstream.searchParams.set("limit", "500");
 
   try {
@@ -42,41 +32,41 @@ export default async (request) => {
     });
 
     const text = await response.text();
-
-    let body = {};
+    let body;
 
     try {
       body = JSON.parse(text);
     } catch {
       return Response.json({
-        error: "OTCharts returned invalid JSON."
+        error: "Invalid JSON returned by OTCharts.",
+        details: text.slice(0, 300)
       }, { status: 502 });
     }
 
     if (!response.ok) {
       return Response.json({
-        error:
-          body.error ||
-          body.message ||
+        error: body.error || body.message ||
           `OTCharts HTTP ${response.status}`,
-        status: response.status
-      }, { status: response.status });
+        upstreamStatus: response.status
+      }, { status: 502 });
     }
 
-    const candles = Array.isArray(body)
-      ? body
-      : (
-          body.candles ||
-          body.data?.candles ||
-          body.data ||
-          body.results ||
-          []
-        );
+    const candidates = [
+      body,
+      body?.candles,
+      body?.data?.candles,
+      body?.data,
+      body?.results,
+      body?.result?.candles
+    ];
 
-    if (!Array.isArray(candles) || !candles.length) {
+    const candles = candidates.find(Array.isArray);
+
+    if (!candles || !candles.length) {
       return Response.json({
-        error: "No 30-second candles returned.",
-        details: Object.keys(body || {})
+        error: "No candle array returned.",
+        responseKeys: Object.keys(body || {}),
+        responsePreview: JSON.stringify(body).slice(0, 500)
       }, { status: 502 });
     }
 
@@ -87,21 +77,18 @@ export default async (request) => {
       interval: "30s",
       count: candles.length,
       candles: candles.slice(-500),
-      gaps: body.gaps || null,
       serverTime: Date.now()
     }, {
       headers: {
-        "Cache-Control": "no-store, max-age=0"
+        "Cache-Control": "no-store, no-cache, must-revalidate"
       }
     });
 
   } catch (error) {
     return Response.json({
-      error:
-        error?.name === "TimeoutError"
-          ? "OTCharts request timed out."
-          : "OTCharts connection failed: " +
-            (error?.message || "Network error")
+      error: error.message || "OTCharts connection failed.",
+      type: error.name || "NetworkError"
     }, { status: 502 });
   }
 };
+
