@@ -465,7 +465,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <option value="5000">5 sec</option><option value="10000">10 sec</option><option value="15000" selected>15 sec</option><option value="30000">30 sec</option>
    </select></label>
   </div>
-  <div class="mobile-market-meta"><span id="heroSelectedMarket">OTC market selected</span><span id="heroLiveLabel">60-second candle analysis</span></div>
+  <div class="mobile-market-meta"><span id="heroSelectedMarket">OTC market selected</span><span id="heroLiveLabel">5-minute candle analysis</span></div>
   <div class="category-note" id="categoryNote" aria-live="polite">OTC currency markets are selected by default.</div>
  </section>
  <section class="kpis">
@@ -487,14 +487,12 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
      <div class="mini"><label>Early setups</label><b id="staleCount">0</b></div>
     </div>
     <div class="scan-table-wrap"><table><thead><tr><th>Market</th><th>Price</th><th>Change</th><th>Trend</th><th>MACD HIST.</th><th>Score</th><th>Signal</th><th>Setup</th></tr></thead><tbody id="scannerBody"><tr><td colspan="8" class="empty">Connect a data provider, choose markets, then scan.</td></tr></tbody></table></div>
-    <div class="chartfoot"><span id="scanFoot">One scan per newly closed 1-minute candle · candle patterns + MACD + support/resistance · signal released for next candle.</span><span id="lastUpdated">—</span></div>
+    <div class="chartfoot"><span id="scanFoot">One callout per newly closed 5-minute candle · signal released for the next 5-minute candle.</span><span id="lastUpdated">—</span></div>
    </div>
    <div class="panel" id="chartPanel">
     <div class="panel-head chart-head"><h2>LIVE OTC CANDLE CHART</h2><select id="chartAsset" style="max-width:170px;background:#091321;color:white;border:1px solid var(--line);padding:7px;border-radius:7px"></select></div>
     <div class="tf-row" role="group" aria-label="Chart timeframe">
-     <button type="button" class="tf-btn" data-tf="1">1 MIN</button>
-     <button type="button" class="tf-btn" data-tf="5">5 MIN</button>
-     <button type="button" class="tf-btn" data-tf="15">15 MIN</button>
+     <button type="button" class="tf-btn active" data-tf="5">5 MIN · ONLY</button>
      <span class="tf-note" id="tfNote">60-second (1-minute) candles</span>
     </div>
     <div class="chart-stage">
@@ -534,14 +532,14 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <div class="panel-head"><h2>LIVE OTC SIGNAL</h2><div class="signal-tools"><span class="pill">REVERSE MODE ON · SIGNALS INVERTED</span><button type="button" id="alertToggle" class="small" aria-pressed="false">🔔 Enable callouts</button></div></div>
     <div id="signalCallout" class="signal-callout" role="status" aria-live="assertive">Scan a loaded OTC pair to generate a BUY or SELL directional bias</div>
     <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Technical engine is checking trend, momentum and candle structure</p>
-    <div id="candleIntel" class="candle-intel"><div class="ci-title">CANDLE INTELLIGENCE · 1M CLOSED BAR</div><div class="ci-muted">Waiting for completed candle data.</div></div><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>MACD</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>MACD 12/26/9</span><span>Histogram confirmation</span><span>Support / resistance</span><span>Closed candle</span><span>Reverse mode ON</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · Each fresh BUY/SELL direction can open one simulated trade per candle</span></div>
+    <div id="candleIntel" class="candle-intel"><div class="ci-title">CANDLE INTELLIGENCE · 5M CLOSED BAR</div><div class="ci-muted">Waiting for completed candle data.</div></div><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>MACD</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>MACD 12/26/9</span><span>Histogram confirmation</span><span>Support / resistance</span><span>Closed candle</span><span>Reverse mode ON</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · Each fresh BUY/SELL direction can open one simulated trade per candle</span></div>
      <div id="paperLiveBoard" class="paper-live-board" aria-live="polite"><b>LIVE PAPER POSITIONS</b><span>No open paper trades yet · waiting for the next directional signal.</span></div>
      <div class="countdown-grid">
       <div><small>BUY / SELL VALID FOR</small><b id="signalCountdown">--:--</b></div>
-      <div><small>1-MIN UTC CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
+      <div><small>5-MIN CANDLE CLOSES IN · UTC-10 DISPLAY</small><b id="candleCountdown">--:--</b></div>
      </div>
      <div class="trade-duration" style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;padding:10px;border:1px solid #31527a;border-radius:10px;background:#07182a">
-      <div style="display:flex;flex-direction:column;gap:5px"><small style="font-size:9px;color:#9ed5ff;font-weight:900;letter-spacing:.08em">AI-SELECTED TRADE HOLD · NO MANUAL DURATION</small><b id="durationAdvice" style="font-size:16px;color:#fff">AI evaluating market structure…</b><small style="font-size:10px;color:#9db1cc">AI chooses from 1m · 3m · 5m · 15m · 30m · 1h · 4h; holds shorter than one full candle are disabled., based on available trend history and live conditions.</small></div>
+      <div style="display:flex;flex-direction:column;gap:5px"><small style="font-size:9px;color:#9ed5ff;font-weight:900;letter-spacing:.08em">AI-SELECTED TRADE HOLD · NO MANUAL DURATION</small><b id="durationAdvice" style="font-size:16px;color:#fff">AI evaluating market structure…</b><small style="font-size:10px;color:#9db1cc">AI chooses from 5m · 15m · 30m · 1h · 4h, based on available trend history and live conditions.</small></div>
      </div>
      <div class="po-compare" id="poCompare" hidden>
       <div class="po-compare-head"><b>POCKET OPTION PRICE CHECK</b><span id="poComparePair">SELECTED PAIR</span></div>
@@ -572,7 +570,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <div class="panel-head"><h2>APEX AI · PICTURE SCANNER</h2><span class="pill">VISION ANALYSIS</span></div>
     <p class="tiny" style="margin:0 0 10px">Upload a Pocket Option chart screenshot. AI reads visible candles, momentum, chart structure and nearby support/resistance. It does not access your broker or see hidden market data.</p>
     <div class="fields" style="margin-bottom:10px">
-     <div class="field"><label>Chart timeframe</label><select id="visionTimeframe"><option value="1m">1 minute</option><option value="5m">5 minutes</option><option value="15m">15 minutes</option><option value="unknown">Not sure</option></select></div>
+     <div class="field"><label>Chart timeframe</label><select id="visionTimeframe"><option value="5m" selected>5 minutes · only</option></select></div>
      <div class="field"><label>Market pair (optional)</label><input id="visionPair" placeholder="e.g. EUR/USD OTC" maxlength="40"></div>
     </div>
     <div class="vision-upload">
@@ -615,7 +613,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
     <div class="checkgrid" id="watchChecks"></div>
     <div class="fields" style="margin-top:11px">
      <div class="field"><label>Auto scan interval</label><select id="interval"><option value="5000">5 seconds</option><option value="10000">10 seconds</option><option value="15000" selected>15 seconds</option><option value="30000">30 seconds</option></select></div>
-     <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. OTC analysis uses 60-second (1-minute) candles. AI selects a paper-trade hold from 1 minute to 4 hours based on trend persistence, signal confluence and available history; longer holds require substantially more history.</div></div>
+     <div class="field wide"><div class="tiny">Important: auto-scan interval controls how often the app refreshes its analysis. It does not change the candle timeframe. OTC analysis uses completed 5-minute candles only. AI selects a paper-trade hold from 5 minutes to 4 hours based on trend persistence, signal confluence and available history; longer holds require substantially more history.</div></div>
      <div class="field"><label>Scanner mode</label><select id="scanMode"><option value="aggressive" selected>Aggressive · early setups</option><option value="balanced">Balanced · confirmed only</option></select></div>
      <div class="field"><label>Signal threshold</label><select id="threshold"><option value="15" selected>15 · Very sensitive</option><option value="30">30 · More sensitive</option><option value="70">70 · Active</option><option value="75">75 · Balanced</option><option value="80">80 · Selective</option><option value="85">85 · Strict</option></select></div>
      <div class="field"><label>Paper stake ($)</label><input id="stake" type="number" min="1" max="100000" value="10"></div>
@@ -675,7 +673,15 @@ const ASSETS=[
 ];
 const lastAnalyzedClosedCandleByAsset=new Map();
 let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
-const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6}),clock=()=>new Date().toLocaleTimeString();
+const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6});
+// Display all dashboard/chart wall-clock times in fixed UTC-10 (Etc/GMT+10).
+// Candle timestamps and five-minute boundary calculations remain UTC epoch-based.
+const APEX_DISPLAY_TZ="Etc/GMT+10";
+const apexTimeFormatter=new Intl.DateTimeFormat("en-GB",{timeZone:APEX_DISPLAY_TZ,hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"});
+const apexDateFormatter=new Intl.DateTimeFormat("en-CA",{timeZone:APEX_DISPLAY_TZ,year:"numeric",month:"2-digit",day:"2-digit"});
+const apexChartTimeFormatter=new Intl.DateTimeFormat("en-GB",{timeZone:APEX_DISPLAY_TZ,hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
+const clock=()=>apexTimeFormatter.format(new Date());
+const apexDisplayDate=()=>apexDateFormatter.format(new Date());
 function status(t,ok=false){$("statusText").textContent=t;$("statusLed").style.background=ok?"var(--green)":"var(--amber)"}
 function saveState(){try{localStorage.setItem(STORE,JSON.stringify({watch:[...watch],history:history.slice(0,150),trades:trades.slice(0,250),threshold:$("threshold").value,mode:$("scanMode").value,interval:$("interval").value,stake:$("stake").value,payout:$("payout").value,chart:selectedChart,autoPaper:autoPaperEnabled}))}catch(e){}}
 function loadState(){
@@ -903,15 +909,25 @@ function apexChartCandidates(bars){
  }
  return out;
 }
+function apexBuildFiveMinuteBarsForUI(candles){
+ const source=closedOneMinuteCandles(candles),groups=new Map(),out=[];
+ for(const c of source){const t=Number(c.timeMs);if(!Number.isFinite(t)||t<=0)continue;const bucket=Math.floor(t/300000)*300000;if(!groups.has(bucket))groups.set(bucket,[]);groups.get(bucket).push(c);}
+ for(const [bucket,parts] of [...groups.entries()].sort((a,b)=>a[0]-b[0])){
+  parts.sort((a,b)=>Number(a.timeMs)-Number(b.timeMs));
+  if(parts.length!==5||parts.some((c,i)=>Number(c.timeMs)!==bucket+i*60000))continue;
+  out.push({time:new Date(bucket).toISOString(),timeMs:bucket,open:Number(parts[0].open),high:Math.max(...parts.map(c=>Number(c.high))),low:Math.min(...parts.map(c=>Number(c.low))),close:Number(parts[4].close),volume:null});
+ }
+ return out;
+}
 function renderCandleIntel(r){
  const host=$("candleIntel");if(!host)return;
- if(!r?.candles?.length){host.innerHTML='<div class="ci-title">CANDLE INTELLIGENCE</div><div class="ci-muted">Waiting for completed 1-minute candle data.</div>';return;}
- const closed=closedOneMinuteCandles(r.candles),read=apexCandleRead(closed),charts=apexChartCandidates(closed);
+ if(!r?.candles?.length){host.innerHTML='<div class="ci-title">CANDLE INTELLIGENCE</div><div class="ci-muted">Waiting for completed 5-minute candle data.</div>';return;}
+ const closed=apexBuildFiveMinuteBarsForUI(r.candles),read=apexCandleRead(closed),charts=apexChartCandidates(closed);
  const a=r.analysis||{},pattern=read.pattern||"No named pattern";
  const side=a.direction==="CALL"?"BUY":a.direction==="PUT"?"SELL":"WAIT";
  const color=side==="BUY"?"ci-buy":side==="SELL"?"ci-sell":"ci-wait";
  const names=[...read.patterns.map(x=>x.name),...charts.map(x=>x.name)].slice(0,5);
- host.innerHTML=`<div class="ci-head"><div class="ci-title">CANDLE INTELLIGENCE · 1M CLOSED BAR</div><span class="ci-pill ${color}">${side}</span></div>
+ host.innerHTML=`<div class="ci-head"><div class="ci-title">CANDLE INTELLIGENCE · 5M CLOSED BAR</div><span class="ci-pill ${color}">${side}</span></div>
  <div class="ci-reading">${read.label}</div><div class="ci-detail">${read.detail}</div>
  <div class="ci-grid"><div><small>DETECTED PATTERN</small><b>${pattern}</b></div><div><small>MACD / FINAL SIDE</small><b>${a.trend||"—"} · ${side}</b></div>
  <div><small>ENTRY REFERENCE</small><b>${Number.isFinite(a.entry)?fmt(a.entry):"—"}</b></div><div><small>STOP / TARGET</small><b>${Number.isFinite(a.stopLoss)?fmt(a.stopLoss):"—"} / ${Number.isFinite(a.takeProfit)?fmt(a.takeProfit):"—"}</b></div></div>
@@ -1029,7 +1045,7 @@ async function fetchAsset(asset){
 }
 
 function setChartTimeframe(minutes){
- chartTimeframe=[1,5,15].includes(minutes)?minutes:1;
+ chartTimeframe=5;
  document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===chartTimeframe));
  const tfLabel=chartTimeframe===1?"60-second":chartTimeframe+"-minute";
  $("tfNote").textContent=tfLabel+" candles";
@@ -1156,7 +1172,7 @@ function drawChart(){
   ctx.fillStyle="#38efb1";ctx.fillRect(w-right-62,py-9,62,18);ctx.fillStyle="#04131a";ctx.font="bold 9px system-ui";ctx.textAlign="center";ctx.fillText(fmt(livePrice),w-right-31,py+3);ctx.restore();
  }
  ctx.fillStyle="#8ea4c2";ctx.font="9px system-ui";ctx.textAlign="left";
- [0,Math.floor(candles.length/2),candles.length-1].forEach(i=>{const d=new Date(candles[i].timeMs);ctx.fillText(d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}),left+i*step+step/2,h-5)});
+ [0,Math.floor(candles.length/2),candles.length-1].forEach(i=>{const d=new Date(candles[i].timeMs);ctx.fillText(apexChartTimeFormatter.format(d),left+i*step+step/2,h-5)});
  $("chartCaption").textContent=`${ASSETS.find(a=>a.id===id)?.name||id} · ${candles.length} candles · candle history · latest ${fmt(livePrice>0?livePrice:last.close)}`;
  $("chartMeta").textContent=`LIVE ticks · MACD only · ${chartTimeframe===1?"60-second":chartTimeframe+"-minute"} view`;
  const boxStatus=$("trendBoxStatus"),box=apexDetectTrendBox(candles);
@@ -1309,7 +1325,7 @@ function renderScanner(){
  let fresh=arr.filter(r=>r.analysis.fresh&&hasCurrentFeed(r.id,r.candles?.at(-1))).length,signals=arr.filter(r=>["CALL","PUT"].includes(r.analysis.direction));
  $("kScanned").textContent=arr.length+" / "+watch.size;$("kSignals").textContent=signals.length;$("freshCount").textContent=arr.length;$("staleCount").textContent="—";
  $("kHealth").textContent=arr.length?"ANALYZED":"OFFLINE";$("kHealthNote").textContent=signals.length+" directional setups · "+fresh+" recently updated";
- $("kScanTime").textContent=latestScan?"Last scan "+new Date(latestScan).toLocaleTimeString():"Not scanned yet";$("lastUpdated").textContent=latestScan?"Updated "+clock():"—";
+ $("kScanTime").textContent=latestScan?"Last scan "+apexTimeFormatter.format(new Date(latestScan)):"Not scanned yet";$("lastUpdated").textContent=latestScan?"Updated "+clock():"—";
  $("staleCount").textContent=arr.filter(r=>["EARLY","EARLY REVERSAL"].includes(r.analysis.signalLevel)).length;$("kBest").textContent=rows[0]?.analysis.score??"—";$("kBestAsset").textContent=rows[0]?.name||"Awaiting scan";
  $("scanFoot").textContent=`${watch.size} OTC markets selected · ${signals.length} directional BUY/SELL setups`;
  updateTop(rows);updateChartOptions();
@@ -1344,13 +1360,13 @@ function applyReverseSignal(r){
   sourceSide==="PUT"?"Original SELL → Reverse BUY":"Waiting for original BUY/SELL setup";
  return effectiveSide;
 }
-const AI_HOLD_OPTIONS=[60,180,300,900,1800,3600,14400];
+const AI_HOLD_OPTIONS=[300,900,1800,3600,14400];
 function formatHold(seconds){const n=Number(seconds)||60;if(n<60)return `${n}s`;if(n<3600)return `${n/60}m`;return `${n/3600}h`;}
 function candleDurationSeconds(r){
  const a=r?.analysis,c=r?.candles||[];
- if(Number(a?.aiHoldSeconds)>0)return Math.max(60,Math.min(14400,Number(a.aiHoldSeconds)));
- if(!a||!["CALL","PUT"].includes(a.direction)||c.length<12)return 60;
- if(!a.fresh)return 60;
+ if(Number(a?.aiHoldSeconds)>0)return Math.max(300,Math.min(14400,Number(a.aiHoldSeconds)));
+ if(!a||!["CALL","PUT"].includes(a.direction)||c.length<12)return 300;
+ if(!a.fresh)return 300;
  const side=a.direction==="CALL"?1:-1,close=c.map(x=>Number(x.close));
  const aligned=(n)=>{const d=close.slice(-n-1).slice(1).map((v,i)=>Math.sign(v-close.slice(-n-1)[i])).filter(Boolean);return d.length?d.filter(x=>x===side).length/d.length:0};
  const c6=aligned(6),c12=aligned(12),c24=aligned(24),c48=aligned(48);
@@ -1366,8 +1382,8 @@ function candleDurationSeconds(r){
   [900,bars>=30&&strong&&c24>=.72],
   [300,bars>=20&&trend&&confluence&&c24>=.68],
   [180,bars>=12&&trend&&confluence&&c12>=.70],
-  [60,trend&&confluence&&c12>=.65],
-   [60,true]
+  [300,trend&&confluence&&c12>=.65],
+   [300,true]
  ];
  return options.find(x=>x[1])[0];
 }
@@ -1530,7 +1546,7 @@ function renderTrades(){
  if($("floatRecord"))$("floatRecord").textContent=`${settled.length} settled · ${pending} pending`;
  if($("floatStatus"))$("floatStatus").textContent=settled.length?`Latest record · ${wins} wins / ${losses} losses`:"Awaiting first settled paper trade";
 
- const today=new Date().toLocaleDateString(),todayTrades=settled.filter(t=>new Date().toLocaleDateString()===today && t.timeDate===today);
+ const today=apexDisplayDate(),todayTrades=settled.filter(t=>t.timeDate===today);
  const todayPnl=trades.filter(t=>t.dayKey===new Date().toISOString().slice(0,10)).reduce((n,t)=>n+(Number(t.pnl)||0),0);
  $("jTodayPnl").textContent=money(todayPnl);$("jTodayPnl").className=todayPnl>=0?"green":"red";$("jTodayCount").textContent=trades.filter(t=>t.dayKey===new Date().toISOString().slice(0,10)&&["WIN","LOSS","TIE"].includes(t.result)).length;
  $("tradeBody").innerHTML=trades.length?trades.map(t=>`<tr><td>${t.time}</td><td>${t.asset}</td><td>${t.side}</td><td>${fmt(t.entry)}</td><td>${formatHold(t.expirySeconds||60)}</td><td>${t.exit==null?"—":fmt(t.exit)}</td><td>${money(t.stake)}</td><td>${t.result==="PENDING"?(t.expiryAt&&Date.now()>=t.expiryAt?"AWAITING EXIT PRICE":`PENDING · ${Math.max(0,Math.ceil((t.expiryAt-Date.now())/1000))}s`):t.result}</td><td>${t.result==="PENDING"?"AUTO SETTLEMENT":"VERIFIED"}</td></tr>`).join(""):'<tr><td colspan="9" class="empty">No paper trades logged.</td></tr>';
@@ -1648,7 +1664,7 @@ function openPaperTrade(r,side,isAutomatic=true,signalKey=""){
  const expirySeconds=candleDurationSeconds(r),payoutRate=Math.max(1,Math.min(100,+$("payout").value||85))/100,now=Date.now();
  const t={
   id:now.toString(36)+Math.random().toString(36).slice(2,6),
-  signalKey:key,time:clock(),timeDate:new Date().toLocaleDateString(),dayKey:new Date().toISOString().slice(0,10),
+  signalKey:key,time:clock(),timeDate:apexDisplayDate(),dayKey:new Date().toISOString().slice(0,10),
   asset:r.name,assetId:r.id,side,entry,entryCandleTime:Number(r.candles?.at(-1)?.timeMs||0),
   entryObservedAt:liveIsFresh?Number(live.receivedAt):Number(r.scannedAt||now),
   entrySource:liveIsFresh?"OTCharts live tick":"latest OTCharts candle close",
@@ -1783,33 +1799,35 @@ async function runLiveAIAnalysis(force=false){
  const selected=selectedAIResult();
  if(!selected){setAIStatus("Select an OTC pair to start AI analysis.");return;}
  const {pair,result}=selected;
- if(!result?.candles||result.candles.length<35){setAIStatus("Waiting for at least 35 candles for a meaningful AI read.");return;}
- const candle=result.candles.at(-1),tick=liveTicks[pair.id];
+ if(!result?.candles||result.candles.length<175){setAIStatus("Waiting for enough history to build 35 completed five-minute candles.");return;}
+ const fiveMinuteCandles=apexBuildFiveMinuteBarsForUI(result.candles);
+ if(fiveMinuteCandles.length<35){setAIStatus("Waiting for 35 completed five-minute candles.");return;}
+ const candle=fiveMinuteCandles.at(-1),tick=liveTicks[pair.id];
  const now=Date.now();
  const tickAge=tick?now-Number(tick.receivedAt||0):Infinity;
- const candleAge=Number.isFinite(Number(candle.timeMs))?now-Number(candle.timeMs):Infinity;
+ const candleAge=Number.isFinite(Number(candle.timeMs))?now-(Number(candle.timeMs)+300000):Infinity;
  const tickFresh=Number.isFinite(tickAge)&&tickAge>=0&&tickAge<=20000;
- const candleFresh=Number.isFinite(candleAge)&&candleAge>=0&&candleAge<=180000;
+ const candleFresh=Number.isFinite(candleAge)&&candleAge>=0&&candleAge<=20000;
  // A provider's historical candle endpoint can lag while its live stream is current.
  // Pause only when BOTH sources are stale; a verified live tick is sufficient to
  // keep the AI running and is already incorporated into the forming 60-second candle.
  if(!tickFresh&&!candleFresh){
-  setAIStatus("AI paused · no fresh 1-minute candle or live tick for over 3 minutes. Checking the OTC feed.");
+  setAIStatus("AI paused · no fresh five-minute close or live tick. Checking the OTC feed.");
   return;
  }
  aiRequestBusy=true;
  const seq=++aiRequestSequence;
- setAIStatus(`Analyzing ${pair.name} · 1-minute candles · ${tickFresh?"live tick verified":"live tick not currently verified"} · patterns, momentum and structure…`);
+ setAIStatus(`Analyzing ${pair.name} · 5-minute candles · ${tickFresh?"live tick verified":"live tick not currently verified"} · patterns, momentum and structure…`);
  const payload={
-  pair:pair.name,symbol:pair.symbol,timeframe:"60-second (1-minute) candles; candle timestamps should be 60 seconds apart",
+  pair:pair.name,symbol:pair.symbol,timeframe:"5-minute candles built from five contiguous completed 1-minute source bars",
   livePrice:Number(tick?.price??result.livePrice??candle.close),
   liveTickAgeSeconds:Number.isFinite(tickAge)?Math.max(0,Math.round(tickAge/1000)):null,
    liveTickTimestamp:tick?.receivedAt?new Date(tick.receivedAt).toISOString():null,
    liveTickFresh:tickFresh,
-   candleIntervalSeconds:60,
+   candleIntervalSeconds:300,
    candleTimestamp:candle.time||(candle.timeMs?new Date(candle.timeMs).toISOString():null),
   technical:{direction:result.analysis?.direction||"WAIT",score:Number(result.analysis?.score)||0,trend:result.analysis?.trend||"MIXED",rsi:Number.isFinite(Number(result.analysis?.rsi))?Number(result.analysis.rsi):null,signalLevel:result.analysis?.signalLevel||"EARLY",reason:String(result.analysis?.reason||"")},
-  candles:result.candles.slice(-60).map(c=>({time:c.time||new Date(c.timeMs).toISOString(),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close),volume:c.volume===null||c.volume===undefined||c.volume===""?null:(Number.isFinite(Number(c.volume))?Number(c.volume):null)}))
+  candles:fiveMinuteCandles.slice(-60).map(c=>({time:c.time||new Date(c.timeMs).toISOString(),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close),volume:c.volume===null||c.volume===undefined||c.volume===""?null:(Number.isFinite(Number(c.volume))?Number(c.volume):null)}))
  };
  try{
   const response=await fetch("/.netlify/functions/openai-analysis",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),cache:"no-store"});
@@ -1829,10 +1847,10 @@ function startLiveAI(){
  clearInterval(aiTimer);aiTimer=null;
  if(!aiLiveEnabled)return;
  runLiveAIAnalysis();
- aiTimer=setInterval(()=>runLiveAIAnalysis(),15000);
+ aiTimer=setInterval(()=>runLiveAIAnalysis(),300000);
 }
 setInterval(()=>{$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();updateCountdowns();settleExpiredTrades()},1000);
-loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · Each fresh BUY/SELL direction can open one simulated trade per candle":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(1);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();setTimeout(()=>{if(!busy)scan()},250);
+loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · Each fresh BUY/SELL direction can open one simulated trade per candle":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(5);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();setTimeout(()=>{if(!busy)scan()},250);
 
 // APEX AI Vision Scanner. The API key stays on Netlify; never place it in this HTML.
 let visionImageData = "", visionBusy = false;
@@ -1894,7 +1912,7 @@ function apexChatAdd(role,text,signal=null){
 function apexChatSnapshot(){
  const pair=selectedOTCPair?.();const result=pair?results?.[pair.id]:null;const candles=(result?.candles||[]).slice(-24).map(c=>({time:c.time||null,open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)}));
  const a=result?.analysis||{};const tick=pair?liveTicks?.[pair.id]:null;
- return {pair:pair?.name||"No pair selected",symbol:pair?.symbol||null,timeframe:"1-minute OTC candles",feedFresh:!!(a.fresh),livePrice:Number(tick?.price??result?.livePrice??candles.at(-1)?.close)||null,liveTickAgeSeconds:tick?.receivedAt?Math.max(0,Math.round((Date.now()-tick.receivedAt)/1000)):null,technical:{direction:a.direction||"WAIT",score:Number(a.score)||0,reason:String(a.reason||"No technical read yet"),macdLine:Number.isFinite(Number(a.macdLine))?Number(a.macdLine):null,macdSignal:Number.isFinite(Number(a.macdSignal))?Number(a.macdSignal):null,macdHistogram:Number.isFinite(Number(a.macdHistogram))?Number(a.macdHistogram):null,support:Number.isFinite(Number(a.support))?Number(a.support):null,resistance:Number.isFinite(Number(a.resistance))?Number(a.resistance):null,reverseMode:true},candles};
+ return {pair:pair?.name||"No pair selected",symbol:pair?.symbol||null,timeframe:"5-minute OTC candles",feedFresh:!!(a.fresh),livePrice:Number(tick?.price??result?.livePrice??candles.at(-1)?.close)||null,liveTickAgeSeconds:tick?.receivedAt?Math.max(0,Math.round((Date.now()-tick.receivedAt)/1000)):null,technical:{direction:a.direction||"WAIT",score:Number(a.score)||0,reason:String(a.reason||"No technical read yet"),macdLine:Number.isFinite(Number(a.macdLine))?Number(a.macdLine):null,macdSignal:Number.isFinite(Number(a.macdSignal))?Number(a.macdSignal):null,macdHistogram:Number.isFinite(Number(a.macdHistogram))?Number(a.macdHistogram):null,support:Number.isFinite(Number(a.support))?Number(a.support):null,resistance:Number.isFinite(Number(a.resistance))?Number(a.resistance):null,reverseMode:true},candles};
 }
 async function apexChatSend(textOverride){
  const message=String(textOverride??apexChatInputEl.value).trim();if(!message||apexChatBusy)return;
@@ -2038,7 +2056,7 @@ function apexRenderIntelligentPanel(){
  const phaseEl=$("apexPhase"),clockEl=$("candleCountdown");
  if(phaseEl)phaseEl.textContent=`${phase} · ${String(60-sec).padStart(2,"0")}s`;
  if(clockEl)clockEl.textContent=`00:${String(countdown).padStart(2,"0")}`;
- const output=a.structured||{signal:"WAIT",confidence_score:0,detected_patterns:[],recommended_expiry:"1m",reasoning:"Waiting for completed candle data."};
+ const output=a.structured||{signal:"WAIT",confidence_score:0,detected_patterns:[],recommended_expiry:"5m",reasoning:"Waiting for completed candle data."};
  const signalEl=$("apexEngineSignal"),scoreEl=$("apexEngineScore"),patternsEl=$("apexEnginePatterns"),reasonEl=$("apexEngineReason"),expiryEl=$("apexEngineExpiry");
  if(signalEl){const side=a.direction==="CALL"?"BUY":a.direction==="PUT"?"SELL":"WAIT";signalEl.textContent=side;signalEl.className="apex-engine-signal "+side.toLowerCase()}
  if(scoreEl)scoreEl.textContent=`${Number(output.confidence_score)||0}/100`;
@@ -2090,7 +2108,7 @@ function apexPauseScheduler(){
 }
 $("startBtn").onclick=apexStartScheduler;
 $("pauseBtn").onclick=apexPauseScheduler;
-$("interval").onchange=()=>{ $("cycleText").textContent="UTC 1-minute phases";saveState(); };
+$("interval").onchange=()=>{ $("cycleText").textContent="UTC-10 DISPLAY · 5-minute candle phases";saveState(); };
 $("mobileInterval").addEventListener("change",()=>{$("interval").value=$("mobileInterval").value;$("cycleText").textContent="UTC 1-minute phases";saveState()});
 // Provider timestamps can refine the local UTC clock offset. Unknown/malformed timestamps are ignored.
 const apexOriginalHandleLiveTick=handleLiveTick;
@@ -2107,174 +2125,199 @@ handleLiveTick=function(event){
 const signalCallout=$("signalCallout");
 if(signalCallout&&!$("apexIntelligentEngine")){
  const card=document.createElement("section");card.id="apexIntelligentEngine";
- card.innerHTML='<div class="apex-engine-head"><b>APEX INTELLIGENT ENGINE · 1M UTC</b><span id="apexPhase">PHASE 1 · BUILDING ANALYSIS</span></div><div class="apex-engine-grid"><div><div class="apex-engine-signal wait" id="apexEngineSignal">WAIT</div><div class="apex-engine-meta"><span>AI evidence score</span><span>Expiry: <b id="apexEngineExpiry">1m</b></span></div></div><div id="apexEngineScore">0/100</div></div><div id="apexEnginePatterns">Waiting for completed candle patterns…</div><p id="apexEngineReason">At least three aligned technical confluences are required.</p>';
+ card.innerHTML='<div class="apex-engine-head"><b>APEX INTELLIGENT ENGINE · 5M · UTC-10</b><span id="apexPhase">PHASE 1 · BUILDING ANALYSIS</span></div><div class="apex-engine-grid"><div><div class="apex-engine-signal wait" id="apexEngineSignal">WAIT</div><div class="apex-engine-meta"><span>AI evidence score</span><span>Expiry: <b id="apexEngineExpiry">5m</b></span></div></div><div id="apexEngineScore">0/100</div></div><div id="apexEnginePatterns">Waiting for completed candle patterns…</div><p id="apexEngineReason">At least three aligned technical confluences are required.</p>';
  signalCallout.parentNode.insertBefore(card,signalCallout);
 }
-setInterval(apexIntelligentHeartbeat,250);
 apexRenderIntelligentPanel();
 
 
 
-/* APEXSCAN PRO V10 · TWO-MINUTE MARKET BUILD-UP / ONE-MINUTE CALLOUTS
-   The provider feed remains 1-minute OHLC. Two consecutive, fully closed
-   1-minute bars are combined into each 2-minute bar. Decisions are released
-   only when a complete 2-minute bar has closed, for the following 1-minute
-   entry candle. */
-(function installTwoMinuteIntelligence(){
+/* APEXSCAN PRO V11 · FIVE-MINUTE CANDLE ENGINE
+   Source feed remains 1-minute OHLC. Five contiguous, completed 1-minute bars
+   are combined into each completed 5-minute bar. At T-2 seconds the engine
+   captures a pre-close checkpoint; it releases a callout only after the
+   provider confirms the completed 5-minute candle and the next 5-minute
+   candle has opened. */
+(function installFiveMinuteIntelligence(){
  const apexAnalyzeBase = analyze;
- const TWO_MIN = 120000, ONE_MIN = 60000;
- let apexLastTwoMinuteDecision = "";
- let apexTwoMinuteState = {
-   phase:"WAITING FOR CLOSED 2-MINUTE CANDLES",
-   direction:"WAIT", detail:"Waiting for two-minute market structure.",
-   completed:0, lastBucket:null
+ const FIVE_MIN = 300000, ONE_MIN = 60000;
+ let apexLastFiveMinuteDecision = "";
+ let apexFiveMinuteState = {
+   phase:"WAITING FOR CLOSED 5-MINUTE CANDLES",
+   direction:"WAIT", detail:"Waiting for five-minute market structure.",
+   completed:0, lastBucket:null, preCloseKey:"", preCloseCaptured:false
  };
 
- function apexBuildCompletedTwoMinuteBars(oneMinuteBars){
+ function apexBuildCompletedFiveMinuteBars(oneMinuteBars){
    const grouped = new Map();
    for(const c of (oneMinuteBars||[])){
      const t=Number(c.timeMs);
      if(!Number.isFinite(t)||t<=0) continue;
-     const bucket=Math.floor(t/TWO_MIN)*TWO_MIN;
+     const bucket=Math.floor(t/FIVE_MIN)*FIVE_MIN;
      if(!grouped.has(bucket)) grouped.set(bucket,[]);
      grouped.get(bucket).push(c);
    }
    const out=[];
    for(const [bucket,parts] of [...grouped.entries()].sort((a,b)=>a[0]-b[0])){
      parts.sort((a,b)=>Number(a.timeMs)-Number(b.timeMs));
-     // Only accept two contiguous, completed 1-minute source bars.
-     if(parts.length!==2) continue;
-     if(Number(parts[0].timeMs)!==bucket || Number(parts[1].timeMs)!==bucket+ONE_MIN) continue;
+     if(parts.length!==5) continue;
+     if(parts.some((c,i)=>Number(c.timeMs)!==bucket+i*ONE_MIN)) continue;
      out.push({
        time:new Date(bucket).toISOString(),timeMs:bucket,
        open:Number(parts[0].open),
-       high:Math.max(Number(parts[0].high),Number(parts[1].high)),
-       low:Math.min(Number(parts[0].low),Number(parts[1].low)),
-       close:Number(parts[1].close),
-       volume:[parts[0].volume,parts[1].volume].every(Number.isFinite)
-         ? Number(parts[0].volume)+Number(parts[1].volume) : null
+       high:Math.max(...parts.map(c=>Number(c.high))),
+       low:Math.min(...parts.map(c=>Number(c.low))),
+       close:Number(parts[4].close),
+       volume:parts.every(c=>Number.isFinite(Number(c.volume)))
+         ?parts.reduce((sum,c)=>sum+Number(c.volume),0):null
      });
    }
    return out;
  }
 
- function apexTwoMinuteBuild(bars){
-   if(!bars||bars.length<2) return {direction:"WAIT",detail:"Need two fully completed 2-minute candles."};
+ function apexFiveMinuteBuild(bars){
+   if(!bars||bars.length<2) return {direction:"WAIT",detail:"Need at least two fully completed five-minute candles to confirm market structure."};
    const a=bars.at(-2),b=bars.at(-1);
    const up=b.close>a.close && b.high>a.high && b.low>=a.low;
    const down=b.close<a.close && b.low<a.low && b.high<=a.high;
-   if(up) return {direction:"CALL",detail:"Two-minute structure is building upward: higher close, higher high and defended low."};
-   if(down) return {direction:"PUT",detail:"Two-minute structure is building downward: lower close, lower low and capped high."};
-   return {direction:"WAIT",detail:"Two-minute candles do not show a clean directional build-up; avoid forcing a trade."};
+   if(up) return {direction:"CALL",detail:"Five-minute structure is bullish: higher close, higher high and defended low."};
+   if(down) return {direction:"PUT",detail:"Five-minute structure is bearish: lower close, lower low and capped high."};
+   return {direction:"WAIT",detail:"The last two five-minute candles are mixed; no clean directional structure."};
  }
 
- // Replace the 1-minute analysis input with completed 2-minute market bars.
  analyze = function(oneMinuteBars,asset){
-   const bars=apexBuildCompletedTwoMinuteBars(oneMinuteBars);
+   const bars=apexBuildCompletedFiveMinuteBars(oneMinuteBars);
    const latestOne=oneMinuteBars?.at(-1);
    const latestCloseTime=Number(latestOne?.timeMs||0)+ONE_MIN;
-   const atTwoMinuteBoundary=latestCloseTime>0 && latestCloseTime%TWO_MIN===0;
-   const build=apexTwoMinuteBuild(bars);
-   apexTwoMinuteState={
-     phase:atTwoMinuteBoundary?"2-MINUTE CANDLE CLOSED · CONFIRMING":"OBSERVING 2-MINUTE BUILD-UP",
+   const atFiveMinuteBoundary=latestCloseTime>0 && latestCloseTime%FIVE_MIN===0;
+   const build=apexFiveMinuteBuild(bars);
+   apexFiveMinuteState={
+     ...apexFiveMinuteState,
+     phase:atFiveMinuteBoundary?"5-MINUTE CANDLE CLOSED · CONFIRMING":"OBSERVING 5-MINUTE MARKET BUILD",
      direction:build.direction,detail:build.detail,
      completed:bars.length,lastBucket:bars.at(-1)?.timeMs??null
    };
 
-   // Do not release a new callout halfway through a 2-minute candle.
-   if(!atTwoMinuteBoundary){
-     return {
-       direction:"WAIT",rawDirection:"WAIT",score:0,confidence_score:0,
-       reason:"Observing the developing 2-minute candle. A signal can only be evaluated after the full 2-minute candle closes.",
-       fresh:false,age:Infinity,signalLevel:"WAIT",detected_patterns:[],
-       confluences:[],candleTimeMs:Number(latestOne?.timeMs||0)
-     };
+   if(!atFiveMinuteBoundary){
+     return {direction:"WAIT",rawDirection:"WAIT",score:0,confidence_score:0,
+       reason:"Observing the developing five-minute candle. The engine waits for its full close before issuing a callout.",
+       fresh:false,age:Infinity,signalLevel:"WAIT",detected_patterns:[],confluences:[],
+       candleTimeMs:Number(latestOne?.timeMs||0),fiveMinuteBars:bars.length,
+       fiveMinuteDirection:build.direction,fiveMinuteDetail:build.detail};
    }
    if(bars.length<35){
-     return {
-       direction:"WAIT",rawDirection:"WAIT",score:0,confidence_score:0,
-       reason:`Building 2-minute history · ${bars.length}/35 completed 2-minute candles available.`,
-       fresh:false,age:Infinity,signalLevel:"WAIT",detected_patterns:[],
-       confluences:[],candleTimeMs:Number(latestOne?.timeMs||0)
-     };
+     return {direction:"WAIT",rawDirection:"WAIT",score:0,confidence_score:0,
+       reason:`Building five-minute history · ${bars.length}/35 completed 5-minute candles available.`,
+       fresh:false,age:Infinity,signalLevel:"WAIT",detected_patterns:[],confluences:[],
+       candleTimeMs:Number(bars.at(-1)?.timeMs||0),fiveMinuteBars:bars.length,
+       fiveMinuteDirection:build.direction,fiveMinuteDetail:build.detail};
    }
 
    const result=apexAnalyzeBase(bars,asset);
    const source=result.rawDirection||result.direction||"WAIT";
    const structureAligned=source===build.direction && ["CALL","PUT"].includes(source);
-   const priorTwoMinuteClose=bars.at(-2)?.timeMs;
    const decisionKey=`${asset?.id||"asset"}|${bars.at(-1)?.timeMs||0}`;
-   if(apexLastTwoMinuteDecision===decisionKey){
-     result.direction="WAIT";result.rawDirection="WAIT";
-     result.score=0;result.confidence_score=0;
+   if(apexLastFiveMinuteDecision===decisionKey){
+     result.direction="WAIT";result.rawDirection="WAIT";result.score=0;result.confidence_score=0;
      result.signalLevel="WAIT";
-     result.reason="This completed 2-minute candle has already been evaluated. Waiting for the next full 2-minute candle.";
+     result.reason="This completed five-minute candle was already evaluated. Waiting for the next five-minute close.";
    }else{
-     apexLastTwoMinuteDecision=decisionKey;
+     apexLastFiveMinuteDecision=decisionKey;
      if(!structureAligned){
        result.direction="WAIT";result.rawDirection="WAIT";
-       result.score=Math.min(Number(result.score)||0,49);
-       result.confidence_score=result.score;result.signalLevel="WAIT";
-       result.reason=`No callout: ${build.detail} Technical indicator direction (${source}) is not aligned with the two-minute structure.`;
+       result.score=Math.min(Number(result.score)||0,49);result.confidence_score=result.score;
+       result.signalLevel="WAIT";
+       result.reason=`No callout: ${build.detail} MACD/candle direction (${source}) does not agree with five-minute structure.`;
      }else{
-       result.rawDirection=source;
-       result.direction=source;
-       result.reason=`2-minute trend confirmed. ${build.detail} ${result.reason||""}`;
-       result.signalLevel="CONFIRMED";
-       result.recommended_expiry="1m";
+       result.rawDirection=source;result.direction=source;
+       result.reason=`Five-minute trend confirmed. ${build.detail} ${result.reason||""}`;
+       result.signalLevel="CONFIRMED";result.recommended_expiry="5m";
      }
    }
-   // Keep signal identity tied to the completed source 1-minute candle at
-   // the 2-minute close, so the UI and paper journal do not reuse old bars.
-   result.candleTimeMs=Number(latestOne?.timeMs||0);
-   result.candleTime=latestOne?.time||result.candleTime;
+   result.candleTimeMs=Number(bars.at(-1)?.timeMs||0);
+   result.candleTime=bars.at(-1)?.time||result.candleTime;
    const age=Math.max(0,(Date.now()-latestCloseTime)/1000);
-   result.age=age;
-   result.fresh=age<=120;
-   result.twoMinuteBars=bars.length;
-   result.twoMinuteDirection=build.direction;
-   result.twoMinuteDetail=build.detail;
+   result.age=age;result.fresh=age<=20;
+   result.fiveMinuteBars=bars.length;result.fiveMinuteDirection=build.direction;
+   result.fiveMinuteDetail=build.detail;
    return result;
  };
 
- // Make the visible engine describe the actual two-minute observation cycle.
+ // Five-minute UTC countdown. The two-second checkpoint is preview-only.
+ apexCandleCountdown=function(){
+   const now=apexServerNow(),next=(Math.floor(now/FIVE_MIN)+1)*FIVE_MIN;
+   return Math.max(0,Math.min(299,Math.ceil((next-now)/1000)));
+ };
+ apexIntelligentHeartbeat=function(){
+   const now=apexServerNow(),bucket=Math.floor(now/FIVE_MIN),within=now-bucket*FIVE_MIN;
+   const secondsLeft=Math.ceil((FIVE_MIN-within)/1000);
+   const key=String(bucket);
+   apexRenderIntelligentPanel();
+   if(secondsLeft===2 && apexFiveMinuteState.preCloseKey!==key){
+     apexFiveMinuteState.preCloseKey=key;
+     apexFiveMinuteState.preCloseCaptured=true;
+     const previews={};let captured=0;
+     for(const id of watch){
+       const raw=results[id]?.candles||[],bucketStart=bucket*FIVE_MIN;
+       const parts=raw.filter(c=>Math.floor(Number(c.timeMs)/FIVE_MIN)*FIVE_MIN===bucketStart).sort((a,b)=>Number(a.timeMs)-Number(b.timeMs));
+       if(parts.length===5&&parts.every((c,i)=>Number(c.timeMs)===bucketStart+i*ONE_MIN)){
+         previews[id]={timeMs:bucketStart,open:Number(parts[0].open),high:Math.max(...parts.map(c=>Number(c.high))),low:Math.min(...parts.map(c=>Number(c.low))),close:Number(parts[4].close),livePrice:Number(liveTicks[id]?.price??results[id]?.livePrice??parts[4].close),provisional:true};captured++;
+       }else previews[id]={available:false,livePrice:Number(liveTicks[id]?.price??results[id]?.livePrice)||null,reason:"Provider has not supplied all five source bars for the forming candle."};
+     }
+     apexFiveMinuteState.preCloseSnapshots=previews;
+     apexFiveMinuteState.phase="PRE-CLOSE CHECKPOINT · 00:02 LEFT";
+     apexFiveMinuteState.detail="Pre-close snapshot: "+captured+"/"+watch.size+" forming five-minute candles available from provider data. Waiting for confirmed close and next candle open.";
+     if(!busy&&running)scan().then(()=>{
+       const refreshed={};let refreshedCount=0;
+       for(const id of watch){
+         const raw=results[id]?.candles||[],bucketStart=bucket*FIVE_MIN;
+         const parts=raw.filter(c=>Math.floor(Number(c.timeMs)/FIVE_MIN)*FIVE_MIN===bucketStart).sort((a,b)=>Number(a.timeMs)-Number(b.timeMs));
+         if(parts.length===5&&parts.every((c,i)=>Number(c.timeMs)===bucketStart+i*ONE_MIN)){
+           refreshed[id]={timeMs:bucketStart,open:Number(parts[0].open),high:Math.max(...parts.map(c=>Number(c.high))),low:Math.min(...parts.map(c=>Number(c.low))),close:Number(parts[4].close),livePrice:Number(liveTicks[id]?.price??results[id]?.livePrice??parts[4].close),provisional:true};refreshedCount++;
+         }else refreshed[id]={available:false,livePrice:Number(liveTicks[id]?.price??results[id]?.livePrice)||null,reason:"Provider has not supplied all five source bars for the forming candle."};
+       }
+       apexFiveMinuteState.preCloseSnapshots=refreshed;
+       apexFiveMinuteState.phase="PRE-CLOSE CHECKPOINT · 00:02 LEFT";
+       apexFiveMinuteState.detail="Pre-close snapshot: "+refreshedCount+"/"+watch.size+" forming five-minute candles available from provider data. Waiting for confirmed close and next candle open.";
+       apexRenderIntelligentPanel();
+     });
+   }
+   if(within<10000 && apexFiveMinuteState.lastBoundaryScan!==key && running && !busy){
+     apexFiveMinuteState.lastBoundaryScan=key;
+     setTimeout(()=>{if(running&&!busy)scan();else if(busy)apexFiveMinuteState.lastBoundaryScan=""},1300);
+   }
+ };
+
  const phaseEl=document.getElementById("apexPhase");
- if(phaseEl) phaseEl.textContent="2-MINUTE TREND BUILD-UP";
+ if(phaseEl)phaseEl.textContent="5-MINUTE TREND BUILD-UP";
  const engine=document.getElementById("apexIntelligentEngine");
  if(engine){
-   const meta=document.createElement("div");
-   meta.id="apexTwoMinuteReadout";
+   const meta=document.createElement("div");meta.id="apexFiveMinuteReadout";
    meta.style.cssText="margin-top:9px;padding:9px 10px;border:1px solid #31527a;border-radius:9px;background:#07182a;font-size:10px;line-height:1.5;color:#b9d2f2";
-   meta.innerHTML='<b style="color:#83c9ff;letter-spacing:.08em">2-MINUTE MARKET STRUCTURE</b><div id="apexTwoMinuteStatus" style="font-weight:900;margin-top:4px">Waiting for completed candles</div><div id="apexTwoMinuteDetail" style="margin-top:3px;color:#9bb6d8">The next 1-minute callout is held until the two-minute candle closes.</div>';
+   meta.innerHTML='<b style="color:#83c9ff;letter-spacing:.08em">5-MINUTE MARKET STRUCTURE</b><div id="apexFiveMinuteStatus" style="font-weight:900;margin-top:4px">Waiting for completed candles</div><div id="apexFiveMinuteDetail" style="margin-top:3px;color:#9bb6d8">At 00:02 remaining, the engine captures a checkpoint. CALL / PUT is released only after the completed five-minute candle and next candle are confirmed.</div>';
    engine.appendChild(meta);
  }
-
  const oldRender=apexRenderIntelligentPanel;
  apexRenderIntelligentPanel=function(){
    oldRender();
-   const s=document.getElementById("apexTwoMinuteStatus");
-   const d=document.getElementById("apexTwoMinuteDetail");
-   if(s)s.textContent=`${apexTwoMinuteState.phase} · ${apexTwoMinuteState.completed} completed bars · ${apexTwoMinuteState.direction}`;
-   if(d)d.textContent=apexTwoMinuteState.detail+" A directional callout is released for the next 1-minute candle only when the trend and MACD/candle evidence agree.";
+   const s=document.getElementById("apexFiveMinuteStatus"),d=document.getElementById("apexFiveMinuteDetail");
+   if(s)s.textContent=`${apexFiveMinuteState.phase} · ${apexFiveMinuteState.completed} completed bars · ${apexFiveMinuteState.direction}`;
+   if(d)d.textContent=apexFiveMinuteState.detail;
+   const countdown=document.getElementById("candleCountdown");
+   if(countdown){const left=apexCandleCountdown();countdown.textContent=`${String(Math.floor(left/60)).padStart(2,"0")}:${String(left%60).padStart(2,"0")}`;}
  };
- const oldHeartbeat=apexIntelligentHeartbeat;
- apexIntelligentHeartbeat=function(){
-   oldHeartbeat();
-   apexRenderIntelligentPanel();
- };
- // The callout/trade duration is deliberately fixed at one minute for this mode.
- if(typeof candleDurationSeconds==="function"){
-   const oldDuration=candleDurationSeconds;
-   candleDurationSeconds=function(r){return 60;};
- }
+ if(typeof candleDurationSeconds==="function")candleDurationSeconds=function(){return 300;};
  const notice=document.querySelector(".notice");
- if(notice) notice.innerHTML="<b>2-minute market intelligence:</b> APEXSCAN combines two consecutive, fully closed 1-minute provider candles into each 2-minute candle. It waits for a completed 2-minute close, checks directional structure against MACD, candle behavior and support/resistance, then releases CALL / PUT for the next 1-minute candle. If structure is mixed, stale or unconfirmed, it displays WAIT. Signals and paper tracking only; no Pocket Option orders are placed.";
+ if(notice)notice.innerHTML="<b>Five-minute market intelligence:</b> APEXSCAN combines five consecutive, fully closed one-minute provider candles into each five-minute candle. It captures a final checkpoint at 00:02 remaining, then waits for the provider-confirmed five-minute close and the next candle opening before releasing CALL / PUT. Mixed, stale or incomplete data produces WAIT. Signals and paper tracking only; no Pocket Option orders are placed.";
  const foot=document.getElementById("scanFoot");
- if(foot)foot.textContent="Two-minute market build-up · signal released on the next 1-minute candle · 1-minute callout expiry.";
+ if(foot)foot.textContent="Five-minute chart analysis only · pre-close checkpoint at 00:02 · confirmed CALL / PUT for the next five-minute candle.";
  const hero=document.getElementById("heroLiveLabel");
- if(hero)hero.textContent="2-minute trend confirmation · 1-minute callouts";
+ if(hero)hero.textContent="5-minute trend confirmation · 5-minute callouts";
  const meta=document.getElementById("chartMeta");
- if(meta)meta.textContent="2-minute trend structure · MACD · candle patterns · support / resistance";
+ if(meta)meta.textContent="5-minute candle structure · MACD · candle patterns · support / resistance";
+ const tfNote=document.getElementById("tfNote");if(tfNote)tfNote.textContent="300-second (5-minute) candles · scanner locked";
+ const ci=document.getElementById("candleIntel");
+ if(ci&&ci.innerHTML)ci.innerHTML=ci.innerHTML.replaceAll("1M CLOSED BAR","5M CLOSED BAR").replaceAll("1-minute","5-minute");
 })();
 
 </script>
