@@ -2121,6 +2121,37 @@ const apexOriginalCountdownsV30=updateCountdowns;updateCountdowns=function(){ape
 function apexStartScheduler(){clearInterval(cycle);running=true;apexClosedDecisionKey=String(Math.floor(apexServerNow()/APEX_BAR_MS));$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="SUPER INTELLIGENCE ACTIVE";status("30-SECOND AUTO SCAN · NEXT CLOSE + 5S",true);apex30State.phase="WAITING FOR NEXT 30S CLOSE";apex30State.detail="Automatic analysis is armed. The next signal scan runs five seconds after the next completed 30-second candle.";cycle=setInterval(apexIntelligentHeartbeat,200);}
 function apexPauseScheduler(){running=false;clearInterval(cycle);cycle=null;$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED");}
 $("startBtn").onclick=apexStartScheduler;$("pauseBtn").onclick=apexPauseScheduler;
+// V9.1 scan reliability patch: serialize all scan requests and always release the UI lock.
+const apexOriginalScanV91=scan;
+let apexScanPromiseV91=null;
+scan=async function(){
+ if(apexScanPromiseV91)return apexScanPromiseV91;
+ apexScanPromiseV91=(async()=>{
+  try{return await apexOriginalScanV91();}
+  finally{
+   busy=false;
+   const button=$("scanNow");
+   if(button)button.disabled=false;
+  }
+ })();
+ try{return await apexScanPromiseV91;}
+ finally{apexScanPromiseV91=null;}
+};
+// Manual scans use the same protected scan path; when auto mode is active,
+// count this candle as handled so the heartbeat does not immediately repeat it.
+$("scanNow").onclick=async()=>{
+ const button=$("scanNow");
+ if(apexScanPromiseV91)return;
+ if(running){const manualNow=apexServerNow();if(manualNow%APEX_BAR_MS>=5000)apexClosedDecisionKey=String(Math.floor(manualNow/APEX_BAR_MS));}
+ button.disabled=true;button.textContent="⚡ INTELLIGENCE ENGINE RUNNING…";
+ try{await scan();}
+ catch(error){status("APEX SCAN ERROR");$("progressText").textContent="Scan failed: "+(error?.message||"unknown error");}
+ finally{button.disabled=false;button.textContent="⚡ RUN SUPER INTELLIGENCE SCAN";}
+};
+// Wake the existing 30-second scheduler after iOS/browser tab suspension.
+// The candle key prevents duplicate scans when focus and visibility fire together.
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&running)apexIntelligentHeartbeat();});
+window.addEventListener("focus",()=>{if(running)apexIntelligentHeartbeat();});
 $("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";$("interval").onchange=()=>{$("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";saveState();};
 const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · adaptive EARLY BUY/SELL heads-up from 35/100 with 2 aligned layers · confirmed entries remain 65/100 + 15-point edge · MACD and momentum counted once · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
 const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · EARLY opportunity alerts · confirmed entry 65/100 · +5s post-close scan · UTC-10 chart display.";
