@@ -1218,46 +1218,46 @@ function isPOComparisonVerified(assetId){
  return Math.abs(Number(tick.price)-poQuoteValue)<=pip*.2;
 }
 function handleLiveTick(raw){
- let tick;try{tick=JSON.parse(raw.data)}catch(e){return}
- if(tick?.data && typeof tick.data==="object")tick=tick.data;
- const symbol=String(tick.symbol||tick.instrument||tick.s||tick.asset||"").trim();
- const normalizedSymbol=symbol.toUpperCase().replace(/^OTC:/," ").replace(/[^A-Z0-9]/g,"").trim();
- const id=OTC_SYMBOLS[symbol] || Object.keys(OTC_SYMBOLS).find(key =>
-  key.toUpperCase().replace(/[^A-Z0-9]/g,"")===normalizedSymbol ||
-  String(OTC_SYMBOLS[key]).toUpperCase().replace(/^OTC:/,"").replace(/[^A-Z0-9]/g,"")===normalizedSymbol
- );
- const price=Number(tick.price??tick.last??tick.close??tick.p??tick.value);
- if(!id||!Number.isFinite(price)||price<=0)return;
- // Refine UTC clock from provider timestamp when the feed supplies one.
- const providerStamp=tick.timestamp??tick.time??tick.ts;
- let providerMs=typeof providerStamp==="string"&&!/^\\d{10,13}$/.test(providerStamp)?Date.parse(providerStamp):Number(providerStamp);
- if(Number.isFinite(providerMs)&&providerMs>0){if(providerMs<1e12)providerMs*=1000;providerMs-=7200000;const delta=providerMs-Date.now();if(Math.abs(delta)<120000)apexServerClockOffsetMs=apexServerClockOffsetMs*.8+delta*.2;}
- const previous=liveTicks[id]?.price ?? results[id]?.price ?? price;
- const receivedAt=Date.now(),candleStart=Math.floor((receivedAt+apexServerClockOffsetMs)/30000)*30000-apexServerClockOffsetMs;
- liveTicks[id]={price,change:price-previous,time:tick.time||tick.timestamp||receivedAt,receivedAt};
- if(results[id]){
-  const result=results[id];result.livePrice=price;result.liveChange=price-previous;result.liveUpdated=receivedAt;
-  const candles=result.candles||(result.candles=[]),last=candles[candles.length-1];
-  if(last&&Math.floor(Number(last.timeMs||0)/30000)===Math.floor(candleStart/30000)){
-   last.high=Math.max(last.high,price);last.low=Math.min(last.low,price);last.close=price;
-  }else{
-   candles.push({time:new Date(candleStart).toISOString(),timeMs:candleStart,open:last?last.close:price,high:price,low:price,close:price,live:true});
-   if(candles.length>240)candles.splice(0,candles.length-240);
+ let payload;try{payload=JSON.parse(raw?.data??raw??"{}")}catch(e){return}
+ const packets=Array.isArray(payload)?payload:[payload];
+ for(const packet of packets){
+  const tick=packet?.data&&typeof packet.data==="object"?packet.data:packet;
+  const symbol=String(tick.symbol??tick.instrument??tick.s??tick.asset??tick.pair??"").trim();
+  const normalized=symbol.toUpperCase().replace(/^OTC:/,"").replace(/[^A-Z0-9]/g,"");
+  let id=OTC_SYMBOLS[symbol]||Object.keys(OTC_SYMBOLS).find(key=>
+   key.toUpperCase().replace(/[^A-Z0-9]/g,"")===normalized||
+   String(OTC_SYMBOLS[key]).toUpperCase().replace(/^OTC:/,"").replace(/[^A-Z0-9]/g,"")===normalized);
+  if(!id){const selected=selectedOTCPair();if(selected&&(!symbol||normalized===selected.symbol.toUpperCase().replace(/[^A-Z0-9]/g,"")))id=selected.id;}
+  const price=Number(tick.price??tick.last??tick.close??tick.p??tick.value??tick.bid??tick.ask);
+  if(!id||!Number.isFinite(price)||price<=0)continue;
+  const stamp=tick.timestamp??tick.time??tick.ts;
+  let providerMs=typeof stamp==="string"&&!/^\d{10,13}$/.test(stamp)?Date.parse(stamp):Number(stamp);
+  if(Number.isFinite(providerMs)&&providerMs>0){if(providerMs<1e12)providerMs*=1000;const delta=providerMs-Date.now();if(Math.abs(delta)<120000)apexServerClockOffsetMs=apexServerClockOffsetMs*.8+delta*.2;}
+  const previous=liveTicks[id]?.price??results[id]?.price??price,receivedAt=Date.now();
+  const candleStart=Math.floor((receivedAt+apexServerClockOffsetMs)/30000)*30000-apexServerClockOffsetMs;
+  liveTicks[id]={price,change:price-previous,time:stamp||receivedAt,receivedAt};
+  if(results[id]){
+   const result=results[id];result.livePrice=price;result.liveChange=price-previous;result.liveUpdated=receivedAt;
+   const candles=result.candles||(result.candles=[]),last=candles.at(-1);
+   if(last&&Math.floor(Number(last.timeMs||0)/30000)===Math.floor(candleStart/30000)){
+    last.high=Math.max(Number(last.high),price);last.low=Math.min(Number(last.low),price);last.close=price;
+   }else{
+    candles.push({time:new Date(candleStart).toISOString(),timeMs:candleStart,open:last?Number(last.close):price,high:price,low:price,close:price,live:true});
+    if(candles.length>500)candles.splice(0,candles.length-500);
+   }
+   const asset=ASSETS.find(x=>x.id===id);
+   if(asset&&candles.length>=35){
+    const closed=closedOneMinuteCandles(candles);
+    result.analysis=closed.length>=35?analyze(closed,asset):{direction:"WAIT",rawDirection:"WAIT",score:0,reason:"Waiting for 35 completed 30-second candles.",fresh:false,age:Infinity,signalLevel:"WAIT"};
+    result.analysis={...result.analysis};applyReverseSignal(result);
+    if(result.analysis.direction!=="WAIT")addSignal(result);
+   }
+   renderScanner();
+   if(selectedChart===id||$("chartAsset")?.value===id){drawChart();$("chartCaption").textContent=`${result.name} · LIVE ${fmt(price)} · tick received ${new Date(receivedAt).toLocaleTimeString()}`;}
   }
-  const asset=ASSETS.find(x=>x.id===id);
-  if(asset&&candles.length>=36){
-   const closed=closedOneMinuteCandles(candles);
-   result.analysis=closed.length>=35?analyze(closed,asset):{direction:"WAIT",score:0,reason:"Waiting for a completed candle before MACD confirmation",fresh:false,age:Infinity,signalLevel:"WAIT"};
-   result.analysis={...result.analysis};applyReverseSignal(result);
-   if(result.analysis.direction!=="WAIT")addSignal(result);
-  }
-  renderScanner();
-  if(selectedChart===id||$("chartAsset")?.value===id){drawChart();$("chartCaption").textContent=`${result.name} · LIVE ${fmt(price)} · updating each provider tick`;}
+  setLiveStreamState("LIVE · "+(ASSETS.find(a=>a.id===id)?.name||id)+" tick received",true);
+  renderPOComparison();renderPaperLiveBoard();settleExpiredTrades();
  }
- setLiveStreamState("LIVE · "+(ASSETS.find(a=>a.id===id)?.name||id)+" tick received",true);
- renderPOComparison();
- renderPaperLiveBoard();
- settleExpiredTrades();
 }
 function connectLiveStream(){
  if(liveStream||typeof EventSource==="undefined")return;
@@ -1403,8 +1403,8 @@ function updateTop(rows){
  $("topEntry").textContent=Number.isFinite(entry)&&entry>0?fmt(entry):"—";
  $("topRsi").textContent=Number.isFinite(Number(s?.macdHistogram))?Number(s.macdHistogram).toPrecision(5):"—";
  $("indicatorChips").innerHTML=s&&r?.candles?.length>=35
-  ?`<span>MACD line / signal · ${Number.isFinite(s.macdLine)&&Number.isFinite(s.macdSignal)?(s.macdLine>s.macdSignal?"Bullish":"Bearish"):"—"}</span><span>MACD histogram · ${Number.isFinite(s.macdHistogram)?(s.macdHistogram>0?"Bullish":s.macdHistogram<0?"Bearish":"Neutral"):"—"}</span><span>Support · ${Number.isFinite(s.support)?fmt(s.support):"—"}</span><span>Resistance · ${Number.isFinite(s.resistance)?fmt(s.resistance):"—"}</span><span>Quote · ${fresh?"Live":"Delayed"}</span>`
-  :'<span>MACD · waiting</span><span>Support · waiting</span><span>Resistance · waiting</span><span>Candle confirmation · waiting</span><span>Feed freshness · waiting</span>';
+   ?`<span>MACD line / signal · ${Number.isFinite(s.macdLine)&&Number.isFinite(s.macdSignal)?(s.macdLine>s.macdSignal?"Bullish":s.macdLine<s.macdSignal?"Bearish":"Neutral"):"Calculating"}</span><span>MACD histogram · ${Number.isFinite(s.macdHistogram)?(s.macdHistogram>0?"Bullish":s.macdHistogram<0?"Bearish":"Neutral"):"Calculating"}</span><span>Support · ${Number.isFinite(s.support)?fmt(s.support):"Not detected"}</span><span>Resistance · ${Number.isFinite(s.resistance)?fmt(s.resistance):"Not detected"}</span><span>Quote · ${fresh?"Live":"Delayed"}</span>`
+   :`<span>MACD · waiting for 35 valid candles</span><span>Support · waiting for history</span><span>Resistance · waiting for history</span><span>Candle confirmation · waiting</span><span>Feed · ${r?.lastError?"ERROR":"connecting"}`;
  if(s?.breakdown){
   $("analysisBreakdown").innerHTML=Object.entries(s.breakdown).map(([k,v])=>`<div><span>${({trend:"Trend structure",momentum:"Momentum",volatility:"Volatility",price:"Price action",structure:"Market structure",feed:"Feed integrity"})[k]||k}</span><b>${v||"—"}</b></div>`).join("");
  }else $("analysisBreakdown").innerHTML="<div><span>Analysis</span><b>Waiting for market data</b></div>";
