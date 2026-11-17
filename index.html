@@ -2113,5 +2113,169 @@ if(signalCallout&&!$("apexIntelligentEngine")){
 setInterval(apexIntelligentHeartbeat,250);
 apexRenderIntelligentPanel();
 
+
+
+/* APEXSCAN PRO V10 · TWO-MINUTE MARKET BUILD-UP / ONE-MINUTE CALLOUTS
+   The provider feed remains 1-minute OHLC. Two consecutive, fully closed
+   1-minute bars are combined into each 2-minute bar. Decisions are released
+   only when a complete 2-minute bar has closed, for the following 1-minute
+   entry candle. */
+(function installTwoMinuteIntelligence(){
+ const apexAnalyzeBase = analyze;
+ const TWO_MIN = 120000, ONE_MIN = 60000;
+ let apexLastTwoMinuteDecision = "";
+ let apexTwoMinuteState = {
+   phase:"WAITING FOR CLOSED 2-MINUTE CANDLES",
+   direction:"WAIT", detail:"Waiting for two-minute market structure.",
+   completed:0, lastBucket:null
+ };
+
+ function apexBuildCompletedTwoMinuteBars(oneMinuteBars){
+   const grouped = new Map();
+   for(const c of (oneMinuteBars||[])){
+     const t=Number(c.timeMs);
+     if(!Number.isFinite(t)||t<=0) continue;
+     const bucket=Math.floor(t/TWO_MIN)*TWO_MIN;
+     if(!grouped.has(bucket)) grouped.set(bucket,[]);
+     grouped.get(bucket).push(c);
+   }
+   const out=[];
+   for(const [bucket,parts] of [...grouped.entries()].sort((a,b)=>a[0]-b[0])){
+     parts.sort((a,b)=>Number(a.timeMs)-Number(b.timeMs));
+     // Only accept two contiguous, completed 1-minute source bars.
+     if(parts.length!==2) continue;
+     if(Number(parts[0].timeMs)!==bucket || Number(parts[1].timeMs)!==bucket+ONE_MIN) continue;
+     out.push({
+       time:new Date(bucket).toISOString(),timeMs:bucket,
+       open:Number(parts[0].open),
+       high:Math.max(Number(parts[0].high),Number(parts[1].high)),
+       low:Math.min(Number(parts[0].low),Number(parts[1].low)),
+       close:Number(parts[1].close),
+       volume:[parts[0].volume,parts[1].volume].every(Number.isFinite)
+         ? Number(parts[0].volume)+Number(parts[1].volume) : null
+     });
+   }
+   return out;
+ }
+
+ function apexTwoMinuteBuild(bars){
+   if(!bars||bars.length<2) return {direction:"WAIT",detail:"Need two fully completed 2-minute candles."};
+   const a=bars.at(-2),b=bars.at(-1);
+   const up=b.close>a.close && b.high>a.high && b.low>=a.low;
+   const down=b.close<a.close && b.low<a.low && b.high<=a.high;
+   if(up) return {direction:"CALL",detail:"Two-minute structure is building upward: higher close, higher high and defended low."};
+   if(down) return {direction:"PUT",detail:"Two-minute structure is building downward: lower close, lower low and capped high."};
+   return {direction:"WAIT",detail:"Two-minute candles do not show a clean directional build-up; avoid forcing a trade."};
+ }
+
+ // Replace the 1-minute analysis input with completed 2-minute market bars.
+ analyze = function(oneMinuteBars,asset){
+   const bars=apexBuildCompletedTwoMinuteBars(oneMinuteBars);
+   const latestOne=oneMinuteBars?.at(-1);
+   const latestCloseTime=Number(latestOne?.timeMs||0)+ONE_MIN;
+   const atTwoMinuteBoundary=latestCloseTime>0 && latestCloseTime%TWO_MIN===0;
+   const build=apexTwoMinuteBuild(bars);
+   apexTwoMinuteState={
+     phase:atTwoMinuteBoundary?"2-MINUTE CANDLE CLOSED · CONFIRMING":"OBSERVING 2-MINUTE BUILD-UP",
+     direction:build.direction,detail:build.detail,
+     completed:bars.length,lastBucket:bars.at(-1)?.timeMs??null
+   };
+
+   // Do not release a new callout halfway through a 2-minute candle.
+   if(!atTwoMinuteBoundary){
+     return {
+       direction:"WAIT",rawDirection:"WAIT",score:0,confidence_score:0,
+       reason:"Observing the developing 2-minute candle. A signal can only be evaluated after the full 2-minute candle closes.",
+       fresh:false,age:Infinity,signalLevel:"WAIT",detected_patterns:[],
+       confluences:[],candleTimeMs:Number(latestOne?.timeMs||0)
+     };
+   }
+   if(bars.length<35){
+     return {
+       direction:"WAIT",rawDirection:"WAIT",score:0,confidence_score:0,
+       reason:`Building 2-minute history · ${bars.length}/35 completed 2-minute candles available.`,
+       fresh:false,age:Infinity,signalLevel:"WAIT",detected_patterns:[],
+       confluences:[],candleTimeMs:Number(latestOne?.timeMs||0)
+     };
+   }
+
+   const result=apexAnalyzeBase(bars,asset);
+   const source=result.rawDirection||result.direction||"WAIT";
+   const structureAligned=source===build.direction && ["CALL","PUT"].includes(source);
+   const priorTwoMinuteClose=bars.at(-2)?.timeMs;
+   const decisionKey=`${asset?.id||"asset"}|${bars.at(-1)?.timeMs||0}`;
+   if(apexLastTwoMinuteDecision===decisionKey){
+     result.direction="WAIT";result.rawDirection="WAIT";
+     result.score=0;result.confidence_score=0;
+     result.signalLevel="WAIT";
+     result.reason="This completed 2-minute candle has already been evaluated. Waiting for the next full 2-minute candle.";
+   }else{
+     apexLastTwoMinuteDecision=decisionKey;
+     if(!structureAligned){
+       result.direction="WAIT";result.rawDirection="WAIT";
+       result.score=Math.min(Number(result.score)||0,49);
+       result.confidence_score=result.score;result.signalLevel="WAIT";
+       result.reason=`No callout: ${build.detail} Technical indicator direction (${source}) is not aligned with the two-minute structure.`;
+     }else{
+       result.rawDirection=source;
+       result.direction=source;
+       result.reason=`2-minute trend confirmed. ${build.detail} ${result.reason||""}`;
+       result.signalLevel="CONFIRMED";
+       result.recommended_expiry="1m";
+     }
+   }
+   // Keep signal identity tied to the completed source 1-minute candle at
+   // the 2-minute close, so the UI and paper journal do not reuse old bars.
+   result.candleTimeMs=Number(latestOne?.timeMs||0);
+   result.candleTime=latestOne?.time||result.candleTime;
+   const age=Math.max(0,(Date.now()-latestCloseTime)/1000);
+   result.age=age;
+   result.fresh=age<=120;
+   result.twoMinuteBars=bars.length;
+   result.twoMinuteDirection=build.direction;
+   result.twoMinuteDetail=build.detail;
+   return result;
+ };
+
+ // Make the visible engine describe the actual two-minute observation cycle.
+ const phaseEl=document.getElementById("apexPhase");
+ if(phaseEl) phaseEl.textContent="2-MINUTE TREND BUILD-UP";
+ const engine=document.getElementById("apexIntelligentEngine");
+ if(engine){
+   const meta=document.createElement("div");
+   meta.id="apexTwoMinuteReadout";
+   meta.style.cssText="margin-top:9px;padding:9px 10px;border:1px solid #31527a;border-radius:9px;background:#07182a;font-size:10px;line-height:1.5;color:#b9d2f2";
+   meta.innerHTML='<b style="color:#83c9ff;letter-spacing:.08em">2-MINUTE MARKET STRUCTURE</b><div id="apexTwoMinuteStatus" style="font-weight:900;margin-top:4px">Waiting for completed candles</div><div id="apexTwoMinuteDetail" style="margin-top:3px;color:#9bb6d8">The next 1-minute callout is held until the two-minute candle closes.</div>';
+   engine.appendChild(meta);
+ }
+
+ const oldRender=apexRenderIntelligentPanel;
+ apexRenderIntelligentPanel=function(){
+   oldRender();
+   const s=document.getElementById("apexTwoMinuteStatus");
+   const d=document.getElementById("apexTwoMinuteDetail");
+   if(s)s.textContent=`${apexTwoMinuteState.phase} · ${apexTwoMinuteState.completed} completed bars · ${apexTwoMinuteState.direction}`;
+   if(d)d.textContent=apexTwoMinuteState.detail+" A directional callout is released for the next 1-minute candle only when the trend and MACD/candle evidence agree.";
+ };
+ const oldHeartbeat=apexIntelligentHeartbeat;
+ apexIntelligentHeartbeat=function(){
+   oldHeartbeat();
+   apexRenderIntelligentPanel();
+ };
+ // The callout/trade duration is deliberately fixed at one minute for this mode.
+ if(typeof candleDurationSeconds==="function"){
+   const oldDuration=candleDurationSeconds;
+   candleDurationSeconds=function(r){return 60;};
+ }
+ const notice=document.querySelector(".notice");
+ if(notice) notice.innerHTML="<b>2-minute market intelligence:</b> APEXSCAN combines two consecutive, fully closed 1-minute provider candles into each 2-minute candle. It waits for a completed 2-minute close, checks directional structure against MACD, candle behavior and support/resistance, then releases CALL / PUT for the next 1-minute candle. If structure is mixed, stale or unconfirmed, it displays WAIT. Signals and paper tracking only; no Pocket Option orders are placed.";
+ const foot=document.getElementById("scanFoot");
+ if(foot)foot.textContent="Two-minute market build-up · signal released on the next 1-minute candle · 1-minute callout expiry.";
+ const hero=document.getElementById("heroLiveLabel");
+ if(hero)hero.textContent="2-minute trend confirmation · 1-minute callouts";
+ const meta=document.getElementById("chartMeta");
+ if(meta)meta.textContent="2-minute trend structure · MACD · candle patterns · support / resistance";
+})();
+
 </script>
 </body></html>
