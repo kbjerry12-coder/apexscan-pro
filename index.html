@@ -505,6 +505,56 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
 }
 
 </style>
+
+<style id="apex-early-signal-countdown-hotfix">
+/* Keep countdown and early status visible despite later theme overrides. */
+#signalPanel .countdown-grid,
+#signalPanel .countdown-grid > div,
+#signalPanel #signalCountdown,
+#signalPanel #candleCountdown {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+#signalPanel .countdown-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 7px !important;
+  margin: 8px 0 !important;
+}
+#signalPanel .countdown-grid > div {
+  min-height: 54px !important;
+}
+#signalPanel .countdown-grid b {
+  font-variant-numeric: tabular-nums !important;
+  min-height: 1.2em !important;
+}
+#apexEarlyStatus {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  margin: 8px 0 !important;
+  padding: 9px 10px !important;
+  border: 1px solid #27646a !important;
+  border-radius: 9px !important;
+  background: #08252d !important;
+  color: #a9e8e1 !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  letter-spacing: .06em !important;
+  line-height: 1.4 !important;
+}
+#apexEarlyStatus.early-buy {
+  border-color: #1aa98b !important;
+  background: #073a32 !important;
+  color: #7cf8d5 !important;
+}
+#apexEarlyStatus.early-sell {
+  border-color: #d84d6b !important;
+  background: #401b29 !important;
+  color: #ff9fb2 !important;
+}
+</style>
 </head>
 <body>
 <header>
@@ -597,7 +647,7 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
     <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Technical engine is checking trend, momentum and candle structure</p>
     <div id="candleIntel" class="candle-intel"><div class="ci-title">CANDLE INTELLIGENCE · 30S CLOSED BAR</div><div class="ci-muted">Waiting for completed candle data.</div></div><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>MACD</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>MACD 12/26/9</span><span>Histogram confirmation</span><span>Support / resistance</span><span>Closed candle</span><span>Reverse mode ON</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · Each fresh BUY/SELL direction can open one simulated trade per candle</span></div>
      <div id="paperLiveBoard" class="paper-live-board" aria-live="polite"><b>LIVE PAPER POSITIONS</b><span>No open paper trades yet · waiting for the next directional signal.</span></div>
-     <div class="countdown-grid">
+     <div id="apexEarlyStatus" aria-live="polite">EARLY SCAN · AUTO SCANNER READY · NEXT 30S CANDLE</div>\n      <div class="countdown-grid">
       <div><small>BUY / SELL VALID FOR</small><b id="signalCountdown">--:--</b></div>
       <div><small>30-SEC CANDLE CLOSES IN · UTC-10 DISPLAY</small><b id="candleCountdown">--:--</b></div>
      </div>
@@ -2273,6 +2323,20 @@ let apexAutoScanInFlight=false;
 async function apexIntelligentHeartbeat(){
  const now=apexServerNow(),bucket=Math.floor(now/APEX_BAR_MS),within=now-bucket*APEX_BAR_MS,key=String(bucket),left=Math.ceil((APEX_BAR_MS-within)/1000);
  apexRenderIntelligentPanel();
+ const earlyStatus=$("apexEarlyStatus");
+ if(earlyStatus){
+  earlyStatus.className="";
+  if(within>=29000)earlyStatus.textContent="⚡ 00:01 · EARLY SIGNAL SCAN RUNNING";
+  else{
+   const selected=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
+   const current=results[selected]?.analysis||{},early=current.earlyDirection||"WAIT";
+   if(["CALL","PUT"].includes(early)&&current.fresh){
+    const side=early==="CALL"?"BUY":"SELL";
+    earlyStatus.className=early==="CALL"?"early-buy":"early-sell";
+    earlyStatus.textContent=`⚡ EARLY ${side} · ${current.earlyScore||0}/100 · HEADS-UP ONLY`;
+   }else earlyStatus.textContent=`AUTO SCAN ARMED · NEXT CHECK IN 00:${String(left).padStart(2,"0")}`;
+  }
+ }
  if(within<APEX_BAR_MS){
   apex30State.phase=within<5000?"POST-CLOSE DATA SETTLE":"WAITING FOR NEXT 30S CLOSE";
   apex30State.detail=within<5000?`Candle closed · waiting ${Math.max(0,5-within/1000).toFixed(1)}s before analysis.`:"Monitoring the active 30-second candle; no forming-candle signal is released.";
@@ -2287,6 +2351,7 @@ async function apexIntelligentHeartbeat(){
    await scan();
    apexClosedDecisionKey=key;
    apex30State.detail="Completed-candle scan finished. Auto scan remains armed for the next candle, regardless of the previous signal status.";
+    if($("apexEarlyStatus"))$("apexEarlyStatus").textContent="✓ 00:01 SCAN COMPLETE · AUTO ARMED FOR NEXT 30S CANDLE";
   }catch(error){
    apex30State.phase="SCAN RETRY · AUTO ACTIVE";
    apex30State.detail=`Scan did not complete: ${error?.message||"temporary error"}. The scheduler will retry this candle.`;
