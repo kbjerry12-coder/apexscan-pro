@@ -627,7 +627,7 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
     <div class="fields">
      <div class="field wide"><label>Twelve Data API key · regular markets</label><input id="apiKey" type="password" placeholder="Twelve Data key saved on this device" autocomplete="off"></div>
      <div class="field wide"><label>OTC candle history</label><input value="Netlify Function · /.netlify/functions/otc-candles" disabled></div>
-     <div class="field wide"><label>OTC live stream · selected pair only (one connection)</label><div class="tiny" id="liveStreamStatus">Stream: connecting when dashboard loads…</div></div>
+     <div class="field wide"><label>OTC LIVE STREAM · MULTI-PAIR (UP TO 5 SYMBOLS · ONE CONNECTION)</label><div class="tiny" id="liveStreamStatus">Stream: connecting when dashboard loads…</div></div>
      <div class="field wide"><button id="saveKey" class="primary">Save & test Twelve Data connection</button></div>
      <div class="field wide"><div class="tiny" id="connectionStatus">Regular feed: not tested<br>OTC feed: function will be tested when selected</div></div>
     </div>
@@ -1220,7 +1220,7 @@ function drawChart(){
 }
 
 
-// One browser EventSource owns the selected-pair OTCharts stream; the scanner can select from the full OTC pair list.
+// One browser EventSource subscribes to up to five watched OTC symbols, prioritizing the selected chart pair.
 let liveStream=null,liveStreamState="CONNECTING",liveTicks={};
 const OTC_SYMBOLS={EURUSD_otc:"OTC:EUR/USD",GBPUSD_otc:"OTC:GBP/USD",USDJPY_otc:"OTC:USD/JPY",AUDCAD_otc:"OTC:AUD/CAD",AUDCHF_otc:"OTC:AUD/CHF",CHFJPY_otc:"OTC:CHF/JPY",EURCHF_otc:"OTC:EUR/CHF",EURNZD_otc:"OTC:EUR/NZD",GBPAUD_otc:"OTC:GBP/AUD",UAHUSD_otc:"OTC:UAH/USD",USDARS_otc:"OTC:USD/ARS",USDBDT_otc:"OTC:USD/BDT",USDCLP_otc:"OTC:USD/CLP",USDPKR_otc:"OTC:USD/PKR",USDTHB_otc:"OTC:USD/THB",KESUSD_otc:"OTC:KES/USD",USDMYR_otc:"OTC:USD/MYR",SARCNY_otc:"OTC:SAR/CNY"};
 function setLiveStreamState(message,ok=false){
@@ -1362,16 +1362,25 @@ function scheduleLiveReconnect(reason="connection lost"){
 function connectLiveStream(force=false){
  const selectedId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
  const selectedAsset=ASSETS.find(a=>a.id===selectedId&&a.kind==="otc")||ASSETS.find(a=>a.id===selectedChart&&a.kind==="otc");
- const streamSymbol=selectedAsset?.symbol||"EURUSD_otc";
- const hasOTC=[...watch].some(id=>ASSETS.find(a=>a.id===id)?.kind==="otc");
- if(!hasOTC){closeLiveStream();setLiveStreamState("OFF · no OTC markets selected");return}
+ const watchedOTC=[...watch].map(id=>ASSETS.find(a=>a.id===id)).filter(a=>a&&a.kind==="otc"&&a.symbol);
+ // Selected chart pair first, then up to four additional watched OTC pairs.
+ const streamAssets=[];
+ if(selectedAsset?.symbol)streamAssets.push(selectedAsset);
+ for(const asset of watchedOTC){
+  if(!streamAssets.some(x=>x.symbol===asset.symbol))streamAssets.push(asset);
+  if(streamAssets.length>=5)break;
+ }
+ const streamSymbols=streamAssets.slice(0,5).map(a=>a.symbol);
+ const streamIds=streamAssets.slice(0,5).map(a=>a.id);
+ if(!streamSymbols.length){closeLiveStream();setLiveStreamState("OFF · no OTC markets selected");return}
  if(typeof EventSource==="undefined"){closeLiveStream();setLiveStreamState("UNAVAILABLE · EventSource unsupported");return}
- if(liveStream&&!force&&liveStreamSymbol===streamSymbol)return;
+ const streamKey=streamSymbols.join(",");
+ if(liveStream&&!force&&liveStreamSymbol===streamKey)return;
  closeLiveStream();
- liveStreamSymbol=streamSymbol;
+ liveStreamSymbol=streamKey;
  const generation=liveStreamGeneration;
- setLiveStreamState("CONNECTING · "+streamSymbol);
- const url="/.netlify/functions/otc-stream?symbol="+encodeURIComponent(streamSymbol);
+ setLiveStreamState("CONNECTING · "+streamAssets.map(a=>a.name).join(", "));
+ const url="/.netlify/functions/otc-stream?symbol="+encodeURIComponent(streamSymbols.join(","));
  try{liveStream=new EventSource(url)}catch(err){scheduleLiveReconnect("could not create stream");return}
  const stream=liveStream;
  liveConnectTimeout=setTimeout(()=>{
@@ -1380,15 +1389,14 @@ function connectLiveStream(force=false){
  stream.onopen=()=>{
   if(generation!==liveStreamGeneration||liveStream!==stream)return;
   if(liveConnectTimeout){clearTimeout(liveConnectTimeout);liveConnectTimeout=null}
-  setLiveStreamState("OPEN · "+streamSymbol+" · waiting for ticks",true);
+  setLiveStreamState("OPEN · "+streamAssets.length+" pairs · waiting for ticks",true);
  };
  stream.addEventListener("connected",e=>{
   if(generation!==liveStreamGeneration||liveStream!==stream)return;
   if(liveConnectTimeout){clearTimeout(liveConnectTimeout);liveConnectTimeout=null}
   let detail="provider connected";try{const j=JSON.parse(e.data);detail=j.message||j.status||detail}catch(err){}
-  setLiveStreamState("CONNECTED · "+streamSymbol+" · "+detail,true);
+  setLiveStreamState("CONNECTED · "+streamAssets.length+" PAIRS · "+detail,true);
  });
- // Accept named tick events and default SSE messages, but avoid duplicate delivery.
  stream.addEventListener("tick",e=>{if(generation===liveStreamGeneration&&liveStream===stream)handleLiveTick(e)});
  stream.onmessage=e=>{if(generation===liveStreamGeneration&&liveStream===stream)handleLiveTick(e)};
  stream.addEventListener("dropped",()=>{if(generation===liveStreamGeneration&&liveStream===stream)scheduleLiveReconnect("provider dropped symbol")});
@@ -1397,13 +1405,14 @@ function connectLiveStream(force=false){
   if(generation!==liveStreamGeneration||liveStream!==stream)return;
   scheduleLiveReconnect("stream error");
  };
+ stream.__apexStreamIds=streamIds;
+ stream.__apexOpenedAt=Date.now();
  liveWatchdogTimer=setInterval(()=>{
   if(generation!==liveStreamGeneration||liveStream!==stream)return;
-  const tick=liveTicks[selectedAsset?.id];
-  if(tick&&Date.now()-Number(tick.receivedAt||0)>LIVE_TICK_TIMEOUT_MS)scheduleLiveReconnect("tick timeout");
-  else if(!tick&&Date.now()-(Number(stream.__apexOpenedAt)||Date.now())>LIVE_TICK_TIMEOUT_MS)scheduleLiveReconnect("no first tick");
+  const latest=Math.max(...streamIds.map(id=>Number(liveTicks[id]?.receivedAt||0)));
+  if(latest&&Date.now()-latest>LIVE_TICK_TIMEOUT_MS)scheduleLiveReconnect("no recent ticks across stream");
+  else if(!latest&&Date.now()-Number(stream.__apexOpenedAt||Date.now())>LIVE_TICK_TIMEOUT_MS)scheduleLiveReconnect("no first tick");
  },5000);
- stream.__apexOpenedAt=Date.now();
 }
 function stopLiveStream(){
  closeLiveStream();
