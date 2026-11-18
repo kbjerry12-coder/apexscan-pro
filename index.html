@@ -1360,10 +1360,35 @@ function connectLiveStream(){
   if(!liveStreamRetryTimer)liveStreamRetryTimer=setTimeout(()=>{liveStreamRetryTimer=null;connectLiveStream()},5000);
  };
 }
+let pairSwitchTimer=null, pairSwitchGeneration=0;
+function handleSelectedPairChange(id){
+ const asset=ASSETS.find(a=>a.id===id&&a.kind==="otc");
+ if(!asset)return;
+ selectedChart=id;
+ if($("chartAsset"))$("chartAsset").value=id;
+ if($("mobileAsset"))$("mobileAsset").value=id;
+ watch.add(id);
+ renderWatch();
+ drawChart();
+ updateMobileMarketLabel();
+ saveState();
+
+ // Collapse rapid selector changes into one stream handoff. Pair changes do not
+ // launch an extra scan; the single 30-second scheduler scans the final pair.
+ const generation=++pairSwitchGeneration;
+ if(pairSwitchTimer)clearTimeout(pairSwitchTimer);
+ stopLiveStream();
+ setLiveStreamState("PAIR CHANGED · preparing one shared stream");
+ pairSwitchTimer=setTimeout(()=>{
+  pairSwitchTimer=null;
+  if(generation!==pairSwitchGeneration)return;
+  connectLiveStream();
+ },1200);
+}
 function stopLiveStream(){
  closeLiveStreamOnly();
  if(liveStreamRetryTimer){clearTimeout(liveStreamRetryTimer);liveStreamRetryTimer=null;}
- setLiveStreamState("OFF · no OTC markets selected");
+ setLiveStreamState("OFF · stream handoff");
 }
 function renderScanner(){
  let arr=[...watch].map(id=>results[id]).filter(Boolean),rows=[...arr].sort((a,b)=>b.analysis.score-a.analysis.score);
@@ -1775,7 +1800,7 @@ function setMobileScreen(screen){
 }
 document.querySelectorAll(".market-tab").forEach(b=>b.addEventListener("click",()=>setMarketCategory(b.dataset.marketCategory)));
 document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>setMobileScreen(b.dataset.screen)));
-$("mobileAsset").addEventListener("change",()=>{const id=$("mobileAsset").value;$("chartAsset").value=id;selectedChart=id;watch.add(id);renderWatch();drawChart();updateMobileMarketLabel();stopLiveStream();connectLiveStream();saveState();if(!busy)scan()});
+$("mobileAsset").addEventListener("change",()=>handleSelectedPairChange($("mobileAsset").value));
 $("mobileInterval").addEventListener("change",()=>{$("interval").value=$("mobileInterval").value;$("interval").dispatchEvent(new Event("change"));});
 function syncMobileControls(){if($("mobileInterval"))$("mobileInterval").value=$("interval").value||"15000";updateChartOptions()}
 window.addEventListener("resize",()=>{setMobileScreen(activeMobileScreen);drawChart()});
@@ -1834,7 +1859,7 @@ $("autoPaperToggle").addEventListener("change",()=>{
 $("scanMode").addEventListener("change",()=>{saveState();if(latestScan)renderScanner()});
 $("clearSignals").onclick=()=>{if(confirm("Clear signal history?")){history=[];renderHistory();saveState()}};
 $("clearTrades").onclick=()=>{if(confirm("Delete all paper journal records?")){trades=[];renderTrades();saveState()}};
-$("chartAsset").onchange=()=>{selectedChart=$("chartAsset").value;watch.add(selectedChart);$("mobileAsset").value=selectedChart;renderWatch();drawChart();stopLiveStream();connectLiveStream();saveState();if(!busy)scan()};
+$("chartAsset").onchange=()=>handleSelectedPairChange($("chartAsset").value);
 document.querySelectorAll(".tf-btn").forEach(b=>b.addEventListener("click",()=>setChartTimeframe(Number(b.dataset.tf))));
 $("threshold").onchange=()=>{$("thresholdText").textContent=$("threshold").value+" / 100";if(latestScan)scan();saveState()};
 $("interval").onchange=()=>{if(running){clearInterval(cycle);cycle=setInterval(()=>{if(!busy)scan()},30000)}$("cycleText").textContent=((+$("interval").value||15000)/1000)+" sec";saveState()};
