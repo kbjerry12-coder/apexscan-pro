@@ -1197,7 +1197,7 @@ function drawChart(){
 
 
 // One browser EventSource owns the selected-pair OTCharts stream; the scanner can select from the full OTC pair list.
-let liveStream=null,liveStreamState="CONNECTING",liveTicks={};
+let liveStream=null,liveStreamState="CONNECTING",liveTicks={},liveStreamRetryTimer=null,liveStreamRetryUntil=0;
 const OTC_SYMBOLS={EURUSD_otc:"OTC:EUR/USD",GBPUSD_otc:"OTC:GBP/USD",USDJPY_otc:"OTC:USD/JPY",AUDCAD_otc:"OTC:AUD/CAD",AUDCHF_otc:"OTC:AUD/CHF",CHFJPY_otc:"OTC:CHF/JPY",EURCHF_otc:"OTC:EUR/CHF",EURNZD_otc:"OTC:EUR/NZD",GBPAUD_otc:"OTC:GBP/AUD",UAHUSD_otc:"OTC:UAH/USD",USDARS_otc:"OTC:USD/ARS",USDBDT_otc:"OTC:USD/BDT",USDCLP_otc:"OTC:USD/CLP",USDPKR_otc:"OTC:USD/PKR",USDTHB_otc:"OTC:USD/THB",KESUSD_otc:"OTC:KES/USD",USDMYR_otc:"OTC:USD/MYR",SARCNY_otc:"OTC:SAR/CNY"};
 function setLiveStreamState(message,ok=false){
  liveStreamState=message;
@@ -1312,37 +1312,59 @@ function handleLiveTick(raw){
  renderPaperLiveBoard();
  settleExpiredTrades();
 }
+function closeLiveStreamOnly(){
+ if(liveStream){liveStream.close();liveStream=null;}
+}
 function connectLiveStream(){
  if(liveStream||typeof EventSource==="undefined")return;
  if(![...watch].some(id=>ASSETS.find(a=>a.id===id)?.kind==="otc")){
   setLiveStreamState("OFF · no OTC markets selected");return;
  }
+ const remaining=Math.max(0,liveStreamRetryUntil-Date.now());
+ if(remaining>0){
+  setLiveStreamState("RATE LIMIT COOLDOWN · retry in "+Math.ceil(remaining/1000)+"s");
+  if(!liveStreamRetryTimer)liveStreamRetryTimer=setTimeout(()=>{liveStreamRetryTimer=null;connectLiveStream()},remaining);
+  return;
+ }
  setLiveStreamState("connecting to one shared connection…");
  const selectedId=$("mobileAsset")?.value||selectedChart;
- const selectedAsset=ASSETS.find(a=>a.id===selectedId&&a.kind==="otc")||ASSETS.find(a=>a.id===selectedChart);
+ const selectedAsset=ASSETS.find(a=>a.id===selectedId&&a.kind==="otc")||ASSETS.find(a=>a.id===selectedChart&&a.kind==="otc");
  const streamSymbol=selectedAsset?.symbol||"EURUSD_otc";
  liveStream=new EventSource("/.netlify/functions/otc-stream?symbol="+encodeURIComponent(streamSymbol));
  liveStream.addEventListener("connected",e=>{
-  let detail="connected";try{const j=JSON.parse(e.data);detail=j.message||j.status||"connected"}catch(err){}
   setLiveStreamState("CONNECTED · waiting for ticks",true);
  });
  liveStream.addEventListener("tick",handleLiveTick);
- liveStream.addEventListener("dropped",e=>setLiveStreamState("provider dropped a symbol; reconnecting"));
- liveStream.addEventListener("closed",e=>setLiveStreamState("provider closed stream; reconnecting"));
+ liveStream.addEventListener("dropped",()=>setLiveStreamState("provider dropped a symbol"));
+ liveStream.addEventListener("closed",()=>setLiveStreamState("provider closed stream"));
  liveStream.addEventListener("stream_error",e=>{
-  let error={};
-  try{error=JSON.parse(e.data)}catch(err){}
+  let error={};try{error=JSON.parse(e.data)}catch(err){}
   const message=error.error||"OTCharts stream error";
   const details=error.details?(typeof error.details==="string"?error.details:JSON.stringify(error.details)):"";
   const status=error.status?(" HTTP "+error.status):"";
+  const retrySeconds=Number(error.retryAfter||error.details?.retryAfter||0)||((error.status===429)?20:5);
+  if(error.status===429){liveStreamRetryUntil=Date.now()+retrySeconds*1000;}
   setLiveStreamState("ERROR"+status+" · "+message+(details?" · "+details:""));
   console.error("OTCharts stream error:",error);
+  closeLiveStreamOnly();
+  if(!liveStreamRetryTimer){
+   liveStreamRetryTimer=setTimeout(()=>{liveStreamRetryTimer=null;connectLiveStream()},Math.max(1000,retrySeconds*1000));
+  }
  });
  liveStream.onmessage=handleLiveTick;
  liveStream.onopen=()=>setLiveStreamState("OPEN · awaiting first tick",true);
- liveStream.onerror=()=>setLiveStreamState("RECONNECTING · browser retry active");
+ liveStream.onerror=()=>{
+  if(!liveStream)return;
+  setLiveStreamState("STREAM INTERRUPTED · closing to prevent reconnect loop");
+  closeLiveStreamOnly();
+  if(!liveStreamRetryTimer)liveStreamRetryTimer=setTimeout(()=>{liveStreamRetryTimer=null;connectLiveStream()},5000);
+ };
 }
-function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
+function stopLiveStream(){
+ closeLiveStreamOnly();
+ if(liveStreamRetryTimer){clearTimeout(liveStreamRetryTimer);liveStreamRetryTimer=null;}
+ setLiveStreamState("OFF · no OTC markets selected");
+}
 function renderScanner(){
  let arr=[...watch].map(id=>results[id]).filter(Boolean),rows=[...arr].sort((a,b)=>b.analysis.score-a.analysis.score);
  $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.direction==="CALL"?"BUY":s.direction==="PUT"?"SELL":"—",cls=shownDirection==="BUY"?"call":shownDirection==="SELL"?"put":"wait",change=r.change,timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+30000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":s.trend==="DOWN"?"red":"muted"}">${s.trend||"—"}</td><td>${Number.isFinite(s.macdHistogram)?s.macdHistogram.toPrecision(4):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">00:30</small>`:""}</td><td><span class="${s.signalLevel==="CONFIRMED"?"green":"blue"}">${s.signalLevel||"EARLY"}</span></td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
