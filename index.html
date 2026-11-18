@@ -1329,9 +1329,18 @@ function connectLiveStream(){
  liveStream.addEventListener("tick",handleLiveTick);
  liveStream.addEventListener("dropped",e=>setLiveStreamState("provider dropped a symbol; reconnecting"));
  liveStream.addEventListener("closed",e=>setLiveStreamState("provider closed stream; reconnecting"));
+ liveStream.addEventListener("stream_error",e=>{
+  let error={};
+  try{error=JSON.parse(e.data)}catch(err){}
+  const message=error.error||"OTCharts stream error";
+  const details=error.details?(typeof error.details==="string"?error.details:JSON.stringify(error.details)):"";
+  const status=error.status?(" HTTP "+error.status):"";
+  setLiveStreamState("ERROR"+status+" · "+message+(details?" · "+details:""));
+  console.error("OTCharts stream error:",error);
+ });
  liveStream.onmessage=handleLiveTick;
  liveStream.onopen=()=>setLiveStreamState("OPEN · awaiting first tick",true);
- liveStream.onerror=()=>setLiveStreamState("RECONNECTING · browser will retry automatically");
+ liveStream.onerror=()=>setLiveStreamState("RECONNECTING · browser retry active");
 }
 function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
 function renderScanner(){
