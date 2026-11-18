@@ -2141,10 +2141,10 @@ async function apexIntelligentHeartbeat(){
  }
  // Scan every newly completed 30-second candle, even while the previous signal is still displayed.
  // Commit the candle key only after the scan settles, so a transient busy/error state cannot consume a scan cycle.
- if(within>=28000&&apexClosedDecisionKey!==key&&running&&!busy&&!apexAutoScanInFlight){
+ if(within>=29000&&apexClosedDecisionKey!==key&&running&&!busy&&!apexAutoScanInFlight){
   apexAutoScanInFlight=true;
-  apex30State.phase="28-SECOND REFRESH SCAN";
-  apex30State.detail="The 28-second scan trigger fired. Fetching the latest market data and refreshing the signal without reloading the page.";
+  apex30State.phase="00:01 EARLY SIGNAL SCAN";
+  apex30State.detail="The countdown reached 00:01. Running the fast early-signal scan now and refreshing the signal without reloading the page.";
   try{
    await scan();
    apexClosedDecisionKey=key;
@@ -2159,7 +2159,7 @@ async function apexIntelligentHeartbeat(){
 setChartTimeframe=function(){chartTimeframe=.5;document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===.5));if($("tfNote"))$("tfNote").textContent="30-second native OTC candles · scanner locked";if($("chartMeta"))$("chartMeta").textContent="30-second candle structure · MACD · momentum · support / resistance";drawChart();};
 if(typeof candleDurationSeconds==="function")candleDurationSeconds=function(){return 30;};
 const apexOriginalCountdownsV30=updateCountdowns;updateCountdowns=function(){apexOriginalCountdownsV30();const el=$("candleCountdown");if(el)el.textContent=`00:${String(apexCandleCountdown()).padStart(2,"0")}`;apexRenderIntelligentPanel();};
-function apexStartScheduler(){clearInterval(cycle);running=true;apexClosedDecisionKey=String(Math.floor(apexServerNow()/APEX_BAR_MS));$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="SUPER INTELLIGENCE ACTIVE";status("AUTO SCAN · REFRESH AT 28 SECONDS",true);apex30State.phase="WAITING FOR NEXT 30S CLOSE";apex30State.detail="Automatic analysis is armed. The signal refresh scan triggers at 28 seconds of each 30-second cycle.";cycle=setInterval(apexIntelligentHeartbeat,200);}
+function apexStartScheduler(){clearInterval(cycle);running=true;apexClosedDecisionKey=String(Math.floor(apexServerNow()/APEX_BAR_MS));$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="SUPER INTELLIGENCE ACTIVE";status("AUTO SCAN · EARLY SIGNAL AT 00:01",true);apex30State.phase="WAITING FOR NEXT 30S CLOSE";apex30State.detail="Automatic analysis is armed. The EARLY signal scan triggers at 00:01 remaining in each 30-second candle.";cycle=setInterval(apexIntelligentHeartbeat,200);}
 function apexPauseScheduler(){running=false;clearInterval(cycle);cycle=null;$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED");}
 $("startBtn").onclick=apexStartScheduler;$("pauseBtn").onclick=apexPauseScheduler;
 // V9.1 scan reliability patch: serialize all scan requests and always release the UI lock.
@@ -2194,8 +2194,8 @@ $("scanNow").onclick=async()=>{
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&running)apexIntelligentHeartbeat();});
 window.addEventListener("focus",()=>{if(running)apexIntelligentHeartbeat();});
 $("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";$("interval").onchange=()=>{$("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";saveState();};
-const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · adaptive EARLY BUY/SELL heads-up from 35/100 with 2 aligned layers · confirmed entries remain 65/100 + 15-point edge · MACD and momentum counted once · refresh scan at 28 seconds of each 30-second cycle. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
-const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · EARLY opportunity alerts · confirmed entry 65/100 · 28-second refresh scan · UTC-10 chart display.";
+const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · adaptive EARLY BUY/SELL heads-up from 35/100 with 2 aligned layers · confirmed entries remain 65/100 + 15-point edge · MACD and momentum counted once · early scan at 00:01 remaining of each 30-second cycle. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
+const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · EARLY opportunity alerts · confirmed entry 65/100 · 00:01 early-signal scan · UTC-10 chart display.";
 const hero=$("heroLiveLabel");if(hero)hero.textContent="30-second market intelligence · next-candle callouts";
 const tfNote=$("tfNote");if(tfNote)tfNote.textContent="30-second native OTC candles · scanner locked";
 const ci=$("candleIntel");if(ci)ci.innerHTML=ci.innerHTML.replaceAll("5M CLOSED BAR","30S CLOSED BAR").replaceAll("1M CLOSED BAR","30S CLOSED BAR");
