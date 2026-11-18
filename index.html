@@ -448,7 +448,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 html,body{min-height:100%;background:#06151c!important}body{background:radial-gradient(ellipse at 55% -10%,#28d9c8 0,rgba(22,140,143,.38) 19%,transparent 46%),linear-gradient(160deg,#071a22 0%,#06131b 52%,#081d25 100%)!important;color:#f2ffff;font-family:Inter,system-ui,-apple-system,sans-serif}
 header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!important;border-bottom:1px solid #267a7b!important;box-shadow:0 5px 22px #0005}
 .brand{gap:8px;font-size:13px;letter-spacing:.08em}.logo{width:30px;height:30px;border-radius:50%;background:linear-gradient(145deg,#b9fff3,#20b7aa)!important;color:#07343a!important;box-shadow:0 0 18px #5fffe255}.brand small{font-size:8px;letter-spacing:.12em;color:#9ed9d5!important}.headright{font-size:9px;gap:8px}.headright .headlabel{font-size:9px}
-.wrap{max-width:520px!important;margin:0 auto!important;padding:10px 12px 26px!important}.top{padding:5px 3px 9px!important;margin:0!important;border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible}.top:after{display:none}.top .eyebrow{font-size:9px;color:#8ff7e8!important}.top h1{font-size:15px!important;letter-spacing:-.02em;margin:1px 0!important}.top p{font-size:9px!important;color:#9bc7c9!important}.top .actions{display:none!important}
+.wrap{max-width:520px!important;margin:0 auto!important;padding:10px 12px 26px!important}.top{padding:5px 3px 9px!important;margin:0!important;border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible}.top:after{display:none}.top .eyebrow{font-size:9px;color:#8ff7e8!important}.top h1{font-size:15px!important;letter-spacing:-.02em;margin:1px 0!important}.top p{font-size:9px!important;color:#9bc7c9!important}.top .actions{display:flex!important;width:100%!important;gap:8px!important;margin:9px 0 2px!important;position:relative!important;z-index:20!important;visibility:visible!important;opacity:1!important}.top .actions button{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:1 1 0!important;min-width:0!important;min-height:44px!important;padding:10px 8px!important;font-size:11px!important;visibility:visible!important;opacity:1!important}
 .notice,.kpis{display:none!important}.mobile-command{display:block!important;margin:0 0 8px!important;padding:8px 10px!important;border:1px solid #23656b!important;border-radius:13px!important;background:linear-gradient(145deg,rgba(15,63,68,.86),rgba(7,29,39,.95))!important;box-shadow:0 8px 22px #0004!important}.market-tabs{display:none!important}.mobile-control-row{display:grid!important;grid-template-columns:1fr 92px!important;gap:8px!important}.mobile-control{gap:3px!important}.mobile-control span{font-size:8px!important;color:#9cd8d3!important}.mobile-control select{padding:7px!important;background:#09242c!important;border:1px solid #28616a!important;border-radius:8px!important;color:#efffff!important;font-size:11px!important}.mobile-market-meta{font-size:9px!important;color:#a5d9d5!important;margin-top:6px!important}.category-note{display:none!important}
 .main-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important}.main-grid>section,.main-grid>aside{display:contents!important}
 #signalPanel{grid-row:1!important;order:1!important;margin:0 0 8px!important;padding:11px!important;border-radius:17px!important;background:linear-gradient(145deg,rgba(10,45,51,.98),rgba(5,22,31,.98))!important;border:1px solid #277c7b!important;box-shadow:0 14px 34px #0006,inset 0 1px #ffffff12!important}
@@ -514,13 +514,12 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
 <main class="wrap">
  <div class="top">
   <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · OTC SIGNAL SCANNER</h1><p>OTCharts live OTC feed · BUY / SELL directional signals · every usable scan returns a side</p></div>
-  <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
+  <div class="actions"><button id="startBtn" class="primary" aria-label="Start automatic scanning">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
  <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Live ticks update displayed prices, but BUY/SELL entries wait for a completed native 30-second candle and aligned multi-layer confirmation. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
  <section class="mobile-command" id="marketControls" aria-label="Market controls">
   <div class="market-tabs" role="group" aria-label="Market category">
    <button type="button" class="market-tab active" data-market-category="currencies">Currencies</button>
-   <button type="button" class="market-tab" data-market-category="stocks">Stocks</button>
    
   </div>
   <div class="mobile-control-row">
@@ -685,34 +684,7 @@ const ASSETS=[
  {id:"OTC:USD/THB",name:"USD/THB OTC",kind:"otc",symbol:"USDTHB_otc",default:false},
  {id:"OTC:KES/USD",name:"KES/USD OTC",kind:"otc",symbol:"KESUSD_otc",default:false},
  {id:"OTC:USD/MYR",name:"USD/MYR OTC",kind:"otc",symbol:"USDMYR_otc",default:false},
- {id:"OTC:SAR/CNY",name:"SAR/CNY OTC",kind:"otc",symbol:"SARCNY_otc",default:false},
- // Additional currency pairs from the supplied Pocket Option asset list.
- // CHF/JPY, EUR/CHF and SAR/CNY were already present above.
- {id:"OTC:AED/CNY",name:"AED/CNY OTC",kind:"otc",symbol:"AEDCNY_otc",default:false},
- {id:"OTC:BHD/CNY",name:"BHD/CNY OTC",kind:"otc",symbol:"BHDCNY_otc",default:false},
- {id:"OTC:CAD/CHF",name:"CAD/CHF OTC",kind:"otc",symbol:"CADCHF_otc",default:false},
- {id:"OTC:CHF/NOK",name:"CHF/NOK OTC",kind:"otc",symbol:"CHFNOK_otc",default:false},
- {id:"OTC:EUR/RUB",name:"EUR/RUB OTC",kind:"otc",symbol:"EURRUB_otc",default:false},
- {id:"OTC:GBP/JPY",name:"GBP/JPY OTC",kind:"otc",symbol:"GBPJPY_otc",default:false},
- {id:"OTC:LBP/USD",name:"LBP/USD OTC",kind:"otc",symbol:"LBPUSD_otc",default:false},
- {id:"OTC:NGN/USD",name:"NGN/USD OTC",kind:"otc",symbol:"NGNUSD_otc",default:false},
- {id:"OTC:NZD/JPY",name:"NZD/JPY OTC",kind:"otc",symbol:"NZDJPY_otc",default:false},
- {id:"OTC:USD/EGP",name:"USD/EGP OTC",kind:"otc",symbol:"USDEGP_otc",default:false},
- {id:"OTC:USD/MXN",name:"USD/MXN OTC",kind:"otc",symbol:"USDMXN_otc",default:false},
- // Pocket Option stock OTC symbols use the provider's #TICKER_otc format.
- {id:"OTC:APPLE",name:"Apple OTC",kind:"otc",symbol:"#AAPL_otc",default:false},
- {id:"OTC:AMEX",name:"American Express OTC",kind:"otc",symbol:"#AXP_otc",default:false},
- {id:"OTC:BOEING",name:"Boeing Company OTC",kind:"otc",symbol:"#BA_otc",default:false},
- {id:"OTC:MCDONALDS",name:"McDonald's OTC",kind:"otc",symbol:"#MCD_otc",default:false},
- {id:"OTC:MICROSOFT",name:"Microsoft OTC",kind:"otc",symbol:"#MSFT_otc",default:false},
- {id:"OTC:PFIZER",name:"Pfizer Inc OTC",kind:"otc",symbol:"#PFE_otc",default:false},
- {id:"OTC:AMD",name:"Advanced Micro Devices OTC",kind:"otc",symbol:"#AMD_otc",default:false},
- {id:"OTC:AMAZON",name:"Amazon OTC",kind:"otc",symbol:"#AMZN_otc",default:false},
- {id:"OTC:VIX",name:"VIX OTC",kind:"otc",symbol:"#VIX_otc",default:false},
- {id:"OTC:NETFLIX",name:"Netflix OTC",kind:"otc",symbol:"#NFLX_otc",default:false},
- {id:"OTC:INTEL",name:"Intel OTC",kind:"otc",symbol:"#INTC_otc",default:false},
- {id:"OTC:MARATHON",name:"Marathon Digital Holdings OTC",kind:"otc",symbol:"#MARA_otc",default:false},
- {id:"OTC:TESLA",name:"Tesla OTC",kind:"otc",symbol:"#TSLA_otc",default:false}
+ {id:"OTC:SAR/CNY",name:"SAR/CNY OTC",kind:"otc",symbol:"SARCNY_otc",default:false}
 ];
 const lastAnalyzedClosedCandleByAsset=new Map();
 let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
@@ -746,7 +718,7 @@ function loadState(){
   if(!watch.has(selectedChart))selectedChart=[...watch][0]||"OTC:EUR/USD";
  }catch(e){console.warn("Saved settings could not be loaded",e)}
 }
-function assetCategory(a){return a.symbol?.startsWith("#")?"stocks":a.id==="BTC/USD"||a.id==="ETH/USD"?"crypto":"currencies"}
+function assetCategory(a){return a.id==="BTC/USD"||a.id==="ETH/USD"?"crypto":"currencies"}
 
 function updateChartOptions(){
  const categoryAssets=ASSETS.filter(a=>a.kind==="otc");
@@ -755,15 +727,8 @@ function updateChartOptions(){
  const fill=(el,list,preferred)=>{
   if(!el)return;
   const previous=el.value||preferred;
-  // Do not rebuild an unchanged native select. Replacing its options on every
-  // scan makes iOS Safari close/reset the picker and lose its scroll position.
-  const signature=list.map(a=>a.id+"|"+a.name+"|"+a.kind).join(";");
-  if(el.dataset.optionSignature!==signature){
-   const fragment=document.createDocumentFragment();
-   list.forEach(a=>{const o=document.createElement("option");o.value=a.id;o.textContent=a.name+(a.kind==="otc"?" · OTC":a.kind==="regular"?" · LIVE FEED":"");fragment.append(o)});
-   el.replaceChildren(fragment);
-   el.dataset.optionSignature=signature;
-  }
+  el.innerHTML="";
+  list.forEach(a=>{const o=document.createElement("option");o.value=a.id;o.textContent=a.name+(a.kind==="otc"?" · OTC":a.kind==="regular"?" · LIVE FEED":"");el.append(o)});
   if(list.some(a=>a.id===previous))el.value=previous;
   else if(list.length)el.value=list[0].id;
  };
@@ -779,7 +744,7 @@ function updateMobileMarketLabel(){
 }
 function renderWatch(){
  let box=$("watchChecks");box.innerHTML="";
- let visible=ASSETS.filter(a=>a.kind==="otc"&&assetCategory(a)===activeMarketCategory);
+ let visible=ASSETS.filter(a=>a.kind==="otc");
  if(!visible.length){box.innerHTML='<div class="empty">No OTC symbols are configured.</div>'}
  visible.forEach(a=>{let lab=document.createElement("label");lab.className="check";lab.dataset.category=assetCategory(a);let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState();if([...watch].some(id=>ASSETS.find(x=>x.id===id)?.kind==="otc"))connectLiveStream();else stopLiveStream();updateChartOptions()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});
  let note=$("categoryNote");if(note){note.style.display="none";note.textContent="OTC currency markets use your existing Netlify OTCharts function."}
@@ -1233,7 +1198,7 @@ function drawChart(){
 
 // One browser EventSource owns the selected-pair OTCharts stream; the scanner can select from the full OTC pair list.
 let liveStream=null,liveStreamState="CONNECTING",liveTicks={};
-const OTC_SYMBOLS=Object.fromEntries(ASSETS.filter(a=>a.kind==="otc").map(a=>[a.symbol,a.id]));
+const OTC_SYMBOLS={EURUSD_otc:"OTC:EUR/USD",GBPUSD_otc:"OTC:GBP/USD",USDJPY_otc:"OTC:USD/JPY",AUDCAD_otc:"OTC:AUD/CAD",AUDCHF_otc:"OTC:AUD/CHF",CHFJPY_otc:"OTC:CHF/JPY",EURCHF_otc:"OTC:EUR/CHF",EURNZD_otc:"OTC:EUR/NZD",GBPAUD_otc:"OTC:GBP/AUD",UAHUSD_otc:"OTC:UAH/USD",USDARS_otc:"OTC:USD/ARS",USDBDT_otc:"OTC:USD/BDT",USDCLP_otc:"OTC:USD/CLP",USDPKR_otc:"OTC:USD/PKR",USDTHB_otc:"OTC:USD/THB",KESUSD_otc:"OTC:KES/USD",USDMYR_otc:"OTC:USD/MYR",SARCNY_otc:"OTC:SAR/CNY"};
 function setLiveStreamState(message,ok=false){
  liveStreamState=message;
  const el=$("liveStreamStatus");
@@ -1652,11 +1617,7 @@ function addSignal(r){
  if(autoPaperEnabled&&!history.some(x=>x.key===paperKey)&&live.analysis.fresh&&hasCurrentFeed(live.id,live.candles?.at(-1)))openPaperTrade(live,side,true,paperKey);
  announceSignal(live);
  history.unshift({key,time:clock(),asset:live.name,side:side==="CALL"?"BUY":"SELL",entry:live.livePrice??live.price,score:live.analysis.score,age:Math.round(live.analysis.age)});
- history=history.slice(0,150);renderHistory();
- // Push the new signal into the visible callout immediately; do not wait for
- // a later page lifecycle event or a manual browser refresh.
- try{updateTop([...watch].map(id=>results[id]).filter(Boolean));}catch(uiError){console.warn("Signal panel refresh deferred",uiError)}
- saveState();
+ history=history.slice(0,150);renderHistory();saveState();
 }async function scan(){
  if(busy)return;if(!watch.size){alert("Select at least one market in Watchlist Configuration.");return}
  busy=true;status("SCANNING",true);$("scanNow").disabled=true;$("progressText").textContent="Starting scan…";$("scanProgress").style.width="0%";
@@ -1701,7 +1662,7 @@ function addSignal(r){
   // Avoid bursting the provider and stay within low-tier rate limits.
   if(done<ids.length)await new Promise(resolve=>setTimeout(resolve,900));
  }
- latestScan=Date.now();renderScanner();renderCandleIntel(results[selectedChart]);try{updateTop([...watch].map(id=>results[id]).filter(Boolean));renderHistory();drawChart()}catch(chartError){console.error("Post-scan UI refresh:",chartError)}settleExpiredTrades();$("scanNow").disabled=false;busy=false;
+ latestScan=Date.now();renderScanner();renderCandleIntel(results[selectedChart]);try{drawChart()}catch(chartError){console.error("Chart render:",chartError)}settleExpiredTrades();$("scanNow").disabled=false;busy=false;
  let fresh=[...watch].filter(id=>results[id]?.analysis.fresh).length;status(fresh?"SCAN COMPLETE · DATA RECEIVED":"SCAN COMPLETE · CHECK DATA",fresh>0);
  $("connectionStatus").textContent=`Regular feed: ${apiKey?"API key saved; per-symbol requests":"not configured"}\nOTC history: ${errorDetails.length?"ERROR · "+errorDetails.join(" | "):"last request completed"}\nOTC live stream: ${liveStreamState}\nLast scan: ${clock()}`;
  $("progressText").textContent=`Complete · ${fresh} fresh markets · ${errors} errors`;saveState();
@@ -2026,11 +1987,7 @@ handleLiveTick=function(event){
   let ms=typeof stamp==="string"&&!/^\d{10,13}$/.test(stamp)?Date.parse(stamp):Number(stamp);
   if(Number.isFinite(ms)&&ms>0){if(ms<1e12)ms*=1000;const delta=ms-Date.now();if(Math.abs(delta)<120000)apexServerClockOffsetMs=apexServerClockOffsetMs*.8+delta*.2;}
  }catch(e){}
- const handled=apexOriginalHandleLiveTick(event);
- // Live ticks repaint the selected signal card and entry quote immediately.
- // This keeps the dashboard reactive even between scheduled candle scans.
- try{updateTop([...watch].map(id=>results[id]).filter(Boolean));}catch(uiError){console.warn("Live signal repaint:",uiError)}
- return handled;
+ return apexOriginalHandleLiveTick(event);
 };
 // Insert the engine status card without changing the existing dashboard structure.
 const signalCallout=$("signalCallout");
@@ -2142,33 +2099,28 @@ function apexRenderIntelligentPanel(){
  const grid=$("apexLayerGrid");if(grid){grid.innerHTML="";(a.layers||[]).forEach(layer=>{const item=document.createElement("div");item.className="apex-layer-item";const name=document.createElement("small");name.textContent=layer.name;const value=document.createElement("b");value.textContent=layer.value;item.append(name,value);grid.appendChild(item);});}
  const stamp=$("apexLastClosed");if(stamp)stamp.textContent=a.candleTimeMs?new Date(a.candleTimeMs).toLocaleTimeString("en-US",{timeZone:"Etc/GMT+10",hour12:false}):"—";
 }
-function apexIntelligentHeartbeat(){
+let apexAutoScanInFlight=false;
+async function apexIntelligentHeartbeat(){
  const now=apexServerNow(),bucket=Math.floor(now/APEX_BAR_MS),within=now-bucket*APEX_BAR_MS,key=String(bucket),left=Math.ceil((APEX_BAR_MS-within)/1000);
  apexRenderIntelligentPanel();
  if(within<APEX_BAR_MS){
   apex30State.phase=within<5000?"POST-CLOSE DATA SETTLE":"WAITING FOR NEXT 30S CLOSE";
   apex30State.detail=within<5000?`Candle closed · waiting ${Math.max(0,5-within/1000).toFixed(1)}s before analysis.`:"Monitoring the active 30-second candle; no forming-candle signal is released.";
  }
- // Scan after the five-second provider-settle window. If the provider is late,
- // retry at a restrained cadence until the new bar arrives (or the retry window ends).
- if(within>=5000&&within<=20000&&apexClosedDecisionKey!==key&&running&&!busy&&
-    now-Number(window.apexLastPostCloseAttemptAt||0)>=3000){
-  window.apexLastPostCloseAttemptAt=now;
-  const selectedId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
-  const priorBar=Number(results[selectedId]?.candles?.at(-1)?.timeMs||0);
-  apex30State.phase="POST-CLOSE SCAN · DATA CHECK";
-  apex30State.detail="Checking for the newly opened 30-second bar. If OTCharts is delayed, the scanner will retry automatically.";
-  Promise.resolve(scan()).then(()=>{
-   const latest=Number(results[selectedId]?.candles?.at(-1)?.timeMs||0);
-   if(latest>priorBar){
-    apexClosedDecisionKey=key;
-    apex30State.phase="SIGNAL CHECK COMPLETE";
-    apex30State.detail="The new bar arrived. The selected market was analyzed and the visible signal panel was refreshed.";
-   }else{
-    apex30State.phase="WAITING FOR PROVIDER UPDATE";
-    apex30State.detail="No newer bar yet. Automatic retry remains armed for this candle.";
-   }
-  }).catch(err=>{console.warn("Post-close scan retry:",err);});
+ // Scan every newly completed 30-second candle, even while the previous signal is still displayed.
+ // Commit the candle key only after the scan settles, so a transient busy/error state cannot consume a scan cycle.
+ if(within>=5000&&apexClosedDecisionKey!==key&&running&&!busy&&!apexAutoScanInFlight){
+  apexAutoScanInFlight=true;
+  apex30State.phase="POST-CLOSE SCAN · +5s";
+  apex30State.detail="Five seconds have elapsed since the 30-second close. Fetching and validating the completed candle before scoring.";
+  try{
+   await scan();
+   apexClosedDecisionKey=key;
+   apex30State.detail="Completed-candle scan finished. Auto scan remains armed for the next candle, regardless of the previous signal status.";
+  }catch(error){
+   apex30State.phase="SCAN RETRY · AUTO ACTIVE";
+   apex30State.detail=`Scan did not complete: ${error?.message||"temporary error"}. The scheduler will retry this candle.`;
+  }finally{apexAutoScanInFlight=false;}
  }
 }
 // Keep the selected chart locked to the native 30-second feed.
@@ -2178,6 +2130,37 @@ const apexOriginalCountdownsV30=updateCountdowns;updateCountdowns=function(){ape
 function apexStartScheduler(){clearInterval(cycle);running=true;apexClosedDecisionKey=String(Math.floor(apexServerNow()/APEX_BAR_MS));$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="SUPER INTELLIGENCE ACTIVE";status("30-SECOND AUTO SCAN · NEXT CLOSE + 5S",true);apex30State.phase="WAITING FOR NEXT 30S CLOSE";apex30State.detail="Automatic analysis is armed. The next signal scan runs five seconds after the next completed 30-second candle.";cycle=setInterval(apexIntelligentHeartbeat,200);}
 function apexPauseScheduler(){running=false;clearInterval(cycle);cycle=null;$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED");}
 $("startBtn").onclick=apexStartScheduler;$("pauseBtn").onclick=apexPauseScheduler;
+// V9.1 scan reliability patch: serialize all scan requests and always release the UI lock.
+const apexOriginalScanV91=scan;
+let apexScanPromiseV91=null;
+scan=async function(){
+ if(apexScanPromiseV91)return apexScanPromiseV91;
+ apexScanPromiseV91=(async()=>{
+  try{return await apexOriginalScanV91();}
+  finally{
+   busy=false;
+   const button=$("scanNow");
+   if(button)button.disabled=false;
+  }
+ })();
+ try{return await apexScanPromiseV91;}
+ finally{apexScanPromiseV91=null;}
+};
+// Manual scans use the same protected scan path; when auto mode is active,
+// count this candle as handled so the heartbeat does not immediately repeat it.
+$("scanNow").onclick=async()=>{
+ const button=$("scanNow");
+ if(apexScanPromiseV91)return;
+ if(running){const manualNow=apexServerNow();if(manualNow%APEX_BAR_MS>=5000)apexClosedDecisionKey=String(Math.floor(manualNow/APEX_BAR_MS));}
+ button.disabled=true;button.textContent="⚡ INTELLIGENCE ENGINE RUNNING…";
+ try{await scan();}
+ catch(error){status("APEX SCAN ERROR");$("progressText").textContent="Scan failed: "+(error?.message||"unknown error");}
+ finally{button.disabled=false;button.textContent="⚡ RUN SUPER INTELLIGENCE SCAN";}
+};
+// Wake the existing 30-second scheduler after iOS/browser tab suspension.
+// The candle key prevents duplicate scans when focus and visibility fire together.
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&running)apexIntelligentHeartbeat();});
+window.addEventListener("focus",()=>{if(running)apexIntelligentHeartbeat();});
 $("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";$("interval").onchange=()=>{$("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";saveState();};
 const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · adaptive EARLY BUY/SELL heads-up from 35/100 with 2 aligned layers · confirmed entries remain 65/100 + 15-point edge · MACD and momentum counted once · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
 const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · EARLY opportunity alerts · confirmed entry 65/100 · +5s post-close scan · UTC-10 chart display.";
