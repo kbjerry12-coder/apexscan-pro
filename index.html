@@ -767,8 +767,10 @@ function renderWatch(){
  let box=$("watchChecks");box.innerHTML="";
  let visible=ASSETS.filter(a=>a.kind==="otc");
  if(!visible.length){box.innerHTML='<div class="empty">No OTC symbols are configured.</div>'}
- visible.forEach(a=>{let lab=document.createElement("label");lab.className="check";lab.dataset.category=assetCategory(a);let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState();if([...watch].some(id=>ASSETS.find(x=>x.id===id)?.kind==="otc"))connectLiveStream();
-if(!liveWatchdogTimer)liveWatchdogTimer=setInterval(()=>{if(liveStream&&liveStreamState.includes("CONNECTED")&&Object.values(liveTicks).every(t=>Date.now()-Number(t?.receivedAt||0)>25000))scheduleLiveReconnect("no recent ticks");},10000);else stopLiveStream();updateChartOptions()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});
+ visible.forEach(a=>{let lab=document.createElement("label");lab.className="check";lab.dataset.category=assetCategory(a);let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState();
+if([...watch].some(id=>ASSETS.find(x=>x.id===id)?.kind==="otc"))connectLiveStream(true);
+else stopLiveStream();
+updateChartOptions()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});
  let note=$("categoryNote");if(note){note.style.display="none";note.textContent="OTC currency markets use your existing Netlify OTCharts function."}
  updateChartOptions();
  // Keep the page and pair-list scroll position stable after selector updates.
@@ -1365,10 +1367,18 @@ function connectLiveStream(force=false){
  const watchedOTC=[...watch].map(id=>ASSETS.find(a=>a.id===id)).filter(a=>a&&a.kind==="otc"&&a.symbol);
  // Selected chart pair first, then up to four additional watched OTC pairs.
  const streamAssets=[];
- if(selectedAsset?.symbol)streamAssets.push(selectedAsset);
- for(const asset of watchedOTC){
-  if(!streamAssets.some(x=>x.symbol===asset.symbol))streamAssets.push(asset);
-  if(streamAssets.length>=5)break;
+ const addStreamAsset=asset=>{
+  if(asset?.symbol&&!streamAssets.some(x=>x.symbol===asset.symbol))streamAssets.push(asset);
+ };
+ // Priority: selected chart pair, watched pairs, then fill remaining slots
+ // from the configured OTC asset list so the stream stays at five symbols.
+ addStreamAsset(selectedAsset);
+ for(const asset of watchedOTC){addStreamAsset(asset);if(streamAssets.length>=5)break;}
+ if(streamAssets.length<5){
+  for(const asset of ASSETS.filter(a=>a.kind==="otc"&&a.symbol)){
+   addStreamAsset(asset);
+   if(streamAssets.length>=5)break;
+  }
  }
  const streamSymbols=streamAssets.slice(0,5).map(a=>a.symbol);
  const streamIds=streamAssets.slice(0,5).map(a=>a.id);
