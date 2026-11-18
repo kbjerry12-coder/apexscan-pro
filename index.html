@@ -684,8 +684,28 @@ const ASSETS=[
  {id:"OTC:USD/THB",name:"USD/THB OTC",kind:"otc",symbol:"USDTHB_otc",default:false},
  {id:"OTC:KES/USD",name:"KES/USD OTC",kind:"otc",symbol:"KESUSD_otc",default:false},
  {id:"OTC:USD/MYR",name:"USD/MYR OTC",kind:"otc",symbol:"USDMYR_otc",default:false},
- {id:"OTC:SAR/CNY",name:"SAR/CNY OTC",kind:"otc",symbol:"SARCNY_otc",default:false}
-];
+ {id:"OTC:SAR/CNY",name:"SAR/CNY OTC",kind:"otc",symbol:"SARCNY_otc",default:false},
+
+ {id:"OTC:NZD/USD",name:"NZD/USD OTC",kind:"otc",symbol:"NZDUSD_otc",default:false},
+ {id:"OTC:USD/CHF",name:"USD/CHF OTC",kind:"otc",symbol:"USDCHF_otc",default:false},
+ {id:"OTC:USD/DZD",name:"USD/DZD OTC",kind:"otc",symbol:"USDDZD_otc",default:false},
+ {id:"OTC:USD/EGP",name:"USD/EGP OTC",kind:"otc",symbol:"USDEGP_otc",default:false},
+ {id:"OTC:USD/INR",name:"USD/INR OTC",kind:"otc",symbol:"USDINR_otc",default:false},
+ {id:"OTC:USD/COP",name:"USD/COP OTC",kind:"otc",symbol:"USDCOP_otc",default:false},
+ {id:"OTC:EUR/HUF",name:"EUR/HUF OTC",kind:"otc",symbol:"EURHUF_otc",default:false},
+ {id:"OTC:AUD/JPY",name:"AUD/JPY OTC",kind:"otc",symbol:"AUDJPY_otc",default:false},
+ {id:"OTC:AUD/NZD",name:"AUD/NZD OTC",kind:"otc",symbol:"AUDNZD_otc",default:false},
+ {id:"OTC:AUD/USD",name:"AUD/USD OTC",kind:"otc",symbol:"AUDUSD_otc",default:false},
+ {id:"OTC:BHD/CNY",name:"BHD/CNY OTC",kind:"otc",symbol:"BHDCNY_otc",default:false},
+ {id:"OTC:CAD/CHF",name:"CAD/CHF OTC",kind:"otc",symbol:"CADCHF_otc",default:false},
+ {id:"OTC:EUR/GBP",name:"EUR/GBP OTC",kind:"otc",symbol:"EURGBP_otc",default:false},
+ {id:"OTC:EUR/JPY",name:"EUR/JPY OTC",kind:"otc",symbol:"EURJPY_otc",default:false},
+ {id:"OTC:EUR/RUB",name:"EUR/RUB OTC",kind:"otc",symbol:"EURRUB_otc",default:false},
+ {id:"OTC:EUR/TRY",name:"EUR/TRY OTC",kind:"otc",symbol:"EURTRY_otc",default:false},
+ {id:"OTC:JOD/CNY",name:"JOD/CNY OTC",kind:"otc",symbol:"JODCNY_otc",default:false},
+ {id:"OTC:MAD/USD",name:"MAD/USD OTC",kind:"otc",symbol:"MADUSD_otc",default:false},
+ {id:"OTC:OMR/CNY",name:"OMR/CNY OTC",kind:"otc",symbol:"OMRCNY_otc",default:false},
+ ];
 const lastAnalyzedClosedCandleByAsset=new Map();
 let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},expiredSignalKeys=new Set(),activeMarketCategory="currencies",activeMobileScreen="scanner";
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6});
@@ -743,6 +763,7 @@ function updateMobileMarketLabel(){
  if(el&&a)el.textContent=a.name+(a.kind==="otc"?" · OTC":"");
 }
 function renderWatch(){
+ const savedScrollY=window.scrollY;const savedBoxScroll=$("watchChecks")?.scrollTop||0;
  let box=$("watchChecks");box.innerHTML="";
  let visible=ASSETS.filter(a=>a.kind==="otc");
  if(!visible.length){box.innerHTML='<div class="empty">No OTC symbols are configured.</div>'}
@@ -750,6 +771,8 @@ function renderWatch(){
 if(!liveWatchdogTimer)liveWatchdogTimer=setInterval(()=>{if(liveStream&&liveStreamState.includes("CONNECTED")&&Object.values(liveTicks).every(t=>Date.now()-Number(t?.receivedAt||0)>25000))scheduleLiveReconnect("no recent ticks");},10000);else stopLiveStream();updateChartOptions()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});
  let note=$("categoryNote");if(note){note.style.display="none";note.textContent="OTC currency markets use your existing Netlify OTCharts function."}
  updateChartOptions();
+ // Keep the page and pair-list scroll position stable after selector updates.
+ box.scrollTop=savedBoxScroll;window.scrollTo({top:savedScrollY,left:0,behavior:"instant"});
 }
 function ema(v,p){if(v.length<p)return null;let k=2/(p+1),x=v.slice(0,p).reduce((a,b)=>a+b,0)/p;for(let i=p;i<v.length;i++)x=v[i]*k+x*(1-k);return x}
 
