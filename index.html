@@ -2106,7 +2106,8 @@ function apexIntelligentHeartbeat(){
  }
  // Trigger exactly once when the native 30-second candle countdown reaches 00:01.
  // Keep this scheduler as the sole automatic trigger; avoid competing minute/post-close scans.
- if(left===1&&apexClosedDecisionKey!==key&&running&&!busy){
+ if(left<=2&&apexClosedDecisionKey!==key&&running&&!busy){
+  // Trigger as soon as the countdown enters 00:01; don't mark the cycle if busy.
   apexClosedDecisionKey=key;
   apex30State.phase="EARLY SCAN · 00:01";
   apex30State.detail="Countdown reached 00:01. Fetching live data and running the scan.";
@@ -2149,5 +2150,30 @@ renderCandleIntel=function(r){
 
 </script>
 
-<script id="apex-risk-calculator-script">(()=>{const stake=document.getElementById('riskStakeView'),payout=document.getElementById('riskPayoutView'),out=document.getElementById('riskProfitView'),realStake=document.getElementById('stake'),realPayout=document.getElementById('payout');if(!stake||!payout||!out)return;const calc=()=>{const s=Math.max(0,Number(stake.value)||0),p=Math.max(0,Math.min(100,Number(payout.value)||0));out.textContent='+$'+(s*p/100).toFixed(2)+' profit';if(realStake)realStake.value=String(s||1);if(realPayout)realPayout.value=String(p||1);try{realStake?.dispatchEvent(new Event('change',{bubbles:true}));realPayout?.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}};stake.addEventListener('input',calc);payout.addEventListener('input',calc);calc();})();</script>
+<script id="apex-risk-calculator-script">(()=>{const stake=document.getElementById('riskStakeView'),payout=document.getElementById('riskPayoutView'),out=document.getElementById('riskProfitView'),realStake=document.getElementById('stake'),realPayout=document.getElementById('payout');if(!stake||!payout||!out)return;const calc=()=>{const s=Math.max(0,Number(stake.value)||0),p=Math.max(0,Math.min(100,Number(payout.value)||0));out.textContent='+$'+(s*p/100).toFixed(2)+' profit';if(realStake)realStake.value=String(s||1);if(realPayout)realPayout.value=String(p||1);try{realStake?.dispatchEvent(new Event('change',{bubbles:true}));realPayout?.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}};stake.addEventListener('input',calc);payout.addEventListener('input',calc);calc();})();
+
+// V9.1 signal lifecycle repair: expire and clear the displayed signal, not just its timer label.
+const apexV91OriginalUpdateCountdowns=updateCountdowns;
+updateCountdowns=function(){
+ apexV91OriginalUpdateCountdowns();
+ if(signalExpiryAt && Date.now()>=signalExpiryAt){
+  signalExpiryAt=0;
+  signalTimerKey="";
+  const card=$("topSignal"),banner=$("signalCallout");
+  if(card){
+   card.className="signal-card wait";
+   card.querySelector(".signal-dir")?.replaceChildren(document.createTextNode("WAIT"));
+  }
+  if(banner){
+   banner.className="signal-callout neutral";
+   banner.textContent="SIGNAL EXPIRED · WAITING FOR NEXT SCAN";
+  }
+  $("signalCountdown").textContent="--:--";
+  $("topDirection").textContent="SCANNING";
+  $("topScore").textContent="SIGNAL EXPIRED";
+  $("topReason").textContent="The previous signal's countdown has ended. Waiting for the next fresh scan.";
+  $("signalStatusLine").textContent="SIGNAL EXPIRED · NEXT SCAN PENDING";
+ }
+};
+</script>
 </body></html>
