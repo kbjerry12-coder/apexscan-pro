@@ -628,7 +628,7 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
      <div class="field wide"><label>Twelve Data API key · regular markets</label><input id="apiKey" type="password" placeholder="Twelve Data key saved on this device" autocomplete="off"></div>
      <div class="field wide"><label>OTC candle history</label><input value="Netlify Function · /.netlify/functions/otc-candles" disabled></div>
      <div class="field wide"><label>OTC live stream · selected pair only (one connection)</label><div class="tiny" id="liveStreamStatus">Stream: connecting when dashboard loads…</div></div>
-     <div class="field wide"><button id="saveKey" class="primary">Save & test Twelve Data connection</button></div>
+     <div class="field wide"><button id="saveKey" class="primary">Save key & test connection</button></div>
      <div class="field wide"><div class="tiny" id="connectionStatus">Regular feed: not tested<br>OTC feed: function will be tested when selected</div></div>
     </div>
    </div>
@@ -1271,7 +1271,7 @@ function isPOComparisonVerified(assetId){
  const pip=assetId.includes("JPY")?.01:.0001;
  return Math.abs(Number(tick.price)-poQuoteValue)<=pip*.2;
 }
-function handleLiveTick(raw){
+function handleLiveTick(raw){\n lastLiveTickAt=Date.now();streamOpenedAt=Date.now();liveReconnectAttempts=0;
  let tick;try{tick=JSON.parse(raw.data)}catch(e){return}
  if(tick?.data && typeof tick.data==="object")tick=tick.data;
  const symbol=String(tick.symbol||tick.instrument||tick.s||tick.asset||"").trim();
@@ -1313,12 +1313,14 @@ function handleLiveTick(raw){
  renderPaperLiveBoard();
  settleExpiredTrades();
 }
-let liveReconnectTimer=null,liveWatchdogTimer=null,liveReconnectAttempts=0;
+let liveReconnectTimer=null,liveWatchdogTimer=null,liveReconnectAttempts=0,lastLiveTickAt=0,lastLiveSymbol="";
 function scheduleLiveReconnect(reason="connection lost"){
- if(liveReconnectTimer)clearTimeout(liveReconnectTimer);
- setLiveStreamState("RECONNECTING · "+reason);
- const delay=Math.min(15000,1000*Math.pow(2,Math.min(liveReconnectAttempts++,4)));
+ if(liveReconnectTimer)return;
+ liveReconnectAttempts++;
+ const delay=Math.min(30000,1000*Math.pow(2,Math.min(liveReconnectAttempts-1,5)));
+ setLiveStreamState(`RECONNECTING · ${reason} · retry ${liveReconnectAttempts} in ${Math.ceil(delay/1000)}s`);
  liveReconnectTimer=setTimeout(()=>{
+  liveReconnectTimer=null;
   if(liveStream){try{liveStream.close()}catch(e){}liveStream=null}
   connectLiveStream(true);
  },delay);
@@ -1331,29 +1333,40 @@ function connectLiveStream(force=false){
  }
  if(liveReconnectTimer){clearTimeout(liveReconnectTimer);liveReconnectTimer=null}
  if(liveStream){try{liveStream.close()}catch(e){}liveStream=null}
- setLiveStreamState("connecting to one shared connection…");
+ setLiveStreamState("CONNECTING · opening provider stream…");
  const selectedId=$("mobileAsset")?.value||selectedChart;
  const selectedAsset=ASSETS.find(a=>a.id===selectedId&&a.kind==="otc")||ASSETS.find(a=>a.id===selectedChart&&a.kind==="otc");
  const streamSymbol=selectedAsset?.symbol||"EURUSD_otc";
+ lastLiveSymbol=streamSymbol;
  liveStream=new EventSource("/.netlify/functions/otc-stream?symbol="+encodeURIComponent(streamSymbol));
  liveStream.addEventListener("connected",e=>{
   let detail="connected";try{const j=JSON.parse(e.data);detail=j.message||j.status||"connected"}catch(err){}
-  liveReconnectAttempts=0;setLiveStreamState("CONNECTED · waiting for ticks",true);
+  setLiveStreamState("CONNECTED · "+detail+" · waiting for fresh ticks",true);
  });
  liveStream.addEventListener("tick",handleLiveTick);
- liveStream.addEventListener("dropped",e=>scheduleLiveReconnect("provider dropped symbol"));
- liveStream.addEventListener("closed",e=>scheduleLiveReconnect("provider closed stream"));
+ liveStream.addEventListener("dropped",()=>scheduleLiveReconnect("provider dropped symbol"));
+ liveStream.addEventListener("closed",()=>scheduleLiveReconnect("provider closed stream"));
  liveStream.onmessage=handleLiveTick;
- liveStream.onopen=()=>{liveReconnectAttempts=0;setLiveStreamState("OPEN · awaiting first tick",true)};
+ liveStream.onopen=()=>setLiveStreamState("OPEN · waiting for first tick",true);
  liveStream.onerror=()=>scheduleLiveReconnect("stream error");
+ if(!liveWatchdogTimer)liveWatchdogTimer=setInterval(()=>{
+  if(!liveStream)return;
+  if(lastLiveTickAt&&Date.now()-lastLiveTickAt>25000)scheduleLiveReconnect("tick timeout");
+  else if(!lastLiveTickAt&&liveStreamState.includes("CONNECTED")&&Date.now()-streamOpenedAt>25000)scheduleLiveReconnect("no initial tick");
+ },10000);
 }
+let streamOpenedAt=Date.now();
 function stopLiveStream(){
  if(liveReconnectTimer){clearTimeout(liveReconnectTimer);liveReconnectTimer=null}
  if(liveWatchdogTimer){clearInterval(liveWatchdogTimer);liveWatchdogTimer=null}
  if(liveStream){liveStream.close();liveStream=null}
  setLiveStreamState("OFF · no OTC markets selected")
 }
-function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
+document.addEventListener("visibilitychange",()=>{
+ if(document.visibilityState==="visible"&&[...watch].some(id=>ASSETS.find(a=>a.id===id)?.kind==="otc")){
+  if(!liveStream||liveStream.readyState!==EventSource.OPEN||Date.now()-lastLiveTickAt>25000)scheduleLiveReconnect("dashboard resumed");
+ }
+});
 function renderScanner(){
  let arr=[...watch].map(id=>results[id]).filter(Boolean),rows=[...arr].sort((a,b)=>b.analysis.score-a.analysis.score);
  $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.direction==="CALL"?"BUY":s.direction==="PUT"?"SELL":"—",cls=shownDirection==="BUY"?"call":shownDirection==="SELL"?"put":"wait",change=r.change,timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+30000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":s.trend==="DOWN"?"red":"muted"}">${s.trend||"—"}</td><td>${Number.isFinite(s.macdHistogram)?s.macdHistogram.toPrecision(4):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">00:30</small>`:""}</td><td><span class="${s.signalLevel==="CONFIRMED"?"green":"blue"}">${s.signalLevel||"EARLY"}</span></td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
@@ -1829,7 +1842,12 @@ $("threshold").onchange=()=>{$("thresholdText").textContent=$("threshold").value
 $("interval").onchange=()=>{if(running){clearInterval(cycle);cycle=setInterval(()=>{if(!busy)scan()},30000)}$("cycleText").textContent=((+$("interval").value||15000)/1000)+" sec";saveState()};
 ["stake","payout"].forEach(id=>$(id).addEventListener("change",saveState));
 setInterval(()=>{$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();updateCountdowns();settleExpiredTrades()},1000);
-loadState();$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · Each fresh BUY/SELL direction can open one simulated trade per candle":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(.5);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();setTimeout(()=>{if(!busy)scan()},250);
+loadState();
+if(apiKey){
+ $("connectionStatus").textContent="Twelve Data key restored · automatically testing connection…";
+ setTimeout(async()=>{try{await regularData("EUR/USD");$("connectionStatus").textContent="Regular feed: CONNECTED · saved key restored automatically";status("TWELVE DATA CONNECTED",true)}catch(e){$("connectionStatus").textContent="Regular feed: AUTO-RETRY · "+(e?.message||"connection error");setTimeout(async()=>{try{await regularData("EUR/USD");$("connectionStatus").textContent="Regular feed: CONNECTED · recovered automatically";status("TWELVE DATA CONNECTED",true)}catch(err){$("connectionStatus").textContent="Regular feed: RETRYING · "+(err?.message||"temporary error")}},5000)}},500);
+}else $("connectionStatus").textContent="Regular feed: no saved key on this device · enter once to save";
+$("autoPaperToggle").checked=autoPaperEnabled;$("autoPaperStatus").textContent=autoPaperEnabled?"ON · Each fresh BUY/SELL direction can open one simulated trade per candle":"OFF · Automatic paper trades are paused";watch=new Set([...watch].filter(id=>ASSETS.some(a=>a.id===id&&a.kind==="otc")));if(!watch.size)watch=new Set(ASSETS.map(a=>a.id));if(!ASSETS.some(a=>a.id===selectedChart))selectedChart=ASSETS[0].id;updateChartOptions();renderWatch();syncMobileControls();$("thresholdText").textContent=$("threshold").value+" / 100";$("cycleText").textContent=(+$("interval").value/1000)+" sec";renderHistory();renderTrades();renderScanner();renderPOComparison();setChartTimeframe(.5);setMobileScreen("scanner");$("clock").textContent=clock();if($("floatClock"))$("floatClock").textContent=clock();connectLiveStream();setTimeout(()=>{if(!busy)scan()},250);
 
 /* APEXSCAN PRO · Intelligent 1-minute engine V9
    Pattern rules are deterministic heuristics, not predictive guarantees. */
