@@ -448,7 +448,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 html,body{min-height:100%;background:#06151c!important}body{background:radial-gradient(ellipse at 55% -10%,#28d9c8 0,rgba(22,140,143,.38) 19%,transparent 46%),linear-gradient(160deg,#071a22 0%,#06131b 52%,#081d25 100%)!important;color:#f2ffff;font-family:Inter,system-ui,-apple-system,sans-serif}
 header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!important;border-bottom:1px solid #267a7b!important;box-shadow:0 5px 22px #0005}
 .brand{gap:8px;font-size:13px;letter-spacing:.08em}.logo{width:30px;height:30px;border-radius:50%;background:linear-gradient(145deg,#b9fff3,#20b7aa)!important;color:#07343a!important;box-shadow:0 0 18px #5fffe255}.brand small{font-size:8px;letter-spacing:.12em;color:#9ed9d5!important}.headright{font-size:9px;gap:8px}.headright .headlabel{font-size:9px}
-.wrap{max-width:520px!important;margin:0 auto!important;padding:10px 12px 26px!important}.top{padding:5px 3px 9px!important;margin:0!important;border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible}.top:after{display:none}.top .eyebrow{font-size:9px;color:#8ff7e8!important}.top h1{font-size:15px!important;letter-spacing:-.02em;margin:1px 0!important}.top p{font-size:9px!important;color:#9bc7c9!important}.top .actions{display:flex!important;width:100%!important;gap:8px!important;margin:9px 0 2px!important;position:relative!important;z-index:20!important;visibility:visible!important;opacity:1!important}.top .actions button{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:1 1 0!important;min-width:0!important;min-height:44px!important;padding:10px 8px!important;font-size:11px!important;visibility:visible!important;opacity:1!important}
+.wrap{max-width:520px!important;margin:0 auto!important;padding:10px 12px 26px!important}.top{padding:5px 3px 9px!important;margin:0!important;border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible}.top:after{display:none}.top .eyebrow{font-size:9px;color:#8ff7e8!important}.top h1{font-size:15px!important;letter-spacing:-.02em;margin:1px 0!important}.top p{font-size:9px!important;color:#9bc7c9!important}.top .actions{display:none!important}
 .notice,.kpis{display:none!important}.mobile-command{display:block!important;margin:0 0 8px!important;padding:8px 10px!important;border:1px solid #23656b!important;border-radius:13px!important;background:linear-gradient(145deg,rgba(15,63,68,.86),rgba(7,29,39,.95))!important;box-shadow:0 8px 22px #0004!important}.market-tabs{display:none!important}.mobile-control-row{display:grid!important;grid-template-columns:1fr 92px!important;gap:8px!important}.mobile-control{gap:3px!important}.mobile-control span{font-size:8px!important;color:#9cd8d3!important}.mobile-control select{padding:7px!important;background:#09242c!important;border:1px solid #28616a!important;border-radius:8px!important;color:#efffff!important;font-size:11px!important}.mobile-market-meta{font-size:9px!important;color:#a5d9d5!important;margin-top:6px!important}.category-note{display:none!important}
 .main-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important}.main-grid>section,.main-grid>aside{display:contents!important}
 #signalPanel{grid-row:1!important;order:1!important;margin:0 0 8px!important;padding:11px!important;border-radius:17px!important;background:linear-gradient(145deg,rgba(10,45,51,.98),rgba(5,22,31,.98))!important;border:1px solid #277c7b!important;box-shadow:0 14px 34px #0006,inset 0 1px #ffffff12!important}
@@ -514,7 +514,7 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
 <main class="wrap">
  <div class="top">
   <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · OTC SIGNAL SCANNER</h1><p>OTCharts live OTC feed · BUY / SELL directional signals · every usable scan returns a side</p></div>
-  <div class="actions"><button id="startBtn" class="primary" aria-label="Start automatic scanning">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
+  <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
  <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Live ticks update displayed prices, but BUY/SELL entries wait for a completed native 30-second candle and aligned multi-layer confirmation. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
  <section class="mobile-command" id="marketControls" aria-label="Market controls">
@@ -687,7 +687,7 @@ const ASSETS=[
  {id:"OTC:SAR/CNY",name:"SAR/CNY OTC",kind:"otc",symbol:"SARCNY_otc",default:false}
 ];
 const lastAnalyzedClosedCandleByAsset=new Map();
-let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},expiredSignalKeys=new Set(),activeMarketCategory="currencies",activeMobileScreen="scanner";
+let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6});
 // Display all dashboard/chart wall-clock times in fixed UTC-10 (Etc/GMT+10).
 // Candle timestamps and 30-second boundary calculations remain UTC epoch-based.
@@ -1417,17 +1417,17 @@ function updateTop(rows){
  const candle=r?.candles?.at(-1);
  const fresh=!!(r&&s&&s.fresh&&r.candles?.length>=35&&candle&&hasCurrentFeed(r.id,candle));
  const liveDirection=s?.direction;
- let candidate=["CALL","PUT"].includes(liveDirection)?r:null;
- let dir=candidate?.analysis.direction||"";
- let timerKey=candidate?`${candidate.id}|${dir}|${candidate.analysis.candleTime}`:"";
- if(timerKey){
+ const candidate=["CALL","PUT"].includes(liveDirection)?r:null;
+ latestTop=candidate;
+ const dir=candidate?.analysis.direction||"";
+ const timerKey=candidate?`${candidate.id}|${dir}|${candidate.analysis.candleTime}`:"";
+ if(timerKey&&timerKey!==signalTimerKey){
+  signalTimerKey=timerKey;
   const signalCandle=candidate.candles?.find(c=>String(c.time)===String(candidate.analysis.candleTime));
   const closedAt=Number(signalCandle?.timeMs||0)+60000;
   signalExpiries[timerKey]=signalExpiries[timerKey]||closedAt+60000;
-  if(expiredSignalKeys.has(timerKey)||Date.now()>=signalExpiries[timerKey]){expiredSignalKeys.add(timerKey);candidate=null;dir="";timerKey="";}
+  signalExpiryAt=signalExpiries[timerKey];
  }
- latestTop=candidate;
- if(timerKey&&timerKey!==signalTimerKey){signalTimerKey=timerKey;signalExpiryAt=signalExpiries[timerKey];}
  if(!timerKey){signalTimerKey="";signalExpiryAt=0;}
  $("topSignal").className="signal-card "+(candidate?(dir==="CALL"?"call":"put"):"wait");
  const banner=$("signalCallout");
@@ -1526,12 +1526,6 @@ function updateCountdowns(){
  if(signalExpiryAt){
   const left=Math.max(0,Math.ceil((signalExpiryAt-now)/1000));
   $("signalCountdown").textContent=left===0?"EXPIRED":String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
-  if(left===0&&signalTimerKey){
-   expiredSignalKeys.add(signalTimerKey);signalTimerKey="";signalExpiryAt=0;latestTop=null;
-   const card=$("topSignal");if(card)card.className="signal-card wait";
-   const callout=$("signalCallout");if(callout){callout.className="signal-callout neutral";callout.textContent="SIGNAL EXPIRED · WAITING FOR NEXT FRESH SCAN";}
-   if(running&&!busy)setTimeout(()=>{if(running&&!busy)scan();},50);
-  }
  }else $("signalCountdown").textContent="--:--";
  // Candle countdown follows the selected pair's latest provider candle.
  const selected=results[$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart];
@@ -2105,28 +2099,19 @@ function apexRenderIntelligentPanel(){
  const grid=$("apexLayerGrid");if(grid){grid.innerHTML="";(a.layers||[]).forEach(layer=>{const item=document.createElement("div");item.className="apex-layer-item";const name=document.createElement("small");name.textContent=layer.name;const value=document.createElement("b");value.textContent=layer.value;item.append(name,value);grid.appendChild(item);});}
  const stamp=$("apexLastClosed");if(stamp)stamp.textContent=a.candleTimeMs?new Date(a.candleTimeMs).toLocaleTimeString("en-US",{timeZone:"Etc/GMT+10",hour12:false}):"—";
 }
-let apexAutoScanInFlight=false;
-async function apexIntelligentHeartbeat(){
+function apexIntelligentHeartbeat(){
  const now=apexServerNow(),bucket=Math.floor(now/APEX_BAR_MS),within=now-bucket*APEX_BAR_MS,key=String(bucket),left=Math.ceil((APEX_BAR_MS-within)/1000);
  apexRenderIntelligentPanel();
  if(within<APEX_BAR_MS){
   apex30State.phase=within<5000?"POST-CLOSE DATA SETTLE":"WAITING FOR NEXT 30S CLOSE";
   apex30State.detail=within<5000?`Candle closed · waiting ${Math.max(0,5-within/1000).toFixed(1)}s before analysis.`:"Monitoring the active 30-second candle; no forming-candle signal is released.";
  }
- // Scan every newly completed 30-second candle, even while the previous signal is still displayed.
- // Commit the candle key only after the scan settles, so a transient busy/error state cannot consume a scan cycle.
- if(within>=5000&&apexClosedDecisionKey!==key&&running&&!busy&&!apexAutoScanInFlight){
-  apexAutoScanInFlight=true;
+ // One scan per newly closed candle, exactly after the five-second provider-settle window.
+ if(within>=5000&&apexClosedDecisionKey!==key&&running&&!busy){
+  apexClosedDecisionKey=key;
   apex30State.phase="POST-CLOSE SCAN · +5s";
   apex30State.detail="Five seconds have elapsed since the 30-second close. Fetching and validating the completed candle before scoring.";
-  try{
-   await scan();
-   apexClosedDecisionKey=key;
-   apex30State.detail="Completed-candle scan finished. Auto scan remains armed for the next candle, regardless of the previous signal status.";
-  }catch(error){
-   apex30State.phase="SCAN RETRY · AUTO ACTIVE";
-   apex30State.detail=`Scan did not complete: ${error?.message||"temporary error"}. The scheduler will retry this candle.`;
-  }finally{apexAutoScanInFlight=false;}
+  scan();
  }
 }
 // Keep the selected chart locked to the native 30-second feed.
@@ -2136,37 +2121,6 @@ const apexOriginalCountdownsV30=updateCountdowns;updateCountdowns=function(){ape
 function apexStartScheduler(){clearInterval(cycle);running=true;apexClosedDecisionKey=String(Math.floor(apexServerNow()/APEX_BAR_MS));$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="SUPER INTELLIGENCE ACTIVE";status("30-SECOND AUTO SCAN · NEXT CLOSE + 5S",true);apex30State.phase="WAITING FOR NEXT 30S CLOSE";apex30State.detail="Automatic analysis is armed. The next signal scan runs five seconds after the next completed 30-second candle.";cycle=setInterval(apexIntelligentHeartbeat,200);}
 function apexPauseScheduler(){running=false;clearInterval(cycle);cycle=null;$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED");}
 $("startBtn").onclick=apexStartScheduler;$("pauseBtn").onclick=apexPauseScheduler;
-// V9.1 scan reliability patch: serialize all scan requests and always release the UI lock.
-const apexOriginalScanV91=scan;
-let apexScanPromiseV91=null;
-scan=async function(){
- if(apexScanPromiseV91)return apexScanPromiseV91;
- apexScanPromiseV91=(async()=>{
-  try{return await apexOriginalScanV91();}
-  finally{
-   busy=false;
-   const button=$("scanNow");
-   if(button)button.disabled=false;
-  }
- })();
- try{return await apexScanPromiseV91;}
- finally{apexScanPromiseV91=null;}
-};
-// Manual scans use the same protected scan path; when auto mode is active,
-// count this candle as handled so the heartbeat does not immediately repeat it.
-$("scanNow").onclick=async()=>{
- const button=$("scanNow");
- if(apexScanPromiseV91)return;
- if(running){const manualNow=apexServerNow();if(manualNow%APEX_BAR_MS>=5000)apexClosedDecisionKey=String(Math.floor(manualNow/APEX_BAR_MS));}
- button.disabled=true;button.textContent="⚡ INTELLIGENCE ENGINE RUNNING…";
- try{await scan();}
- catch(error){status("APEX SCAN ERROR");$("progressText").textContent="Scan failed: "+(error?.message||"unknown error");}
- finally{button.disabled=false;button.textContent="⚡ RUN SUPER INTELLIGENCE SCAN";}
-};
-// Wake the existing 30-second scheduler after iOS/browser tab suspension.
-// The candle key prevents duplicate scans when focus and visibility fire together.
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&running)apexIntelligentHeartbeat();});
-window.addEventListener("focus",()=>{if(running)apexIntelligentHeartbeat();});
 $("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";$("interval").onchange=()=>{$("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";saveState();};
 const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · adaptive EARLY BUY/SELL heads-up from 35/100 with 2 aligned layers · confirmed entries remain 65/100 + 15-point edge · MACD and momentum counted once · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
 const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · EARLY opportunity alerts · confirmed entry 65/100 · +5s post-close scan · UTC-10 chart display.";
