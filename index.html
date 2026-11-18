@@ -448,7 +448,7 @@ label[for="paperSide"],#topExpiry,#nextCandleOutlook{display:none!important}
 html,body{min-height:100%;background:#06151c!important}body{background:radial-gradient(ellipse at 55% -10%,#28d9c8 0,rgba(22,140,143,.38) 19%,transparent 46%),linear-gradient(160deg,#071a22 0%,#06131b 52%,#081d25 100%)!important;color:#f2ffff;font-family:Inter,system-ui,-apple-system,sans-serif}
 header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!important;border-bottom:1px solid #267a7b!important;box-shadow:0 5px 22px #0005}
 .brand{gap:8px;font-size:13px;letter-spacing:.08em}.logo{width:30px;height:30px;border-radius:50%;background:linear-gradient(145deg,#b9fff3,#20b7aa)!important;color:#07343a!important;box-shadow:0 0 18px #5fffe255}.brand small{font-size:8px;letter-spacing:.12em;color:#9ed9d5!important}.headright{font-size:9px;gap:8px}.headright .headlabel{font-size:9px}
-.wrap{max-width:520px!important;margin:0 auto!important;padding:10px 12px 26px!important}.top{padding:5px 3px 9px!important;margin:0!important;border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible}.top:after{display:none}.top .eyebrow{font-size:9px;color:#8ff7e8!important}.top h1{font-size:15px!important;letter-spacing:-.02em;margin:1px 0!important}.top p{font-size:9px!important;color:#9bc7c9!important}.top .actions{display:flex!important;width:100%!important;gap:8px!important;margin:9px 0 2px!important;position:relative!important;z-index:20!important;visibility:visible!important;opacity:1!important}.top .actions button{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:1 1 0!important;min-width:0!important;min-height:44px!important;padding:10px 8px!important;font-size:11px!important;visibility:visible!important;opacity:1!important}
+.wrap{max-width:520px!important;margin:0 auto!important;padding:10px 12px 26px!important}.top{padding:5px 3px 9px!important;margin:0!important;border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible}.top:after{display:none}.top .eyebrow{font-size:9px;color:#8ff7e8!important}.top h1{font-size:15px!important;letter-spacing:-.02em;margin:1px 0!important}.top p{font-size:9px!important;color:#9bc7c9!important}.top .actions{display:none!important}
 .notice,.kpis{display:none!important}.mobile-command{display:block!important;margin:0 0 8px!important;padding:8px 10px!important;border:1px solid #23656b!important;border-radius:13px!important;background:linear-gradient(145deg,rgba(15,63,68,.86),rgba(7,29,39,.95))!important;box-shadow:0 8px 22px #0004!important}.market-tabs{display:none!important}.mobile-control-row{display:grid!important;grid-template-columns:1fr 92px!important;gap:8px!important}.mobile-control{gap:3px!important}.mobile-control span{font-size:8px!important;color:#9cd8d3!important}.mobile-control select{padding:7px!important;background:#09242c!important;border:1px solid #28616a!important;border-radius:8px!important;color:#efffff!important;font-size:11px!important}.mobile-market-meta{font-size:9px!important;color:#a5d9d5!important;margin-top:6px!important}.category-note{display:none!important}
 .main-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important}.main-grid>section,.main-grid>aside{display:contents!important}
 #signalPanel{grid-row:1!important;order:1!important;margin:0 0 8px!important;padding:11px!important;border-radius:17px!important;background:linear-gradient(145deg,rgba(10,45,51,.98),rgba(5,22,31,.98))!important;border:1px solid #277c7b!important;box-shadow:0 14px 34px #0006,inset 0 1px #ffffff12!important}
@@ -505,56 +505,6 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
 }
 
 </style>
-
-<style id="apex-early-signal-countdown-hotfix">
-/* Keep countdown and early status visible despite later theme overrides. */
-#signalPanel .countdown-grid,
-#signalPanel .countdown-grid > div,
-#signalPanel #signalCountdown,
-#signalPanel #candleCountdown {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-#signalPanel .countdown-grid {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 7px !important;
-  margin: 8px 0 !important;
-}
-#signalPanel .countdown-grid > div {
-  min-height: 54px !important;
-}
-#signalPanel .countdown-grid b {
-  font-variant-numeric: tabular-nums !important;
-  min-height: 1.2em !important;
-}
-#apexEarlyStatus {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  margin: 8px 0 !important;
-  padding: 9px 10px !important;
-  border: 1px solid #27646a !important;
-  border-radius: 9px !important;
-  background: #08252d !important;
-  color: #a9e8e1 !important;
-  font-size: 9px !important;
-  font-weight: 900 !important;
-  letter-spacing: .06em !important;
-  line-height: 1.4 !important;
-}
-#apexEarlyStatus.early-buy {
-  border-color: #1aa98b !important;
-  background: #073a32 !important;
-  color: #7cf8d5 !important;
-}
-#apexEarlyStatus.early-sell {
-  border-color: #d84d6b !important;
-  background: #401b29 !important;
-  color: #ff9fb2 !important;
-}
-</style>
 </head>
 <body>
 <header>
@@ -564,7 +514,7 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
 <main class="wrap">
  <div class="top">
   <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · OTC SIGNAL SCANNER</h1><p>OTCharts live OTC feed · BUY / SELL directional signals · every usable scan returns a side</p></div>
-  <div class="actions"><button id="startBtn" class="primary" aria-label="Start automatic scanning">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
+  <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
  </div>
  <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Live ticks update displayed prices, but BUY/SELL entries wait for a completed native 30-second candle and aligned multi-layer confirmation. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
  <section class="mobile-command" id="marketControls" aria-label="Market controls">
@@ -647,7 +597,7 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
     <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Technical engine is checking trend, momentum and candle structure</p>
     <div id="candleIntel" class="candle-intel"><div class="ci-title">CANDLE INTELLIGENCE · 30S CLOSED BAR</div><div class="ci-muted">Waiting for completed candle data.</div></div><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>MACD</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>MACD 12/26/9</span><span>Histogram confirmation</span><span>Support / resistance</span><span>Closed candle</span><span>Reverse mode ON</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · Each fresh BUY/SELL direction can open one simulated trade per candle</span></div>
      <div id="paperLiveBoard" class="paper-live-board" aria-live="polite"><b>LIVE PAPER POSITIONS</b><span>No open paper trades yet · waiting for the next directional signal.</span></div>
-     <div id="apexEarlyStatus" aria-live="polite">EARLY SCAN · AUTO SCANNER READY · NEXT 30S CANDLE</div>\n      <div class="countdown-grid">
+     <div class="countdown-grid">
       <div><small>BUY / SELL VALID FOR</small><b id="signalCountdown">--:--</b></div>
       <div><small>30-SEC CANDLE CLOSES IN · UTC-10 DISPLAY</small><b id="candleCountdown">--:--</b></div>
      </div>
@@ -675,10 +625,10 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
    <div class="panel" id="dataPanel">
     <div class="panel-head"><h2>DATA CONNECTIONS</h2><span class="pill">PROVIDER SETUP</span></div>
     <div class="fields">
-     <div class="field wide"><label>Twelve Data API key · regular markets</label><input id="apiKey" type="password" placeholder="Twelve Data key saved on this device" autocomplete="off"></div>
+     <div class="field wide"><label>Twelve Data API key · regular markets</label><input id="apiKey" type="password" placeholder="Paste Twelve Data API key"></div>
      <div class="field wide"><label>OTC candle history</label><input value="Netlify Function · /.netlify/functions/otc-candles" disabled></div>
-     <div class="field wide"><label>OTC LIVE STREAM · MULTI-PAIR (UP TO 5 SYMBOLS · ONE CONNECTION)</label><div class="tiny" id="liveStreamStatus">Stream: connecting when dashboard loads…</div></div>
-     <div class="field wide"><button id="saveKey" class="primary">Save & test Twelve Data connection</button></div>
+     <div class="field wide"><label>OTC live stream · selected pair only (one connection)</label><div class="tiny" id="liveStreamStatus">Stream: connecting when dashboard loads…</div></div>
+     <div class="field wide"><button id="saveKey" class="primary">Save API key & test connection</button></div>
      <div class="field wide"><div class="tiny" id="connectionStatus">Regular feed: not tested<br>OTC feed: function will be tested when selected</div></div>
     </div>
    </div>
@@ -734,30 +684,10 @@ const ASSETS=[
  {id:"OTC:USD/THB",name:"USD/THB OTC",kind:"otc",symbol:"USDTHB_otc",default:false},
  {id:"OTC:KES/USD",name:"KES/USD OTC",kind:"otc",symbol:"KESUSD_otc",default:false},
  {id:"OTC:USD/MYR",name:"USD/MYR OTC",kind:"otc",symbol:"USDMYR_otc",default:false},
- {id:"OTC:SAR/CNY",name:"SAR/CNY OTC",kind:"otc",symbol:"SARCNY_otc",default:false},
-
- {id:"OTC:NZD/USD",name:"NZD/USD OTC",kind:"otc",symbol:"NZDUSD_otc",default:false},
- {id:"OTC:USD/CHF",name:"USD/CHF OTC",kind:"otc",symbol:"USDCHF_otc",default:false},
- {id:"OTC:USD/DZD",name:"USD/DZD OTC",kind:"otc",symbol:"USDDZD_otc",default:false},
- {id:"OTC:USD/EGP",name:"USD/EGP OTC",kind:"otc",symbol:"USDEGP_otc",default:false},
- {id:"OTC:USD/INR",name:"USD/INR OTC",kind:"otc",symbol:"USDINR_otc",default:false},
- {id:"OTC:USD/COP",name:"USD/COP OTC",kind:"otc",symbol:"USDCOP_otc",default:false},
- {id:"OTC:EUR/HUF",name:"EUR/HUF OTC",kind:"otc",symbol:"EURHUF_otc",default:false},
- {id:"OTC:AUD/JPY",name:"AUD/JPY OTC",kind:"otc",symbol:"AUDJPY_otc",default:false},
- {id:"OTC:AUD/NZD",name:"AUD/NZD OTC",kind:"otc",symbol:"AUDNZD_otc",default:false},
- {id:"OTC:AUD/USD",name:"AUD/USD OTC",kind:"otc",symbol:"AUDUSD_otc",default:false},
- {id:"OTC:BHD/CNY",name:"BHD/CNY OTC",kind:"otc",symbol:"BHDCNY_otc",default:false},
- {id:"OTC:CAD/CHF",name:"CAD/CHF OTC",kind:"otc",symbol:"CADCHF_otc",default:false},
- {id:"OTC:EUR/GBP",name:"EUR/GBP OTC",kind:"otc",symbol:"EURGBP_otc",default:false},
- {id:"OTC:EUR/JPY",name:"EUR/JPY OTC",kind:"otc",symbol:"EURJPY_otc",default:false},
- {id:"OTC:EUR/RUB",name:"EUR/RUB OTC",kind:"otc",symbol:"EURRUB_otc",default:false},
- {id:"OTC:EUR/TRY",name:"EUR/TRY OTC",kind:"otc",symbol:"EURTRY_otc",default:false},
- {id:"OTC:JOD/CNY",name:"JOD/CNY OTC",kind:"otc",symbol:"JODCNY_otc",default:false},
- {id:"OTC:MAD/USD",name:"MAD/USD OTC",kind:"otc",symbol:"MADUSD_otc",default:false},
- {id:"OTC:OMR/CNY",name:"OMR/CNY OTC",kind:"otc",symbol:"OMRCNY_otc",default:false},
- ];
+ {id:"OTC:SAR/CNY",name:"SAR/CNY OTC",kind:"otc",symbol:"SARCNY_otc",default:false}
+];
 const lastAnalyzedClosedCandleByAsset=new Map();
-let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},expiredSignalKeys=new Set(),activeMarketCategory="currencies",activeMobileScreen="scanner";
+let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6});
 // Display all dashboard/chart wall-clock times in fixed UTC-10 (Etc/GMT+10).
 // Candle timestamps and 30-second boundary calculations remain UTC epoch-based.
@@ -813,21 +743,12 @@ function updateMobileMarketLabel(){
  if(el&&a)el.textContent=a.name+(a.kind==="otc"?" · OTC":"");
 }
 function renderWatch(){
- const savedScrollY=window.scrollY;const savedBoxScroll=$("watchChecks")?.scrollTop||0;
  let box=$("watchChecks");box.innerHTML="";
  let visible=ASSETS.filter(a=>a.kind==="otc");
  if(!visible.length){box.innerHTML='<div class="empty">No OTC symbols are configured.</div>'}
- visible.forEach(a=>{let lab=document.createElement("label");lab.className="check";lab.dataset.category=assetCategory(a);let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{
-   cb.checked?watch.add(a.id):watch.delete(a.id);
-   saveState();
-   updateChartOptions();
-   if(watch.size)connectLiveStream(true);
-   else stopLiveStream();
-  });lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});
+ visible.forEach(a=>{let lab=document.createElement("label");lab.className="check";lab.dataset.category=assetCategory(a);let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState();if([...watch].some(id=>ASSETS.find(x=>x.id===id)?.kind==="otc"))connectLiveStream();else stopLiveStream();updateChartOptions()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});
  let note=$("categoryNote");if(note){note.style.display="none";note.textContent="OTC currency markets use your existing Netlify OTCharts function."}
  updateChartOptions();
- // Keep the page and pair-list scroll position stable after selector updates.
- box.scrollTop=savedBoxScroll;window.scrollTo({top:savedScrollY,left:0,behavior:"instant"});
 }
 function ema(v,p){if(v.length<p)return null;let k=2/(p+1),x=v.slice(0,p).reduce((a,b)=>a+b,0)/p;for(let i=p;i<v.length;i++)x=v[i]*k+x*(1-k);return x}
 
@@ -1275,117 +1196,100 @@ function drawChart(){
 }
 
 
-// APEXSCAN PRO · RESTORED OTCHARTS MULTI-PAIR STREAM
-// One EventSource connection carries up to five Pocket Option OTC symbols.
-// OTCharts' connected event is authoritative: it reports the symbols actually carried.
-let liveStream=null,liveStreamState="OFF",liveTicks=Object.create(null);
-let liveReconnectTimer=null,liveWatchdogTimer=null,liveConnectTimeout=null,liveDroppedRetryTimer=null;
-let liveReconnectAttempts=0,liveStreamGeneration=0,liveStreamSymbol="";
-let liveStreamExpectedAssets=[],liveStreamSubscribedSymbols=[],liveStreamDroppedSymbols=[],liveStreamClosedSymbols=[];
-let liveStreamLastTickAt=0,liveStreamPairTickAt=Object.create(null),liveStreamReplaced=false,liveDroppedRetryAttempts=0;
-const LIVE_TICK_TIMEOUT_MS=90000, LIVE_CONNECT_TIMEOUT_MS=30000, LIVE_DROPPED_RETRY_MS=180000;
-
+// One browser EventSource owns the selected-pair OTCharts stream; the scanner can select from the full OTC pair list.
+let liveStream=null,liveStreamState="CONNECTING",liveTicks={};
+const OTC_SYMBOLS={EURUSD_otc:"OTC:EUR/USD",GBPUSD_otc:"OTC:GBP/USD",USDJPY_otc:"OTC:USD/JPY",AUDCAD_otc:"OTC:AUD/CAD",AUDCHF_otc:"OTC:AUD/CHF",CHFJPY_otc:"OTC:CHF/JPY",EURCHF_otc:"OTC:EUR/CHF",EURNZD_otc:"OTC:EUR/NZD",GBPAUD_otc:"OTC:GBP/AUD",UAHUSD_otc:"OTC:UAH/USD",USDARS_otc:"OTC:USD/ARS",USDBDT_otc:"OTC:USD/BDT",USDCLP_otc:"OTC:USD/CLP",USDPKR_otc:"OTC:USD/PKR",USDTHB_otc:"OTC:USD/THB",KESUSD_otc:"OTC:KES/USD",USDMYR_otc:"OTC:USD/MYR",SARCNY_otc:"OTC:SAR/CNY"};
 function setLiveStreamState(message,ok=false){
  liveStreamState=message;
  const el=$("liveStreamStatus");
  if(el){el.textContent="Stream: "+message;el.style.color=ok?"var(--green)":"var(--amber)"}
 }
-function normalizeOTCSymbol(value){
- return String(value||"").trim().toUpperCase()
-  .replace(/^OTC:/,"")
-  .replace(/_OTC$/,"")
-  .replace(/[^A-Z0-9]/g,"");
+let poQuoteCapturedAt=0,poQuoteValue=null,poQuotePair=null;
+function selectedOTCPair(){
+ const id=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
+ return ASSETS.find(a=>a.id===id&&a.kind==="otc")||null;
 }
-function resolveOTCAsset(symbol){
- const normalized=normalizeOTCSymbol(symbol);
- if(!normalized)return null;
- return ASSETS.find(a=>a.kind==="otc"&&
-  [a.symbol,a.id,a.name].some(value=>normalizeOTCSymbol(value)===normalized)
- )||null;
-}
-function parseOTCEventData(event){
- try{
-  const parsed=JSON.parse(event?.data||"{}");
-  return parsed?.data&&typeof parsed.data==="object"&&!Array.isArray(parsed.data)
-   ?parsed.data:parsed;
- }catch(error){return null}
-}
-function providerTimeToUtcMillis(stamp){
- if(stamp===undefined||stamp===null||stamp==="")return null;
- let ms=typeof stamp==="string"&&!/^\d{10,13}$/.test(stamp)
-  ?Date.parse(stamp):Number(stamp);
- if(!Number.isFinite(ms)||ms<=0)return null;
- if(ms<1e12)ms*=1000;
- // OTCharts documents Pocket Option's OTC clock as UTC+2.
- ms-=7200000;
- return ms;
-}
-function clearLiveTimers(){
- if(liveReconnectTimer){clearTimeout(liveReconnectTimer);liveReconnectTimer=null}
- if(liveWatchdogTimer){clearInterval(liveWatchdogTimer);liveWatchdogTimer=null}
- if(liveConnectTimeout){clearTimeout(liveConnectTimeout);liveConnectTimeout=null}
- if(liveDroppedRetryTimer){clearTimeout(liveDroppedRetryTimer);liveDroppedRetryTimer=null}
-}
-function closeLiveStream(){
- liveStreamGeneration++;
- clearLiveTimers();
- const old=liveStream;
- liveStream=null;
- if(old){try{old.close()}catch(error){}}
-}
-function liveStreamStatusSummary(prefix="LIVE"){
- const expected=liveStreamExpectedAssets.length;
- const subscribed=liveStreamSubscribedSymbols.length||expected;
- const seen=liveStreamExpectedAssets.filter(asset=>Number(liveStreamPairTickAt[asset.id]||0)>0).length;
- const dropped=liveStreamDroppedSymbols.map(resolveOTCAsset).filter(Boolean).map(a=>a.name);
- const closed=liveStreamClosedSymbols.map(resolveOTCAsset).filter(Boolean).map(a=>a.name);
- let text=`${prefix} · ${seen}/${subscribed} pairs ticking`;
- if(subscribed<expected)text+=` · ${subscribed}/${expected} subscribed`;
- if(dropped.length)text+=` · DROPPED: ${dropped.join(", ")}`;
- if(closed.length)text+=` · BROKER CLOSED: ${closed.join(", ")}`;
- return text;
-}
-function buildLiveStreamAssets(){
- if(!watch.size)return [];
- const selectedId=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
- const selected=ASSETS.find(a=>a.id===selectedId&&a.kind==="otc"&&a.symbol)
-  ||ASSETS.find(a=>a.id===selectedChart&&a.kind==="otc"&&a.symbol);
- return selected?[selected]:[];
-}
-function scheduleLiveReconnect(reason="connection lost",requestedDelay=null){
- if(liveReconnectTimer||liveStreamReplaced)return;
- closeLiveStream();
- setLiveStreamState("RECONNECTING · "+reason);
- const exponential=Math.min(60000,2000*Math.pow(2,Math.min(liveReconnectAttempts++,5)));
- const delay=requestedDelay===null?exponential:Math.max(1000,requestedDelay);
- liveReconnectTimer=setTimeout(()=>{
-  liveReconnectTimer=null;
-  connectLiveStream(true);
- },delay);
-}
-function handleLiveTick(event){
- const tick=parseOTCEventData(event);
- if(!tick)return false;
- const symbol=String(tick.symbol??tick.instrument??tick.s??tick.asset??"").trim();
- const asset=resolveOTCAsset(symbol);
- const price=Number(tick.price??tick.last??tick.close??tick.p??tick.value);
- if(!asset||!Number.isFinite(price)||price<=0)return false;
-
- const providerMs=providerTimeToUtcMillis(tick.timestamp??tick.time??tick.ts);
- if(providerMs){
-  const delta=providerMs-Date.now();
-  if(Math.abs(delta)<120000)apexServerClockOffsetMs=apexServerClockOffsetMs*.8+delta*.2;
+function renderPOComparison(){
+ const resultEl=$("poCompareResult"),pairLabel=$("poComparePair");
+ if(!resultEl)return;
+ const pair=selectedOTCPair();
+ if(pairLabel)pairLabel.textContent=pair?.name||"NO PAIR SELECTED";
+ if(!pair){resultEl.className="error";resultEl.textContent="Select an OTC pair first.";return;}
+ if(poQuotePair!==pair.id||!Number.isFinite(poQuoteValue)){
+  resultEl.className="";
+  resultEl.textContent=`${pair.name} · Enter the price currently shown in Pocket Option.`;
+  return;
  }
- const id=asset.id;
- const previous=liveTicks[id]?.price??results[id]?.price??price;
- const receivedAt=Date.now();
- const candleStart=Math.floor((receivedAt+apexServerClockOffsetMs)/30000)*30000-apexServerClockOffsetMs;
- liveTicks[id]={price,change:price-previous,time:tick.time??tick.timestamp??receivedAt,receivedAt};
- liveStreamPairTickAt[id]=receivedAt;
-
+ const tick=liveTicks[pair.id];
+ if(!tick||!Number.isFinite(Number(tick.price))){
+  resultEl.className="error";
+  resultEl.textContent=`${pair.name}\nOTCharts live tick unavailable. No price comparison can be made yet.`;
+  return;
+ }
+ const now=Date.now(),tickAge=Math.max(0,now-Number(tick.receivedAt||0)),poAge=Math.max(0,now-poQuoteCapturedAt);
+ if(tickAge>10000){
+  resultEl.className="error";
+  resultEl.textContent=`${pair.name}\nPocket Option entered: ${fmt(poQuoteValue)}\nOTCharts last tick: ${fmt(tick.price)} (${(tickAge/1000).toFixed(1)}s old)\nNOT VERIFIED · OTCharts tick is older than 10 seconds.`;
+  return;
+ }
+ if(poAge>10000){
+  resultEl.className="error";
+  resultEl.textContent=`${pair.name}\nPocket Option entered: ${fmt(poQuoteValue)} (${(poAge/1000).toFixed(1)}s ago)\nOTCharts now: ${fmt(tick.price)}\nRE-ENTER THE CURRENT PO PRICE · comparison quote is older than 10 seconds.`;
+  return;
+ }
+ const diff=Number(tick.price)-poQuoteValue,abs=Math.abs(diff);
+ const pip=pair.id.includes("JPY")?.01:.0001;
+ const pips=abs/pip,percent=abs/poQuoteValue*100;
+ const tolerance=pip*.2;
+ const match=abs<=tolerance;
+ resultEl.className=match?"match":"diff";
+ resultEl.textContent=[
+  pair.name+" · SAME PAIR",
+  "Pocket Option: "+fmt(poQuoteValue),
+  "OTCharts live: "+fmt(tick.price),
+  "Difference: "+abs.toFixed(pair.id.includes("JPY")?5:6)+" · "+pips.toFixed(2)+" pips ("+percent.toFixed(5)+"%)",
+  "OTCharts tick age: "+(tickAge/1000).toFixed(1)+"s · PO value entered: "+(poAge/1000).toFixed(1)+"s ago",
+  match?"CLOSE MATCH · within 0.2 pip":"PRICE DIFFERENCE · not an exact match"
+ ].join("\n");
+}
+function comparePocketOptionPrice(){
+ const pair=selectedOTCPair(),input=$("poPriceInput"),value=Number(input?.value);
+ if(!pair){$("poCompareResult").className="error";$("poCompareResult").textContent="Select an OTC pair first.";return;}
+ if(!input?.value||!Number.isFinite(value)||value<=0){
+  $("poCompareResult").className="error";$("poCompareResult").textContent="Enter the current price shown in Pocket Option.";return;
+ }
+ poQuoteValue=value;poQuotePair=pair.id;poQuoteCapturedAt=Date.now();
+ renderPOComparison();
+}
+function isPOComparisonVerified(assetId){
+ if(!assetId||poQuotePair!==assetId||!Number.isFinite(poQuoteValue)||!poQuoteCapturedAt)return false;
+ const now=Date.now(),poAge=now-poQuoteCapturedAt,tick=liveTicks[assetId];
+ if(poAge<0||poAge>10000||!tick||!Number.isFinite(Number(tick.price)))return false;
+ const tickAge=now-Number(tick.receivedAt||0);
+ if(tickAge<0||tickAge>10000)return false;
+ const pip=assetId.includes("JPY")?.01:.0001;
+ return Math.abs(Number(tick.price)-poQuoteValue)<=pip*.2;
+}
+function handleLiveTick(raw){
+ let tick;try{tick=JSON.parse(raw.data)}catch(e){return}
+ if(tick?.data && typeof tick.data==="object")tick=tick.data;
+ const symbol=String(tick.symbol||tick.instrument||tick.s||tick.asset||"").trim();
+ const normalizedSymbol=symbol.toUpperCase().replace(/^OTC:/," ").replace(/[^A-Z0-9]/g,"").trim();
+ const id=OTC_SYMBOLS[symbol] || Object.keys(OTC_SYMBOLS).find(key =>
+  key.toUpperCase().replace(/[^A-Z0-9]/g,"")===normalizedSymbol ||
+  String(OTC_SYMBOLS[key]).toUpperCase().replace(/^OTC:/,"").replace(/[^A-Z0-9]/g,"")===normalizedSymbol
+ );
+ const price=Number(tick.price??tick.last??tick.close??tick.p??tick.value);
+ if(!id||!Number.isFinite(price)||price<=0)return;
+ // Refine UTC clock from provider timestamp when the feed supplies one.
+ const providerStamp=tick.timestamp??tick.time??tick.ts;
+ let providerMs=typeof providerStamp==="string"&&!/^\\d{10,13}$/.test(providerStamp)?Date.parse(providerStamp):Number(providerStamp);
+ if(Number.isFinite(providerMs)&&providerMs>0){if(providerMs<1e12)providerMs*=1000;providerMs-=7200000;const delta=providerMs-Date.now();if(Math.abs(delta)<120000)apexServerClockOffsetMs=apexServerClockOffsetMs*.8+delta*.2;}
+ const previous=liveTicks[id]?.price ?? results[id]?.price ?? price;
+ const receivedAt=Date.now(),candleStart=Math.floor((receivedAt+apexServerClockOffsetMs)/30000)*30000-apexServerClockOffsetMs;
+ liveTicks[id]={price,change:price-previous,time:tick.time||tick.timestamp||receivedAt,receivedAt};
  if(results[id]){
-  const result=results[id];
-  result.livePrice=price;result.liveChange=price-previous;result.liveUpdated=receivedAt;
+  const result=results[id];result.livePrice=price;result.liveChange=price-previous;result.liveUpdated=receivedAt;
   const candles=result.candles||(result.candles=[]),last=candles[candles.length-1];
   if(last&&Math.floor(Number(last.timeMs||0)/30000)===Math.floor(candleStart/30000)){
    last.high=Math.max(last.high,price);last.low=Math.min(last.low,price);last.close=price;
@@ -1393,161 +1297,43 @@ function handleLiveTick(event){
    candles.push({time:new Date(candleStart).toISOString(),timeMs:candleStart,open:last?last.close:price,high:price,low:price,close:price,live:true});
    if(candles.length>240)candles.splice(0,candles.length-240);
   }
-  if(candles.length>=36){
+  const asset=ASSETS.find(x=>x.id===id);
+  if(asset&&candles.length>=36){
    const closed=closedOneMinuteCandles(candles);
-   result.analysis=closed.length>=35
-    ?analyze(closed,asset)
-    :{direction:"WAIT",score:0,reason:"Waiting for a completed candle before MACD confirmation",fresh:false,age:Infinity,signalLevel:"WAIT"};
+   result.analysis=closed.length>=35?analyze(closed,asset):{direction:"WAIT",score:0,reason:"Waiting for a completed candle before MACD confirmation",fresh:false,age:Infinity,signalLevel:"WAIT"};
    result.analysis={...result.analysis};applyReverseSignal(result);
    if(result.analysis.direction!=="WAIT")addSignal(result);
   }
   renderScanner();
-  if(selectedChart===id||$("chartAsset")?.value===id){
-   drawChart();
-   $("chartCaption").textContent=`${result.name} · LIVE ${fmt(price)} · updating each provider tick`;
-  }
+  if(selectedChart===id||$("chartAsset")?.value===id){drawChart();$("chartCaption").textContent=`${result.name} · LIVE ${fmt(price)} · updating each provider tick`;}
  }
- setLiveStreamState(liveStreamStatusSummary(),true);
+ setLiveStreamState("LIVE · "+(ASSETS.find(a=>a.id===id)?.name||id)+" tick received",true);
  renderPOComparison();
  renderPaperLiveBoard();
  settleExpiredTrades();
- return true;
 }
-function connectLiveStream(force=false){
- if(liveStreamReplaced&&!force){
-  setLiveStreamState("REPLACED · another browser tab or app is using this account's stream slot");
-  return;
+function connectLiveStream(){
+ if(liveStream||typeof EventSource==="undefined")return;
+ if(![...watch].some(id=>ASSETS.find(a=>a.id===id)?.kind==="otc")){
+  setLiveStreamState("OFF · no OTC markets selected");return;
  }
- const streamAssets=buildLiveStreamAssets();
- if(!streamAssets.length){
-  stopLiveStream();
-  return;
- }
- if(typeof EventSource==="undefined"){
-  closeLiveStream();setLiveStreamState("UNAVAILABLE · EventSource is not supported");return;
- }
- const streamSymbols=streamAssets.map(a=>a.symbol);
- const streamKey=streamSymbols.join(",");
- if(liveStream&&liveStreamSymbol===streamKey&&liveStream.readyState!==EventSource.CLOSED)return;
-
- closeLiveStream();
- liveStreamReplaced=false;
- liveStreamSymbol=streamKey;
- liveStreamExpectedAssets=streamAssets;
- liveStreamSubscribedSymbols=[];
- liveStreamDroppedSymbols=[];
- liveStreamClosedSymbols=[];
- liveStreamLastTickAt=0;
- liveStreamPairTickAt=Object.create(null);
- setLiveStreamState("CONNECTING · requesting "+streamAssets.map(a=>a.name).join(", "));
-
- const url="/.netlify/functions/otc-stream?symbol="+encodeURIComponent(streamSymbols.join(","));
- let stream;
- try{stream=new EventSource(url);liveStream=stream}
- catch(error){scheduleLiveReconnect("could not create EventSource");return}
-
- const generation=liveStreamGeneration;
- stream.__apexOpenedAt=Date.now();
- stream.__apexEverOpened=false;
- stream.__apexEverTicked=false;
-
- liveConnectTimeout=setTimeout(()=>{
-  if(generation===liveStreamGeneration&&liveStream===stream&&!stream.__apexEverOpened)
-   scheduleLiveReconnect("connection did not open");
- },LIVE_CONNECT_TIMEOUT_MS);
-
- stream.onopen=()=>{
-  if(generation!==liveStreamGeneration||liveStream!==stream)return;
-  stream.__apexEverOpened=true;
-  if(liveConnectTimeout){clearTimeout(liveConnectTimeout);liveConnectTimeout=null}
-  liveReconnectAttempts=0;
-  setLiveStreamState("OPEN · waiting for OTCharts subscription confirmation");
- };
- stream.addEventListener("connected",event=>{
-  if(generation!==liveStreamGeneration||liveStream!==stream)return;
-  const detail=parseOTCEventData(event)||{};
-  const actual=Array.isArray(detail.symbols)?detail.symbols.map(String):[];
-  liveStreamSubscribedSymbols=actual.length?actual:streamSymbols.slice();
-  const actualNorm=new Set(liveStreamSubscribedSymbols.map(normalizeOTCSymbol));
-  const missing=streamSymbols.filter(symbol=>!actualNorm.has(normalizeOTCSymbol(symbol)));
-  if(missing.length){
-   liveStreamDroppedSymbols=[...new Set([...liveStreamDroppedSymbols,...missing])];
-   setLiveStreamState(`PARTIAL · subscribed ${liveStreamSubscribedSymbols.length}/${streamSymbols.length} · not carried: ${missing.join(", ")}`);
-  }else{
-   liveDroppedRetryAttempts=0;
-   setLiveStreamState(`SUBSCRIBED · ${liveStreamSubscribedSymbols.length} OTC pairs · awaiting first ticks`);
-  }
+ setLiveStreamState("connecting to one shared connection…");
+ const selectedId=$("mobileAsset")?.value||selectedChart;
+ const selectedAsset=ASSETS.find(a=>a.id===selectedId&&a.kind==="otc")||ASSETS.find(a=>a.id===selectedChart);
+ const streamSymbol=selectedAsset?.symbol||"EURUSD_otc";
+ liveStream=new EventSource("/.netlify/functions/otc-stream?symbol="+encodeURIComponent(streamSymbol));
+ liveStream.addEventListener("connected",e=>{
+  let detail="connected";try{const j=JSON.parse(e.data);detail=j.message||j.status||"connected"}catch(err){}
+  setLiveStreamState("CONNECTED · waiting for ticks",true);
  });
- const acceptTick=event=>{
-  if(generation!==liveStreamGeneration||liveStream!==stream)return;
-  const accepted=handleLiveTick(event);
-  if(accepted){
-   stream.__apexEverTicked=true;
-   stream.__apexLastTickAt=Date.now();
-   liveStreamLastTickAt=stream.__apexLastTickAt;
-  }
- };
- stream.addEventListener("tick",acceptTick);
- stream.onmessage=acceptTick;
- stream.addEventListener("dropped",event=>{
-  if(generation!==liveStreamGeneration||liveStream!==stream)return;
-  const detail=parseOTCEventData(event)||{};
-  const dropped=Array.isArray(detail.dropped)?detail.dropped.map(String):[];
-  if(dropped.length)liveStreamDroppedSymbols=[...new Set([...liveStreamDroppedSymbols,...dropped])];
-  setLiveStreamState(liveStreamStatusSummary("PARTIAL"));
-  // A dropped feed is not a dead connection. Keep healthy pairs live and retry
-  // the missing subscription after a cooldown instead of reconnecting in a loop.
-  if(dropped.length&&liveDroppedRetryAttempts<2&&!liveDroppedRetryTimer){
-   liveDroppedRetryAttempts++;
-   liveDroppedRetryTimer=setTimeout(()=>{
-    liveDroppedRetryTimer=null;
-    if(liveStream===stream&&generation===liveStreamGeneration)
-     scheduleLiveReconnect("retrying temporarily dropped OTC symbols",1000);
-   },LIVE_DROPPED_RETRY_MS);
-  }
- });
- stream.addEventListener("closed",event=>{
-  if(generation!==liveStreamGeneration||liveStream!==stream)return;
-  const detail=parseOTCEventData(event)||{};
-  const closed=Array.isArray(detail.closed)?detail.closed.map(String):[];
-  if(closed.length)liveStreamClosedSymbols=[...new Set([...liveStreamClosedSymbols,...closed])];
-  // `closed` means the broker has disabled trading for a symbol; the stream
-  // itself is still valid and may continue sending prices. Do not reconnect.
-  setLiveStreamState(liveStreamStatusSummary("CONNECTED · broker-closed pair"));
- });
- stream.addEventListener("replaced",event=>{
-  if(generation!==liveStreamGeneration||liveStream!==stream)return;
-  liveStreamReplaced=true;
-  closeLiveStream();
-  setLiveStreamState("REPLACED · another tab/app opened a newer stream on this OTCharts account");
- });
- stream.onerror=()=>{
-  if(generation!==liveStreamGeneration||liveStream!==stream)return;
-  if(stream.readyState===EventSource.CLOSED){
-   scheduleLiveReconnect("server closed the stream");
-  }else{
-   // EventSource already retries transient network errors by itself.
-   setLiveStreamState("INTERRUPTED · browser is retrying the same stream");
-  }
- };
-
- liveWatchdogTimer=setInterval(()=>{
-  if(generation!==liveStreamGeneration||liveStream!==stream)return;
-  const now=Date.now();
-  const last=Number(stream.__apexLastTickAt||0);
-  const opened=Number(stream.__apexOpenedAt||now);
-  if(last&&now-last>LIVE_TICK_TIMEOUT_MS)scheduleLiveReconnect("no OTC ticks for 90 seconds");
-  else if(!last&&stream.__apexEverOpened&&now-opened>LIVE_TICK_TIMEOUT_MS)
-   scheduleLiveReconnect("no first OTC tick after 90 seconds");
- },10000);
+ liveStream.addEventListener("tick",handleLiveTick);
+ liveStream.addEventListener("dropped",e=>setLiveStreamState("provider dropped a symbol; reconnecting"));
+ liveStream.addEventListener("closed",e=>setLiveStreamState("provider closed stream; reconnecting"));
+ liveStream.onmessage=handleLiveTick;
+ liveStream.onopen=()=>setLiveStreamState("OPEN · awaiting first tick",true);
+ liveStream.onerror=()=>setLiveStreamState("RECONNECTING · browser will retry automatically");
 }
-function stopLiveStream(){
- closeLiveStream();
- liveReconnectAttempts=0;liveDroppedRetryAttempts=0;liveStreamSymbol="";
- liveStreamExpectedAssets=[];liveStreamSubscribedSymbols=[];liveStreamDroppedSymbols=[];liveStreamClosedSymbols=[];
- liveStreamLastTickAt=0;liveStreamPairTickAt=Object.create(null);liveStreamReplaced=false;
- setLiveStreamState("OFF · no OTC markets selected");
-}
+function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
 function renderScanner(){
  let arr=[...watch].map(id=>results[id]).filter(Boolean),rows=[...arr].sort((a,b)=>b.analysis.score-a.analysis.score);
  $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.direction==="CALL"?"BUY":s.direction==="PUT"?"SELL":"—",cls=shownDirection==="BUY"?"call":shownDirection==="SELL"?"put":"wait",change=r.change,timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+30000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":s.trend==="DOWN"?"red":"muted"}">${s.trend||"—"}</td><td>${Number.isFinite(s.macdHistogram)?s.macdHistogram.toPrecision(4):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">00:30</small>`:""}</td><td><span class="${s.signalLevel==="CONFIRMED"?"green":"blue"}">${s.signalLevel||"EARLY"}</span></td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
@@ -1631,17 +1417,17 @@ function updateTop(rows){
  const candle=r?.candles?.at(-1);
  const fresh=!!(r&&s&&s.fresh&&r.candles?.length>=35&&candle&&hasCurrentFeed(r.id,candle));
  const liveDirection=s?.direction;
- let candidate=["CALL","PUT"].includes(liveDirection)?r:null;
- let dir=candidate?.analysis.direction||"";
- let timerKey=candidate?`${candidate.id}|${dir}|${candidate.analysis.candleTime}`:"";
- if(timerKey){
+ const candidate=["CALL","PUT"].includes(liveDirection)?r:null;
+ latestTop=candidate;
+ const dir=candidate?.analysis.direction||"";
+ const timerKey=candidate?`${candidate.id}|${dir}|${candidate.analysis.candleTime}`:"";
+ if(timerKey&&timerKey!==signalTimerKey){
+  signalTimerKey=timerKey;
   const signalCandle=candidate.candles?.find(c=>String(c.time)===String(candidate.analysis.candleTime));
   const closedAt=Number(signalCandle?.timeMs||0)+60000;
   signalExpiries[timerKey]=signalExpiries[timerKey]||closedAt+60000;
-  if(expiredSignalKeys.has(timerKey)||Date.now()>=signalExpiries[timerKey]){expiredSignalKeys.add(timerKey);candidate=null;dir="";timerKey="";}
+  signalExpiryAt=signalExpiries[timerKey];
  }
- latestTop=candidate;
- if(timerKey&&timerKey!==signalTimerKey){signalTimerKey=timerKey;signalExpiryAt=signalExpiries[timerKey];}
  if(!timerKey){signalTimerKey="";signalExpiryAt=0;}
  $("topSignal").className="signal-card "+(candidate?(dir==="CALL"?"call":"put"):"wait");
  const banner=$("signalCallout");
@@ -1740,12 +1526,6 @@ function updateCountdowns(){
  if(signalExpiryAt){
   const left=Math.max(0,Math.ceil((signalExpiryAt-now)/1000));
   $("signalCountdown").textContent=left===0?"EXPIRED":String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
-  if(left===0&&signalTimerKey){
-   expiredSignalKeys.add(signalTimerKey);signalTimerKey="";signalExpiryAt=0;latestTop=null;
-   const card=$("topSignal");if(card)card.className="signal-card wait";
-   const callout=$("signalCallout");if(callout){callout.className="signal-callout neutral";callout.textContent="SIGNAL EXPIRED · WAITING FOR NEXT FRESH SCAN";}
-   if(running&&!busy)setTimeout(()=>{if(running&&!busy)scan();},50);
-  }
  }else $("signalCountdown").textContent="--:--";
  // Candle countdown follows the selected pair's latest provider candle.
  const selected=results[$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart];
@@ -1952,7 +1732,7 @@ function setMobileScreen(screen){
 }
 document.querySelectorAll(".market-tab").forEach(b=>b.addEventListener("click",()=>setMarketCategory(b.dataset.marketCategory)));
 document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>setMobileScreen(b.dataset.screen)));
-$("mobileAsset").addEventListener("change",()=>{const id=$("mobileAsset").value;$("chartAsset").value=id;selectedChart=id;watch.add(id);renderWatch();drawChart();updateMobileMarketLabel();connectLiveStream(true);saveState();if(!busy)scan()});
+$("mobileAsset").addEventListener("change",()=>{const id=$("mobileAsset").value;$("chartAsset").value=id;selectedChart=id;watch.add(id);renderWatch();drawChart();updateMobileMarketLabel();stopLiveStream();connectLiveStream();saveState();if(!busy)scan()});
 $("mobileInterval").addEventListener("change",()=>{$("interval").value=$("mobileInterval").value;$("interval").dispatchEvent(new Event("change"));});
 function syncMobileControls(){if($("mobileInterval"))$("mobileInterval").value=$("interval").value||"15000";updateChartOptions()}
 window.addEventListener("resize",()=>{setMobileScreen(activeMobileScreen);drawChart()});
@@ -1976,12 +1756,6 @@ $("scanNow").onclick=async()=>{
 $("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN";status("AUTO SCANNER ACTIVE",true);scan();cycle=setInterval(()=>{if(!busy)scan()},Math.max(5000,+$("interval").value))};
 $("pauseBtn").onclick=()=>{running=false;clearInterval(cycle);$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED")};
 $("saveKey").type="button";
-$("apiKey").addEventListener("input",()=>{
- apiKey=$("apiKey").value.trim();
- try{if(apiKey)localStorage.setItem("apex_key",apiKey);else localStorage.removeItem("apex_key")}catch(e){}
- const message=$("connectionStatus");
- if(message&&apiKey)message.textContent="Twelve Data API key saved on this device · press test to verify";
-});
 $("saveKey").addEventListener("click",async(event)=>{
  event.preventDefault();
  const button=$("saveKey"),message=$("connectionStatus");
@@ -2017,7 +1791,7 @@ $("autoPaperToggle").addEventListener("change",()=>{
 $("scanMode").addEventListener("change",()=>{saveState();if(latestScan)renderScanner()});
 $("clearSignals").onclick=()=>{if(confirm("Clear signal history?")){history=[];renderHistory();saveState()}};
 $("clearTrades").onclick=()=>{if(confirm("Delete all paper journal records?")){trades=[];renderTrades();saveState()}};
-$("chartAsset").onchange=()=>{selectedChart=$("chartAsset").value;watch.add(selectedChart);$("mobileAsset").value=selectedChart;renderWatch();drawChart();connectLiveStream(true);saveState();if(!busy)scan()};
+$("chartAsset").onchange=()=>{selectedChart=$("chartAsset").value;watch.add(selectedChart);$("mobileAsset").value=selectedChart;renderWatch();drawChart();stopLiveStream();connectLiveStream();saveState();if(!busy)scan()};
 document.querySelectorAll(".tf-btn").forEach(b=>b.addEventListener("click",()=>setChartTimeframe(Number(b.dataset.tf))));
 $("threshold").onchange=()=>{$("thresholdText").textContent=$("threshold").value+" / 100";if(latestScan)scan();saveState()};
 $("interval").onchange=()=>{if(running){clearInterval(cycle);cycle=setInterval(()=>{if(!busy)scan()},30000)}$("cycleText").textContent=((+$("interval").value||15000)/1000)+" sec";saveState()};
@@ -2161,11 +1935,8 @@ function apexRenderIntelligentPanel(){
 function apexIntelligentHeartbeat(){
  const now=apexServerNow(), minute=Math.floor(now/60000), sec=Math.floor((now%60000)/1000), key=String(minute);
  apexRenderIntelligentPanel();
- // Background analysis is tick-driven. Refresh full history once during the final ten seconds.
- if(sec>=50&&apexPhase50Key!==key){apexPhase50Key=key;if(!busy&&running)scan();}
- // At the next UTC minute boundary, fetch the newly closed bar and lock the decision.
- if(sec<=1&&apexBoundaryKey!==key){apexBoundaryKey=key;if(running)setTimeout(()=>{if(running&&!busy)scan()},250);}
- // Keep the scanner's live phase label and update the chart clock without a random interval.
+ // Legacy minute scheduler intentionally does not launch scans; the active 30-second scheduler
+ // below is the single source of automatic scans and triggers at countdown 00:01.
  if(sec===0)apexPhaseMinuteKey=key;
 }
 
@@ -2206,9 +1977,15 @@ $("interval").onchange=()=>{ $("cycleText").textContent="UTC-10 DISPLAY · 30-se
 $("mobileInterval").addEventListener("change",()=>{$("interval").value=$("mobileInterval").value;$("cycleText").textContent="UTC-10 · 30-second phases";saveState()});
 // Provider timestamps can refine the local UTC clock offset. Unknown/malformed timestamps are ignored.
 const apexOriginalHandleLiveTick=handleLiveTick;
-// The primary tick handler already normalizes OTCharts Pocket Option UTC+2 timestamps.
-// Do not run a second, conflicting clock adjustment here.
-handleLiveTick=function(event){return apexOriginalHandleLiveTick(event);};
+handleLiveTick=function(event){
+ try{
+  const raw=JSON.parse(event.data||"{}"),t=raw?.data&&typeof raw.data==="object"?raw.data:raw;
+  let stamp=t?.timestamp??t?.time??t?.ts;
+  let ms=typeof stamp==="string"&&!/^\d{10,13}$/.test(stamp)?Date.parse(stamp):Number(stamp);
+  if(Number.isFinite(ms)&&ms>0){if(ms<1e12)ms*=1000;const delta=ms-Date.now();if(Math.abs(delta)<120000)apexServerClockOffsetMs=apexServerClockOffsetMs*.8+delta*.2;}
+ }catch(e){}
+ return apexOriginalHandleLiveTick(event);
+};
 // Insert the engine status card without changing the existing dashboard structure.
 const signalCallout=$("signalCallout");
 if(signalCallout&&!$("apexIntelligentEngine")){
@@ -2319,86 +2096,33 @@ function apexRenderIntelligentPanel(){
  const grid=$("apexLayerGrid");if(grid){grid.innerHTML="";(a.layers||[]).forEach(layer=>{const item=document.createElement("div");item.className="apex-layer-item";const name=document.createElement("small");name.textContent=layer.name;const value=document.createElement("b");value.textContent=layer.value;item.append(name,value);grid.appendChild(item);});}
  const stamp=$("apexLastClosed");if(stamp)stamp.textContent=a.candleTimeMs?new Date(a.candleTimeMs).toLocaleTimeString("en-US",{timeZone:"Etc/GMT+10",hour12:false}):"—";
 }
-let apexAutoScanInFlight=false;
-async function apexIntelligentHeartbeat(){
+function apexIntelligentHeartbeat(){
  const now=apexServerNow(),bucket=Math.floor(now/APEX_BAR_MS),within=now-bucket*APEX_BAR_MS,key=String(bucket),left=Math.ceil((APEX_BAR_MS-within)/1000);
  apexRenderIntelligentPanel();
- const earlyStatus=$("apexEarlyStatus");
- if(earlyStatus){
-  earlyStatus.className="";
-  if(within>=29000)earlyStatus.textContent="⚡ 00:01 · EARLY SIGNAL SCAN RUNNING";
-  else{
-   const selected=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
-   const current=results[selected]?.analysis||{},early=current.earlyDirection||"WAIT";
-   if(["CALL","PUT"].includes(early)&&current.fresh){
-    const side=early==="CALL"?"BUY":"SELL";
-    earlyStatus.className=early==="CALL"?"early-buy":"early-sell";
-    earlyStatus.textContent=`⚡ EARLY ${side} · ${current.earlyScore||0}/100 · HEADS-UP ONLY`;
-   }else earlyStatus.textContent=`AUTO SCAN ARMED · NEXT CHECK IN 00:${String(left).padStart(2,"0")}`;
-  }
- }
+ // Show a live countdown to the exact scan trigger.
  if(within<APEX_BAR_MS){
-  apex30State.phase=within<5000?"POST-CLOSE DATA SETTLE":"WAITING FOR NEXT 30S CLOSE";
-  apex30State.detail=within<5000?`Candle closed · waiting ${Math.max(0,5-within/1000).toFixed(1)}s before analysis.`:"Monitoring the active 30-second candle; no forming-candle signal is released.";
+  apex30State.phase=left===1?"EARLY SCAN · 00:01":"WAITING FOR 30S SCAN TRIGGER";
+  apex30State.detail=left===1?"Countdown reached 00:01. Starting the scan now.":`Monitoring live data · next scan in ${left}s.`;
  }
- // Scan every newly completed 30-second candle, even while the previous signal is still displayed.
- // Commit the candle key only after the scan settles, so a transient busy/error state cannot consume a scan cycle.
- if(within>=29000&&apexClosedDecisionKey!==key&&running&&!busy&&!apexAutoScanInFlight){
-  apexAutoScanInFlight=true;
-  apex30State.phase="00:01 EARLY SIGNAL SCAN";
-  apex30State.detail="The countdown reached 00:01. Running the fast early-signal scan now and refreshing the signal without reloading the page.";
-  try{
-   await scan();
-   apexClosedDecisionKey=key;
-   apex30State.detail="Completed-candle scan finished. Auto scan remains armed for the next candle, regardless of the previous signal status.";
-    if($("apexEarlyStatus"))$("apexEarlyStatus").textContent="✓ 00:01 SCAN COMPLETE · AUTO ARMED FOR NEXT 30S CANDLE";
-  }catch(error){
-   apex30State.phase="SCAN RETRY · AUTO ACTIVE";
-   apex30State.detail=`Scan did not complete: ${error?.message||"temporary error"}. The scheduler will retry this candle.`;
-  }finally{apexAutoScanInFlight=false;}
+ // Trigger exactly once when the native 30-second candle countdown reaches 00:01.
+ // Keep this scheduler as the sole automatic trigger; avoid competing minute/post-close scans.
+ if(left===1&&apexClosedDecisionKey!==key&&running&&!busy){
+  apexClosedDecisionKey=key;
+  apex30State.phase="EARLY SCAN · 00:01";
+  apex30State.detail="Countdown reached 00:01. Fetching live data and running the scan.";
+  scan();
  }
 }
 // Keep the selected chart locked to the native 30-second feed.
 setChartTimeframe=function(){chartTimeframe=.5;document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===.5));if($("tfNote"))$("tfNote").textContent="30-second native OTC candles · scanner locked";if($("chartMeta"))$("chartMeta").textContent="30-second candle structure · MACD · momentum · support / resistance";drawChart();};
 if(typeof candleDurationSeconds==="function")candleDurationSeconds=function(){return 30;};
 const apexOriginalCountdownsV30=updateCountdowns;updateCountdowns=function(){apexOriginalCountdownsV30();const el=$("candleCountdown");if(el)el.textContent=`00:${String(apexCandleCountdown()).padStart(2,"0")}`;apexRenderIntelligentPanel();};
-function apexStartScheduler(){clearInterval(cycle);running=true;apexClosedDecisionKey=String(Math.floor(apexServerNow()/APEX_BAR_MS));$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="SUPER INTELLIGENCE ACTIVE";status("AUTO SCAN · EARLY SIGNAL AT 00:01",true);apex30State.phase="WAITING FOR NEXT 30S CLOSE";apex30State.detail="Automatic analysis is armed. The EARLY signal scan triggers at 00:01 remaining in each 30-second candle.";cycle=setInterval(apexIntelligentHeartbeat,200);}
+function apexStartScheduler(){clearInterval(cycle);running=true;apexClosedDecisionKey=String(Math.floor(apexServerNow()/APEX_BAR_MS));$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="SUPER INTELLIGENCE ACTIVE";status("30-SECOND AUTO SCAN · NEXT CLOSE + 5S",true);apex30State.phase="WAITING FOR NEXT 30S CLOSE";apex30State.detail="Automatic analysis is armed. The next signal scan runs five seconds after the next completed 30-second candle.";cycle=setInterval(apexIntelligentHeartbeat,200);}
 function apexPauseScheduler(){running=false;clearInterval(cycle);cycle=null;$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED");}
 $("startBtn").onclick=apexStartScheduler;$("pauseBtn").onclick=apexPauseScheduler;
-// V9.1 scan reliability patch: serialize all scan requests and always release the UI lock.
-const apexOriginalScanV91=scan;
-let apexScanPromiseV91=null;
-scan=async function(){
- if(apexScanPromiseV91)return apexScanPromiseV91;
- apexScanPromiseV91=(async()=>{
-  try{return await apexOriginalScanV91();}
-  finally{
-   busy=false;
-   const button=$("scanNow");
-   if(button)button.disabled=false;
-  }
- })();
- try{return await apexScanPromiseV91;}
- finally{apexScanPromiseV91=null;}
-};
-// Manual scans use the same protected scan path; when auto mode is active,
-// count this candle as handled so the heartbeat does not immediately repeat it.
-$("scanNow").onclick=async()=>{
- const button=$("scanNow");
- if(apexScanPromiseV91)return;
- if(running){const manualNow=apexServerNow();if(manualNow%APEX_BAR_MS>=5000)apexClosedDecisionKey=String(Math.floor(manualNow/APEX_BAR_MS));}
- button.disabled=true;button.textContent="⚡ INTELLIGENCE ENGINE RUNNING…";
- try{await scan();}
- catch(error){status("APEX SCAN ERROR");$("progressText").textContent="Scan failed: "+(error?.message||"unknown error");}
- finally{button.disabled=false;button.textContent="⚡ RUN SUPER INTELLIGENCE SCAN";}
-};
-// Wake the existing 30-second scheduler after iOS/browser tab suspension.
-// The candle key prevents duplicate scans when focus and visibility fire together.
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&running)apexIntelligentHeartbeat();});
-window.addEventListener("focus",()=>{if(running)apexIntelligentHeartbeat();});
 $("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";$("interval").onchange=()=>{$("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";saveState();};
-const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · adaptive EARLY BUY/SELL heads-up from 35/100 with 2 aligned layers · confirmed entries remain 65/100 + 15-point edge · MACD and momentum counted once · early scan at 00:01 remaining of each 30-second cycle. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
-const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · EARLY opportunity alerts · confirmed entry 65/100 · 00:01 early-signal scan · UTC-10 chart display.";
+const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · adaptive EARLY BUY/SELL heads-up from 35/100 with 2 aligned layers · confirmed entries remain 65/100 + 15-point edge · MACD and momentum counted once · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
+const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · EARLY opportunity alerts · confirmed entry 65/100 · +5s post-close scan · UTC-10 chart display.";
 const hero=$("heroLiveLabel");if(hero)hero.textContent="30-second market intelligence · next-candle callouts";
 const tfNote=$("tfNote");if(tfNote)tfNote.textContent="30-second native OTC candles · scanner locked";
 const ci=$("candleIntel");if(ci)ci.innerHTML=ci.innerHTML.replaceAll("5M CLOSED BAR","30S CLOSED BAR").replaceAll("1M CLOSED BAR","30S CLOSED BAR");
