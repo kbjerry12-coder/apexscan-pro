@@ -1652,6 +1652,7 @@ function addSignal(r){
 }async function scan(){
  if(busy)return;if(!watch.size){alert("Select at least one market in Watchlist Configuration.");return}
  busy=true;status("SCANNING",true);$("scanNow").disabled=true;$("progressText").textContent="Starting scan…";$("scanProgress").style.width="0%";
+ try{
  let ids=[selectedChart||$("mobileAsset")?.value||[...watch][0]].filter(Boolean),done=0,errors=0,errorDetails=[];
  for(const id of ids){
   let a=ASSETS.find(x=>x.id===id);
@@ -1693,10 +1694,21 @@ function addSignal(r){
   // Avoid bursting the provider and stay within low-tier rate limits.
   if(done<ids.length)await new Promise(resolve=>setTimeout(resolve,900));
  }
- latestScan=Date.now();renderScanner();renderCandleIntel(results[selectedChart]);try{drawChart()}catch(chartError){console.error("Chart render:",chartError)}settleExpiredTrades();$("scanNow").disabled=false;busy=false;
+ latestScan=Date.now();renderScanner();renderCandleIntel(results[selectedChart]);try{drawChart()}catch(chartError){console.error("Chart render:",chartError)}settleExpiredTrades();
  let fresh=[...watch].filter(id=>results[id]?.analysis.fresh).length;status(fresh?"SCAN COMPLETE · DATA RECEIVED":"SCAN COMPLETE · CHECK DATA",fresh>0);
  $("connectionStatus").textContent=`Regular feed: ${apiKey?"API key saved; per-symbol requests":"not configured"}\nOTC history: ${errorDetails.length?"ERROR · "+errorDetails.join(" | "):"last request completed"}\nOTC live stream: ${liveStreamState}\nLast scan: ${clock()}`;
  $("progressText").textContent=`Complete · ${fresh} fresh markets · ${errors} errors`;saveState();
+ }catch(scanError){
+  console.error("APEXSCAN scan-cycle error:",scanError);
+  status("SCAN RECOVERY · RETRY ON NEXT CYCLE",false);
+  if($("progressText"))$("progressText").textContent="Scan interrupted · automatic recovery armed";
+  if($("connectionStatus"))$("connectionStatus").textContent=`Scanner recovery: ${scanError?.message||"Unexpected scan error"}\nOTC live stream: ${liveStreamState}\nLast scan: ${clock()}`;
+ }finally{
+  // Always release the scan lock, even if rendering or settlement throws.
+  busy=false;
+  if($("scanNow"))$("scanNow").disabled=false;
+  if(running&&$("scanStateBadge")&&$("scanStateBadge").textContent!="PAUSED")$("scanStateBadge").textContent="SUPER INTELLIGENCE ACTIVE";
+ }
 }
 function openPaperTrade(r,side,isAutomatic=true,signalKey=""){
  if(!r||!r.analysis?.fresh||!hasCurrentFeed(r.id,r.candles?.at(-1))||!["CALL","PUT"].includes(side)){
