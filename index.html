@@ -514,7 +514,7 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
 <main class="wrap">
  <div class="top">
   <div><div class="eyebrow">POCKET OPTION OTC · LIVE SCANNER</div><h1>APEXSCAN PRO · OTC SIGNAL SCANNER</h1><p>OTCharts live OTC feed · BUY / SELL directional signals · every usable scan returns a side</p></div>
-  <div class="actions"><button id="startBtn" class="primary">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" disabled>Ⅱ PAUSE</button></div>
+  <div class="actions"><button id="startBtn" class="primary" type="button" aria-label="Start automatic scanning" title="Start automatic scanning">▶ AUTO SCAN</button><button id="pauseBtn" class="danger" type="button" aria-label="Pause automatic scanning" title="Pause automatic scanning" disabled>Ⅱ PAUSE SCAN</button></div>
  </div>
  <div class="notice"><b>Data integrity:</b> A scanner can only be as current as its provider. OTC markets are selected by default and use your Netlify OTCharts function. Live ticks update displayed prices, but BUY/SELL entries wait for a completed native 30-second candle and aligned multi-layer confirmation. If provider updates stop, new entries are paused. OTC provider timestamps and update frequency must be verified; regular markets are optional and use Twelve Data. This is signals and paper tracking only; it does not connect to or place Pocket Option orders. Technical scores are not guaranteed probabilities.</div>
  <section class="mobile-command" id="marketControls" aria-label="Market controls">
@@ -1055,7 +1055,21 @@ async function otcData(symbol){
 }
 async function fetchAsset(asset){
  if(!asset)throw new Error("No market selected.");
- if(asset.kind==="otc")return otcData(asset.symbol);
+ if(asset.kind==="otc"){
+  // Prefer the candle history already maintained by the one shared live stream.
+  // Only trust it when the stream tick and cached candle timestamps are recent.
+  const cached=results[asset.id]?.candles;
+  const tick=liveTicks[asset.id];
+  const tickAge=tick?Date.now()-Number(tick.receivedAt||0):Infinity;
+  const last=cached?.[cached.length-1];
+  const candleAge=last?Date.now()-Number(last.timeMs||0):Infinity;
+  const cacheUsable=Array.isArray(cached)&&cached.length>=35&&
+   Number.isFinite(tickAge)&&tickAge>=0&&tickAge<=10000&&
+   Number.isFinite(candleAge)&&candleAge>=-30000&&candleAge<=65000;
+  if(cacheUsable)return cached.slice();
+  // Recovery path: refresh history only when the live cache is absent, incomplete or stale.
+  return otcData(asset.symbol);
+ }
  if(asset.kind==="regular")return regularData(asset.symbol);
  throw new Error("Unsupported market type: "+String(asset.kind));
 }
@@ -1733,6 +1747,10 @@ function addSignal(r){
   busy=false;
   if($("scanNow"))$("scanNow").disabled=false;
   if(running&&$("scanStateBadge")&&$("scanStateBadge").textContent!="PAUSED")$("scanStateBadge").textContent="SUPER INTELLIGENCE ACTIVE";
+  if(running&&apexPendingScheduledScan){
+   apexPendingScheduledScan=false;
+   setTimeout(()=>{if(running&&!busy)scan();},0);
+  }
  }
 }
 function openPaperTrade(r,side,isAutomatic=true,signalKey=""){
@@ -2164,30 +2182,65 @@ function apexRenderIntelligentPanel(){
  const grid=$("apexLayerGrid");if(grid){grid.innerHTML="";(a.layers||[]).forEach(layer=>{const item=document.createElement("div");item.className="apex-layer-item";const name=document.createElement("small");name.textContent=layer.name;const value=document.createElement("b");value.textContent=layer.value;item.append(name,value);grid.appendChild(item);});}
  const stamp=$("apexLastClosed");if(stamp)stamp.textContent=a.candleTimeMs?new Date(a.candleTimeMs).toLocaleTimeString("en-US",{timeZone:"Etc/GMT+10",hour12:false}):"—";
 }
+let apexPendingScheduledScan=false;
 function apexIntelligentHeartbeat(){
- const now=apexServerNow(),bucket=Math.floor(now/APEX_BAR_MS),within=now-bucket*APEX_BAR_MS,key=String(bucket),left=Math.ceil((APEX_BAR_MS-within)/1000);
+ const now=apexServerNow(),bucket=Math.floor(now/APEX_BAR_MS),within=now-bucket*APEX_BAR_MS,key=String(bucket);
+ const remainingMs=APEX_BAR_MS-within,left=Math.ceil(remainingMs/1000);
  apexRenderIntelligentPanel();
- // Show a live countdown to the exact scan trigger.
- if(within<APEX_BAR_MS){
-  apex30State.phase=left===1?"EARLY SCAN · 00:01":"WAITING FOR 30S SCAN TRIGGER";
-  apex30State.detail=left===1?"Countdown reached 00:01. Starting the scan now.":`Monitoring live data · next scan in ${left}s.`;
- }
- // Trigger exactly once when the native 30-second candle countdown reaches 00:01.
- // Keep this scheduler as the sole automatic trigger; avoid competing minute/post-close scans.
- if(left<=2&&apexClosedDecisionKey!==key&&running&&!busy){
-  // Trigger as soon as the countdown enters 00:01; don't mark the cycle if busy.
+
+ // One automatic scan at 00:01 of each native 30-second candle.
+ apex30State.phase=left===1?"AUTO SCAN · 00:01":"AUTO SCAN ARMED";
+ apex30State.detail=left===1
+  ?"Countdown reached 00:01. Running the selected-pair intelligence scan."
+  :`Automatic scan armed · next trigger in ${left}s.`;
+
+ if(remainingMs>0&&remainingMs<=1000&&apexClosedDecisionKey!==key&&running){
   apexClosedDecisionKey=key;
-  apex30State.phase="EARLY SCAN · 00:01";
-  apex30State.detail="Countdown reached 00:01. Fetching live data and running the scan.";
-  scan();
+  apex30State.phase="AUTO SCAN · 00:01";
+  if(busy){
+   apexPendingScheduledScan=true;
+   apex30State.detail="The previous scan is still finishing. This scheduled scan is queued and will run next.";
+  }else{
+   apex30State.detail="Countdown reached 00:01. Fetching live data and running the scan.";
+   scan();
+  }
  }
 }
 // Keep the selected chart locked to the native 30-second feed.
 setChartTimeframe=function(){chartTimeframe=.5;document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===.5));if($("tfNote"))$("tfNote").textContent="30-second native OTC candles · scanner locked";if($("chartMeta"))$("chartMeta").textContent="30-second candle structure · MACD · momentum · support / resistance";drawChart();};
 if(typeof candleDurationSeconds==="function")candleDurationSeconds=function(){return 30;};
 const apexOriginalCountdownsV30=updateCountdowns;updateCountdowns=function(){apexOriginalCountdownsV30();const el=$("candleCountdown");if(el)el.textContent=`00:${String(apexCandleCountdown()).padStart(2,"0")}`;apexRenderIntelligentPanel();};
-function apexStartScheduler(){clearInterval(cycle);running=true;apexClosedDecisionKey=String(Math.floor(apexServerNow()/APEX_BAR_MS));$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="SUPER INTELLIGENCE ACTIVE";status("30-SECOND AUTO SCAN · NEXT CLOSE + 5S",true);apex30State.phase="WAITING FOR NEXT 30S CLOSE";apex30State.detail="Automatic analysis is armed. The next signal scan runs five seconds after the next completed 30-second candle.";cycle=setInterval(apexIntelligentHeartbeat,200);}
-function apexPauseScheduler(){running=false;clearInterval(cycle);cycle=null;$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED");}
+function apexStartScheduler(){
+ clearInterval(cycle);
+ running=true;
+ apexPendingScheduledScan=false;
+ apexClosedDecisionKey=String(Math.floor(apexServerNow()/APEX_BAR_MS));
+ $("startBtn").disabled=true;
+ $("pauseBtn").disabled=false;
+ $("scanStateBadge").textContent="AUTO SCAN ACTIVE";
+ $("startBtn").textContent="▶ AUTO SCAN ACTIVE";
+ $("pauseBtn").textContent="Ⅱ PAUSE SCAN";
+ status("AUTO SCAN ACTIVE · 30-SECOND CYCLE",true);
+ apex30State.phase="AUTO SCAN ACTIVE";
+ apex30State.detail="Initial scan starting now. Next automatic scans trigger at 00:01 of each native 30-second candle.";
+ cycle=setInterval(apexIntelligentHeartbeat,100);
+ if(busy)apexPendingScheduledScan=true;
+ else scan();
+}
+function apexPauseScheduler(){
+ running=false;
+ apexPendingScheduledScan=false;
+ clearInterval(cycle);
+ cycle=null;
+ $("startBtn").disabled=false;
+ $("pauseBtn").disabled=true;
+ $("scanStateBadge").textContent="PAUSED";
+ $("startBtn").textContent="▶ AUTO SCAN";
+ $("pauseBtn").textContent="Ⅱ PAUSE SCAN";
+ apex30State.phase="PAUSED";
+ apex30State.detail="Automatic scanning is paused. Press AUTO SCAN to resume.";
+ status("AUTO SCANNER PAUSED");
+}
 $("startBtn").onclick=apexStartScheduler;$("pauseBtn").onclick=apexPauseScheduler;
 $("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";$("interval").onchange=()=>{$("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";saveState();};
 const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · adaptive EARLY BUY/SELL heads-up from 35/100 with 2 aligned layers · confirmed entries remain 65/100 + 15-point edge · MACD and momentum counted once · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
