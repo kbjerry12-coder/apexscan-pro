@@ -625,10 +625,10 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
    <div class="panel" id="dataPanel">
     <div class="panel-head"><h2>DATA CONNECTIONS</h2><span class="pill">PROVIDER SETUP</span></div>
     <div class="fields">
-     <div class="field wide"><label>Twelve Data API key · regular markets</label><input id="apiKey" type="password" placeholder="Paste Twelve Data API key"></div>
+     <div class="field wide"><label>Twelve Data API key · regular markets</label><input id="apiKey" type="password" placeholder="Twelve Data key saved on this device" autocomplete="off"></div>
      <div class="field wide"><label>OTC candle history</label><input value="Netlify Function · /.netlify/functions/otc-candles" disabled></div>
      <div class="field wide"><label>OTC live stream · selected pair only (one connection)</label><div class="tiny" id="liveStreamStatus">Stream: connecting when dashboard loads…</div></div>
-     <div class="field wide"><button id="saveKey" class="primary">Save API key & test connection</button></div>
+     <div class="field wide"><button id="saveKey" class="primary">Save & test Twelve Data connection</button></div>
      <div class="field wide"><div class="tiny" id="connectionStatus">Regular feed: not tested<br>OTC feed: function will be tested when selected</div></div>
     </div>
    </div>
@@ -746,7 +746,8 @@ function renderWatch(){
  let box=$("watchChecks");box.innerHTML="";
  let visible=ASSETS.filter(a=>a.kind==="otc");
  if(!visible.length){box.innerHTML='<div class="empty">No OTC symbols are configured.</div>'}
- visible.forEach(a=>{let lab=document.createElement("label");lab.className="check";lab.dataset.category=assetCategory(a);let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState();if([...watch].some(id=>ASSETS.find(x=>x.id===id)?.kind==="otc"))connectLiveStream();else stopLiveStream();updateChartOptions()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});
+ visible.forEach(a=>{let lab=document.createElement("label");lab.className="check";lab.dataset.category=assetCategory(a);let cb=document.createElement("input");cb.type="checkbox";cb.checked=watch.has(a.id);cb.addEventListener("change",()=>{cb.checked?watch.add(a.id):watch.delete(a.id);saveState();if([...watch].some(id=>ASSETS.find(x=>x.id===id)?.kind==="otc"))connectLiveStream();
+if(!liveWatchdogTimer)liveWatchdogTimer=setInterval(()=>{if(liveStream&&liveStreamState.includes("CONNECTED")&&Object.values(liveTicks).every(t=>Date.now()-Number(t?.receivedAt||0)>25000))scheduleLiveReconnect("no recent ticks");},10000);else stopLiveStream();updateChartOptions()});lab.append(cb,document.createTextNode(a.name+(a.kind==="otc"?" · OTC":"")));box.append(lab)});
  let note=$("categoryNote");if(note){note.style.display="none";note.textContent="OTC currency markets use your existing Netlify OTCharts function."}
  updateChartOptions();
 }
@@ -1312,26 +1313,45 @@ function handleLiveTick(raw){
  renderPaperLiveBoard();
  settleExpiredTrades();
 }
-function connectLiveStream(){
- if(liveStream||typeof EventSource==="undefined")return;
+let liveReconnectTimer=null,liveWatchdogTimer=null,liveReconnectAttempts=0;
+function scheduleLiveReconnect(reason="connection lost"){
+ if(liveReconnectTimer)clearTimeout(liveReconnectTimer);
+ setLiveStreamState("RECONNECTING · "+reason);
+ const delay=Math.min(15000,1000*Math.pow(2,Math.min(liveReconnectAttempts++,4)));
+ liveReconnectTimer=setTimeout(()=>{
+  if(liveStream){try{liveStream.close()}catch(e){}liveStream=null}
+  connectLiveStream(true);
+ },delay);
+}
+function connectLiveStream(force=false){
+ if(liveStream&&!force)return;
+ if(typeof EventSource==="undefined"){setLiveStreamState("UNAVAILABLE · EventSource unsupported");return}
  if(![...watch].some(id=>ASSETS.find(a=>a.id===id)?.kind==="otc")){
   setLiveStreamState("OFF · no OTC markets selected");return;
  }
+ if(liveReconnectTimer){clearTimeout(liveReconnectTimer);liveReconnectTimer=null}
+ if(liveStream){try{liveStream.close()}catch(e){}liveStream=null}
  setLiveStreamState("connecting to one shared connection…");
  const selectedId=$("mobileAsset")?.value||selectedChart;
- const selectedAsset=ASSETS.find(a=>a.id===selectedId&&a.kind==="otc")||ASSETS.find(a=>a.id===selectedChart);
+ const selectedAsset=ASSETS.find(a=>a.id===selectedId&&a.kind==="otc")||ASSETS.find(a=>a.id===selectedChart&&a.kind==="otc");
  const streamSymbol=selectedAsset?.symbol||"EURUSD_otc";
  liveStream=new EventSource("/.netlify/functions/otc-stream?symbol="+encodeURIComponent(streamSymbol));
  liveStream.addEventListener("connected",e=>{
   let detail="connected";try{const j=JSON.parse(e.data);detail=j.message||j.status||"connected"}catch(err){}
-  setLiveStreamState("CONNECTED · waiting for ticks",true);
+  liveReconnectAttempts=0;setLiveStreamState("CONNECTED · waiting for ticks",true);
  });
  liveStream.addEventListener("tick",handleLiveTick);
- liveStream.addEventListener("dropped",e=>setLiveStreamState("provider dropped a symbol; reconnecting"));
- liveStream.addEventListener("closed",e=>setLiveStreamState("provider closed stream; reconnecting"));
+ liveStream.addEventListener("dropped",e=>scheduleLiveReconnect("provider dropped symbol"));
+ liveStream.addEventListener("closed",e=>scheduleLiveReconnect("provider closed stream"));
  liveStream.onmessage=handleLiveTick;
- liveStream.onopen=()=>setLiveStreamState("OPEN · awaiting first tick",true);
- liveStream.onerror=()=>setLiveStreamState("RECONNECTING · browser will retry automatically");
+ liveStream.onopen=()=>{liveReconnectAttempts=0;setLiveStreamState("OPEN · awaiting first tick",true)};
+ liveStream.onerror=()=>scheduleLiveReconnect("stream error");
+}
+function stopLiveStream(){
+ if(liveReconnectTimer){clearTimeout(liveReconnectTimer);liveReconnectTimer=null}
+ if(liveWatchdogTimer){clearInterval(liveWatchdogTimer);liveWatchdogTimer=null}
+ if(liveStream){liveStream.close();liveStream=null}
+ setLiveStreamState("OFF · no OTC markets selected")
 }
 function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
 function renderScanner(){
@@ -1762,6 +1782,12 @@ $("scanNow").onclick=async()=>{
 $("startBtn").onclick=()=>{if(running)return;running=true;$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="AUTO SCAN";status("AUTO SCANNER ACTIVE",true);scan();cycle=setInterval(()=>{if(!busy)scan()},Math.max(5000,+$("interval").value))};
 $("pauseBtn").onclick=()=>{running=false;clearInterval(cycle);$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED")};
 $("saveKey").type="button";
+$("apiKey").addEventListener("input",()=>{
+ apiKey=$("apiKey").value.trim();
+ try{if(apiKey)localStorage.setItem("apex_key",apiKey);else localStorage.removeItem("apex_key")}catch(e){}
+ const message=$("connectionStatus");
+ if(message&&apiKey)message.textContent="Twelve Data API key saved on this device · press test to verify";
+});
 $("saveKey").addEventListener("click",async(event)=>{
  event.preventDefault();
  const button=$("saveKey"),message=$("connectionStatus");
