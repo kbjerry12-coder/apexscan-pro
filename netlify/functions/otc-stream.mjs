@@ -2,38 +2,53 @@ export default async (request) => {
   const key = process.env.OTCHARTS_API_KEY;
 
   if (!key) {
-    return Response.json({
-      error: "OTCHARTS_API_KEY is missing from Netlify environment variables."
-    }, { status: 500 });
+    return new Response(
+      `event: stream_error
+data: ${JSON.stringify({
+  error: "OTCHARTS_API_KEY is missing from Netlify environment variables."
+})}
+
+`,
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache, no-store",
+          "Access-Control-Allow-Origin": "*"
+        }
+      }
+    );
   }
 
   const url = new URL(request.url);
+  const symbol = url.searchParams.get("symbol") || "EURUSD_otc";
 
-  const raw = url.searchParams.get("symbol") || "EURUSD_otc";
+  if (!/^[A-Z0-9#]+_otc$/.test(symbol)) {
+    return new Response(
+      `event: stream_error
+data: ${JSON.stringify({
+  error: "Invalid OTC symbol",
+  symbol
+})}
 
-  const symbols = [...new Set(
-    raw.split(",").map(s => s.trim()).filter(Boolean)
-  )];
-
-  // OTCharts Lite supports up to 5 instruments per stream.
-  if (
-    !symbols.length ||
-    symbols.length > 5 ||
-    symbols.some(s => !/^[A-Z0-9#]+_otc$/.test(s))
-  ) {
-    return Response.json({
-      error: "Invalid OTC stream symbols.",
-      received: symbols
-    }, { status: 400 });
+`,
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache"
+        }
+      }
+    );
   }
 
   const upstream = new URL("https://otcharts.com/v1/stream");
 
   upstream.searchParams.set("venue", "otc");
-  upstream.searchParams.set("symbol", symbols.join(","));
+  upstream.searchParams.set("symbol", symbol);
 
   try {
-    const response = await fetch(upstream, {
+    const response = await fetch(upstream.toString(), {
       method: "GET",
       headers: {
         Authorization: `Bearer ${key}`,
@@ -45,73 +60,86 @@ export default async (request) => {
     });
 
     if (!response.ok) {
-      const text = await response.text();
+      const raw = await response.text();
 
-      let body = {};
+      let details;
 
       try {
-        body = JSON.parse(text);
+        details = JSON.parse(raw);
       } catch {
-        body = { raw: text };
+        details = raw;
       }
 
-      return Response.json({
-        error:
-          body.error ||
-          body.message ||
-          `OTCharts returned HTTP ${response.status}`,
-
+      const errorPayload = {
+        error: "OTCharts stream connection rejected",
         status: response.status,
-        details: body,
+        statusText: response.statusText,
+        symbol,
+        details,
+        retryAfter: response.headers.get("retry-after")
+      };
 
-        retryAfter:
-          response.headers.get("retry-after")
-      }, {
-        status: response.status,
-        headers: {
-          ...(response.headers.get("retry-after")
-            ? {
-                "Retry-After":
-                  response.headers.get("retry-after")
-              }
-            : {})
+      return new Response(
+        `event: stream_error
+data: ${JSON.stringify(errorPayload)}
+
+`,
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "text/event-stream; charset=utf-8",
+            "Cache-Control": "no-cache, no-store",
+            "X-Accel-Buffering": "no"
+          }
         }
-      });
+      );
     }
 
     if (!response.body) {
-      return Response.json({
-        error: "OTCharts returned no stream body."
-      }, { status: 502 });
+      return new Response(
+        `event: stream_error
+data: ${JSON.stringify({
+  error: "OTCharts returned HTTP 200 but no stream body.",
+  symbol
+})}
+
+`,
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache"
+          }
+        }
+      );
     }
 
-    // Forward the actual upstream SSE stream.
     return new Response(response.body, {
       status: 200,
       headers: {
         "Content-Type": "text/event-stream; charset=utf-8",
         "Cache-Control": "no-cache, no-store, no-transform",
-        "X-Accel-Buffering": "no",
-        "Connection": "keep-alive",
-        "Retry": "3000",
-
-        ...(response.headers.get("x-otc-dropped")
-          ? {
-              "X-OTC-Dropped":
-                response.headers.get("x-otc-dropped")
-            }
-          : {})
+        "X-Accel-Buffering": "no"
       }
     });
 
   } catch (error) {
-    return Response.json({
-      error:
-        error?.name === "AbortError"
-          ? "Stream connection was cancelled."
-          : "OTCharts connection failed.",
+    return new Response(
+      `event: stream_error
+data: ${JSON.stringify({
+  error: "OTCharts connection failed",
+  details: error?.message || "Unknown network error",
+  symbol
+})}
 
-      details: error?.message || "Unknown network error"
-    }, { status: 502 });
+`,
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache, no-store"
+        }
+      }
+    );
   }
 };
