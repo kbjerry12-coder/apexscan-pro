@@ -687,7 +687,7 @@ const ASSETS=[
  {id:"OTC:SAR/CNY",name:"SAR/CNY OTC",kind:"otc",symbol:"SARCNY_otc",default:false}
 ];
 const lastAnalyzedClosedCandleByAsset=new Map();
-let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},activeMarketCategory="currencies",activeMobileScreen="scanner";
+let apiKey="",watch=new Set(ASSETS.filter(a=>a.default).map(a=>a.id)),results={},history=[],trades=[],running=false,cycle=null,busy=false,selectedChart="OTC:EUR/USD",latestTop=null,latestScan=0,chartTimeframe=1,signalExpiryAt=0,signalTimerKey="",signalExpiries={},expiredSignalKeys=new Set(),activeMarketCategory="currencies",activeMobileScreen="scanner";
 const money=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:6});
 // Display all dashboard/chart wall-clock times in fixed UTC-10 (Etc/GMT+10).
 // Candle timestamps and 30-second boundary calculations remain UTC epoch-based.
@@ -1417,17 +1417,17 @@ function updateTop(rows){
  const candle=r?.candles?.at(-1);
  const fresh=!!(r&&s&&s.fresh&&r.candles?.length>=35&&candle&&hasCurrentFeed(r.id,candle));
  const liveDirection=s?.direction;
- const candidate=["CALL","PUT"].includes(liveDirection)?r:null;
- latestTop=candidate;
- const dir=candidate?.analysis.direction||"";
- const timerKey=candidate?`${candidate.id}|${dir}|${candidate.analysis.candleTime}`:"";
- if(timerKey&&timerKey!==signalTimerKey){
-  signalTimerKey=timerKey;
+ let candidate=["CALL","PUT"].includes(liveDirection)?r:null;
+ let dir=candidate?.analysis.direction||"";
+ let timerKey=candidate?`${candidate.id}|${dir}|${candidate.analysis.candleTime}`:"";
+ if(timerKey){
   const signalCandle=candidate.candles?.find(c=>String(c.time)===String(candidate.analysis.candleTime));
   const closedAt=Number(signalCandle?.timeMs||0)+60000;
   signalExpiries[timerKey]=signalExpiries[timerKey]||closedAt+60000;
-  signalExpiryAt=signalExpiries[timerKey];
+  if(expiredSignalKeys.has(timerKey)||Date.now()>=signalExpiries[timerKey]){expiredSignalKeys.add(timerKey);candidate=null;dir="";timerKey="";}
  }
+ latestTop=candidate;
+ if(timerKey&&timerKey!==signalTimerKey){signalTimerKey=timerKey;signalExpiryAt=signalExpiries[timerKey];}
  if(!timerKey){signalTimerKey="";signalExpiryAt=0;}
  $("topSignal").className="signal-card "+(candidate?(dir==="CALL"?"call":"put"):"wait");
  const banner=$("signalCallout");
@@ -1526,6 +1526,12 @@ function updateCountdowns(){
  if(signalExpiryAt){
   const left=Math.max(0,Math.ceil((signalExpiryAt-now)/1000));
   $("signalCountdown").textContent=left===0?"EXPIRED":String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
+  if(left===0&&signalTimerKey){
+   expiredSignalKeys.add(signalTimerKey);signalTimerKey="";signalExpiryAt=0;latestTop=null;
+   const card=$("topSignal");if(card)card.className="signal-card wait";
+   const callout=$("signalCallout");if(callout){callout.className="signal-callout neutral";callout.textContent="SIGNAL EXPIRED · WAITING FOR NEXT FRESH SCAN";}
+   if(running&&!busy)setTimeout(()=>{if(running&&!busy)scan();},50);
+  }
  }else $("signalCountdown").textContent="--:--";
  // Candle countdown follows the selected pair's latest provider candle.
  const selected=results[$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart];
