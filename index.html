@@ -1197,8 +1197,7 @@ function drawChart(){
 }
 
 
-// One browser EventSource owns the selected-pair OTCharts stream.
-// A candle-history polling fallback keeps prices/scanning alive during SSE outages.
+// One browser EventSource owns the selected-pair OTCharts stream; the scanner can select from the full OTC pair list.
 let liveStream=null,liveStreamState="CONNECTING",liveTicks={};
 const OTC_SYMBOLS={EURUSD_otc:"OTC:EUR/USD",GBPUSD_otc:"OTC:GBP/USD",USDJPY_otc:"OTC:USD/JPY",AUDCAD_otc:"OTC:AUD/CAD",AUDCHF_otc:"OTC:AUD/CHF",CHFJPY_otc:"OTC:CHF/JPY",EURCHF_otc:"OTC:EUR/CHF",EURNZD_otc:"OTC:EUR/NZD",GBPAUD_otc:"OTC:GBP/AUD",UAHUSD_otc:"OTC:UAH/USD",USDARS_otc:"OTC:USD/ARS",USDBDT_otc:"OTC:USD/BDT",USDCLP_otc:"OTC:USD/CLP",USDPKR_otc:"OTC:USD/PKR",USDTHB_otc:"OTC:USD/THB",KESUSD_otc:"OTC:KES/USD",USDMYR_otc:"OTC:USD/MYR",SARCNY_otc:"OTC:SAR/CNY"};
 function setLiveStreamState(message,ok=false){
@@ -1217,94 +1216,144 @@ function renderPOComparison(){
  const pair=selectedOTCPair();
  if(pairLabel)pairLabel.textContent=pair?.name||"NO PAIR SELECTED";
  if(!pair){resultEl.className="error";resultEl.textContent="Select an OTC pair first.";return;}
- if(poQuotePair!==pair.id||!Number.isFinite(poQuoteValue)){resultEl.className="";resultEl.textContent=`${pair.name} · Enter the price currently shown in Pocket Option.`;return;}
+ if(poQuotePair!==pair.id||!Number.isFinite(poQuoteValue)){
+  resultEl.className="";
+  resultEl.textContent=`${pair.name} · Enter the price currently shown in Pocket Option.`;
+  return;
+ }
  const tick=liveTicks[pair.id];
- if(!tick||!Number.isFinite(Number(tick.price))){resultEl.className="error";resultEl.textContent=`${pair.name}\nOTCharts live tick unavailable. No price comparison can be made yet.`;return;}
+ if(!tick||!Number.isFinite(Number(tick.price))){
+  resultEl.className="error";
+  resultEl.textContent=`${pair.name}\nOTCharts live tick unavailable. No price comparison can be made yet.`;
+  return;
+ }
  const now=Date.now(),tickAge=Math.max(0,now-Number(tick.receivedAt||0)),poAge=Math.max(0,now-poQuoteCapturedAt);
- if(tickAge>10000){resultEl.className="error";resultEl.textContent=`${pair.name}\nPocket Option entered: ${fmt(poQuoteValue)}\nOTCharts last tick: ${fmt(tick.price)} (${(tickAge/1000).toFixed(1)}s old)\nNOT VERIFIED · OTCharts tick is older than 10 seconds.`;return;}
- if(poAge>10000){resultEl.className="error";resultEl.textContent=`${pair.name}\nPocket Option entered: ${fmt(poQuoteValue)} (${(poAge/1000).toFixed(1)}s ago)\nOTCharts now: ${fmt(tick.price)}\nRE-ENTER THE CURRENT PO PRICE · comparison quote is older than 10 seconds.`;return;}
- const diff=Number(tick.price)-poQuoteValue,abs=Math.abs(diff),pip=pair.id.includes("JPY")?.01:.0001,pips=abs/pip,percent=abs/poQuoteValue*100,tolerance=pip*.2,match=abs<=tolerance;
+ if(tickAge>10000){
+  resultEl.className="error";
+  resultEl.textContent=`${pair.name}\nPocket Option entered: ${fmt(poQuoteValue)}\nOTCharts last tick: ${fmt(tick.price)} (${(tickAge/1000).toFixed(1)}s old)\nNOT VERIFIED · OTCharts tick is older than 10 seconds.`;
+  return;
+ }
+ if(poAge>10000){
+  resultEl.className="error";
+  resultEl.textContent=`${pair.name}\nPocket Option entered: ${fmt(poQuoteValue)} (${(poAge/1000).toFixed(1)}s ago)\nOTCharts now: ${fmt(tick.price)}\nRE-ENTER THE CURRENT PO PRICE · comparison quote is older than 10 seconds.`;
+  return;
+ }
+ const diff=Number(tick.price)-poQuoteValue,abs=Math.abs(diff);
+ const pip=pair.id.includes("JPY")?.01:.0001;
+ const pips=abs/pip,percent=abs/poQuoteValue*100;
+ const tolerance=pip*.2;
+ const match=abs<=tolerance;
  resultEl.className=match?"match":"diff";
- resultEl.textContent=[pair.name+" · SAME PAIR","Pocket Option: "+fmt(poQuoteValue),"OTCharts live: "+fmt(tick.price),"Difference: "+abs.toFixed(pair.id.includes("JPY")?5:6)+" · "+pips.toFixed(2)+" pips ("+percent.toFixed(5)+"%)","OTCharts tick age: "+(tickAge/1000).toFixed(1)+"s · PO value entered: "+(poAge/1000).toFixed(1)+"s ago",match?"CLOSE MATCH · within 0.2 pip":"PRICE DIFFERENCE · not an exact match"].join("\n");
+ resultEl.textContent=[
+  pair.name+" · SAME PAIR",
+  "Pocket Option: "+fmt(poQuoteValue),
+  "OTCharts live: "+fmt(tick.price),
+  "Difference: "+abs.toFixed(pair.id.includes("JPY")?5:6)+" · "+pips.toFixed(2)+" pips ("+percent.toFixed(5)+"%)",
+  "OTCharts tick age: "+(tickAge/1000).toFixed(1)+"s · PO value entered: "+(poAge/1000).toFixed(1)+"s ago",
+  match?"CLOSE MATCH · within 0.2 pip":"PRICE DIFFERENCE · not an exact match"
+ ].join("\n");
 }
 function comparePocketOptionPrice(){
  const pair=selectedOTCPair(),input=$("poPriceInput"),value=Number(input?.value);
  if(!pair){$("poCompareResult").className="error";$("poCompareResult").textContent="Select an OTC pair first.";return;}
- if(!input?.value||!Number.isFinite(value)||value<=0){$("poCompareResult").className="error";$("poCompareResult").textContent="Enter the current price shown in Pocket Option.";return;}
- poQuoteValue=value;poQuotePair=pair.id;poQuoteCapturedAt=Date.now();renderPOComparison();
+ if(!input?.value||!Number.isFinite(value)||value<=0){
+  $("poCompareResult").className="error";$("poCompareResult").textContent="Enter the current price shown in Pocket Option.";return;
+ }
+ poQuoteValue=value;poQuotePair=pair.id;poQuoteCapturedAt=Date.now();
+ renderPOComparison();
 }
 function isPOComparisonVerified(assetId){
  if(!assetId||poQuotePair!==assetId||!Number.isFinite(poQuoteValue)||!poQuoteCapturedAt)return false;
  const now=Date.now(),poAge=now-poQuoteCapturedAt,tick=liveTicks[assetId];
  if(poAge<0||poAge>10000||!tick||!Number.isFinite(Number(tick.price)))return false;
- const tickAge=now-Number(tick.receivedAt||0);if(tickAge<0||tickAge>10000)return false;
- const pip=assetId.includes("JPY")?.01:.0001;return Math.abs(Number(tick.price)-poQuoteValue)<=pip*.2;
+ const tickAge=now-Number(tick.receivedAt||0);
+ if(tickAge<0||tickAge>10000)return false;
+ const pip=assetId.includes("JPY")?.01:.0001;
+ return Math.abs(Number(tick.price)-poQuoteValue)<=pip*.2;
 }
 function handleLiveTick(raw){
  let tick;try{tick=JSON.parse(raw.data)}catch(e){return}
- if(tick?.data&&typeof tick.data==="object")tick=tick.data;
+ if(tick?.data && typeof tick.data==="object")tick=tick.data;
  const symbol=String(tick.symbol||tick.instrument||tick.s||tick.asset||"").trim();
  const normalizedSymbol=symbol.toUpperCase().replace(/^OTC:/," ").replace(/[^A-Z0-9]/g,"").trim();
- const id=OTC_SYMBOLS[symbol]||Object.keys(OTC_SYMBOLS).find(key=>key.toUpperCase().replace(/[^A-Z0-9]/g,"")===normalizedSymbol||String(OTC_SYMBOLS[key]).toUpperCase().replace(/^OTC:/,"").replace(/[^A-Z0-9]/g,"")===normalizedSymbol);
+ const id=OTC_SYMBOLS[symbol] || Object.keys(OTC_SYMBOLS).find(key =>
+  key.toUpperCase().replace(/[^A-Z0-9]/g,"")===normalizedSymbol ||
+  String(OTC_SYMBOLS[key]).toUpperCase().replace(/^OTC:/,"").replace(/[^A-Z0-9]/g,"")===normalizedSymbol
+ );
  const price=Number(tick.price??tick.last??tick.close??tick.p??tick.value);
  if(!id||!Number.isFinite(price)||price<=0)return;
+ // Refine UTC clock from provider timestamp when the feed supplies one.
  const providerStamp=tick.timestamp??tick.time??tick.ts;
- let providerMs=typeof providerStamp==="string"&&!/^\d{10,13}$/.test(providerStamp)?Date.parse(providerStamp):Number(providerStamp);
+ let providerMs=typeof providerStamp==="string"&&!/^\\d{10,13}$/.test(providerStamp)?Date.parse(providerStamp):Number(providerStamp);
  if(Number.isFinite(providerMs)&&providerMs>0){if(providerMs<1e12)providerMs*=1000;providerMs-=7200000;const delta=providerMs-Date.now();if(Math.abs(delta)<120000)apexServerClockOffsetMs=apexServerClockOffsetMs*.8+delta*.2;}
- const previous=liveTicks[id]?.price??results[id]?.price??price,receivedAt=tick.source==="fallback"?Number(tick.timestamp||Date.now()):Date.now(),candleStart=Math.floor((receivedAt+apexServerClockOffsetMs)/30000)*30000-apexServerClockOffsetMs;
- liveTicks[id]={price,change:price-previous,time:tick.time||tick.timestamp||receivedAt,receivedAt,source:tick.source||"stream"};if(tick.source!=="fallback")lastStreamTickAt=receivedAt;
+ const previous=liveTicks[id]?.price ?? results[id]?.price ?? price;
+ const receivedAt=Date.now(),candleStart=Math.floor((receivedAt+apexServerClockOffsetMs)/30000)*30000-apexServerClockOffsetMs;
+ liveTicks[id]={price,change:price-previous,time:tick.time||tick.timestamp||receivedAt,receivedAt};
  if(results[id]){
   const result=results[id];result.livePrice=price;result.liveChange=price-previous;result.liveUpdated=receivedAt;
   const candles=result.candles||(result.candles=[]),last=candles[candles.length-1];
-  if(last&&Math.floor(Number(last.timeMs||0)/30000)===Math.floor(candleStart/30000)){last.high=Math.max(last.high,price);last.low=Math.min(last.low,price);last.close=price;}
-  else{candles.push({time:new Date(candleStart).toISOString(),timeMs:candleStart,open:last?last.close:price,high:price,low:price,close:price,live:true});if(candles.length>240)candles.splice(0,candles.length-240);}
-  const asset=ASSETS.find(x=>x.id===id);if(asset&&candles.length>=36){const closed=closedOneMinuteCandles(candles);result.analysis=closed.length>=35?analyze(closed,asset):{direction:"WAIT",score:0,reason:"Waiting for a completed candle before MACD confirmation",fresh:false,age:Infinity,signalLevel:"WAIT"};result.analysis={...result.analysis};applyReverseSignal(result);if(result.analysis.direction!=="WAIT")addSignal(result);}
-  renderScanner();if(selectedChart===id||$("chartAsset")?.value===id){drawChart();$("chartCaption").textContent=`${result.name} · LIVE ${fmt(price)} · updating each provider tick`;}
+  if(last&&Math.floor(Number(last.timeMs||0)/30000)===Math.floor(candleStart/30000)){
+   last.high=Math.max(last.high,price);last.low=Math.min(last.low,price);last.close=price;
+  }else{
+   candles.push({time:new Date(candleStart).toISOString(),timeMs:candleStart,open:last?last.close:price,high:price,low:price,close:price,live:true});
+   if(candles.length>240)candles.splice(0,candles.length-240);
+  }
+  const asset=ASSETS.find(x=>x.id===id);
+  if(asset&&candles.length>=36){
+   const closed=closedOneMinuteCandles(candles);
+   result.analysis=closed.length>=35?analyze(closed,asset):{direction:"WAIT",score:0,reason:"Waiting for a completed candle before MACD confirmation",fresh:false,age:Infinity,signalLevel:"WAIT"};
+   result.analysis={...result.analysis};applyReverseSignal(result);
+   if(result.analysis.direction!=="WAIT")addSignal(result);
+  }
+  renderScanner();
+  if(selectedChart===id||$("chartAsset")?.value===id){drawChart();$("chartCaption").textContent=`${result.name} · LIVE ${fmt(price)} · updating each provider tick`;}
  }
- setLiveStreamState((tick.source==="fallback"?"FALLBACK CANDLES · ":"LIVE · ")+(ASSETS.find(a=>a.id===id)?.name||id)+" update received",true);
- renderPOComparison();renderPaperLiveBoard();settleExpiredTrades();
+ setLiveStreamState("LIVE · "+(ASSETS.find(a=>a.id===id)?.name||id)+" tick received",true);
+ renderPOComparison();
+ renderPaperLiveBoard();
+ settleExpiredTrades();
 }
-let liveReconnectTimer=null,liveWatchdogTimer=null,liveFallbackTimer=null,liveReconnectAttempts=0,lastStreamTickAt=0;
-function activeStreamSymbol(){const selectedAsset=selectedOTCPair()||ASSETS.find(a=>a.id===selectedChart&&a.kind==="otc");return selectedAsset?.symbol||"EURUSD_otc"}
-async function pollOTCFallback(){
- if(![...watch].some(id=>ASSETS.find(a=>a.id===id)?.kind==="otc"))return;
- const asset=ASSETS.find(a=>a.symbol===activeStreamSymbol());if(!asset)return;
- try{const candles=await otcData(asset.symbol);const last=candles.at(-1);if(last){handleLiveTick({data:JSON.stringify({symbol:asset.symbol,price:last.close,timestamp:last.timeMs,source:"fallback"})});if(liveStreamState.includes("RECONNECTING")||liveStreamState.includes("error"))setLiveStreamState("FALLBACK CANDLES · stream retry active",true);}}
- catch(e){if(!liveStreamState.includes("RECONNECTING"))setLiveStreamState("STREAM ERROR · fallback unavailable: "+(e.message||"request failed"));}
-}
-function startFallback(){if(liveFallbackTimer)return;pollOTCFallback();liveFallbackTimer=setInterval(pollOTCFallback,12000)}
-function stopFallback(){if(liveFallbackTimer){clearInterval(liveFallbackTimer);liveFallbackTimer=null}}
+let liveReconnectTimer=null,liveWatchdogTimer=null,liveReconnectAttempts=0;
 function scheduleLiveReconnect(reason="connection lost"){
  if(liveReconnectTimer)clearTimeout(liveReconnectTimer);
  setLiveStreamState("RECONNECTING · "+reason);
- startFallback();
- const delay=Math.min(30000,1000*Math.pow(2,Math.min(liveReconnectAttempts++,5)));
- liveReconnectTimer=setTimeout(()=>{liveReconnectTimer=null;connectLiveStream(true)},delay);
+ const delay=Math.min(15000,1000*Math.pow(2,Math.min(liveReconnectAttempts++,4)));
+ liveReconnectTimer=setTimeout(()=>{
+  if(liveStream){try{liveStream.close()}catch(e){}liveStream=null}
+  connectLiveStream(true);
+ },delay);
 }
 function connectLiveStream(force=false){
  if(liveStream&&!force)return;
- if(typeof EventSource==="undefined"){setLiveStreamState("UNAVAILABLE · EventSource unsupported");startFallback();return}
- if(![...watch].some(id=>ASSETS.find(a=>a.id===id)?.kind==="otc")){stopLiveStream();return}
+ if(typeof EventSource==="undefined"){setLiveStreamState("UNAVAILABLE · EventSource unsupported");return}
+ if(![...watch].some(id=>ASSETS.find(a=>a.id===id)?.kind==="otc")){
+  setLiveStreamState("OFF · no OTC markets selected");return;
+ }
  if(liveReconnectTimer){clearTimeout(liveReconnectTimer);liveReconnectTimer=null}
  if(liveStream){try{liveStream.close()}catch(e){}liveStream=null}
- const streamSymbol=activeStreamSymbol();
- setLiveStreamState("CONNECTING · "+streamSymbol);
+ setLiveStreamState("connecting to one shared connection…");
+ const selectedId=$("mobileAsset")?.value||selectedChart;
+ const selectedAsset=ASSETS.find(a=>a.id===selectedId&&a.kind==="otc")||ASSETS.find(a=>a.id===selectedChart&&a.kind==="otc");
+ const streamSymbol=selectedAsset?.symbol||"EURUSD_otc";
  liveStream=new EventSource("/.netlify/functions/otc-stream?symbol="+encodeURIComponent(streamSymbol));
- liveStream.addEventListener("connected",()=>setLiveStreamState("CONNECTED · waiting for ticks",true));
+ liveStream.addEventListener("connected",e=>{
+  let detail="connected";try{const j=JSON.parse(e.data);detail=j.message||j.status||"connected"}catch(err){}
+  liveReconnectAttempts=0;setLiveStreamState("CONNECTED · waiting for ticks",true);
+ });
  liveStream.addEventListener("tick",handleLiveTick);
- liveStream.addEventListener("dropped",()=>scheduleLiveReconnect("provider dropped symbol"));
- liveStream.addEventListener("closed",()=>scheduleLiveReconnect("provider closed stream"));
+ liveStream.addEventListener("dropped",e=>scheduleLiveReconnect("provider dropped symbol"));
+ liveStream.addEventListener("closed",e=>scheduleLiveReconnect("provider closed stream"));
  liveStream.onmessage=handleLiveTick;
- liveStream.onopen=()=>setLiveStreamState("OPEN · awaiting first tick",true);
+ liveStream.onopen=()=>{liveReconnectAttempts=0;setLiveStreamState("OPEN · awaiting first tick",true)};
  liveStream.onerror=()=>scheduleLiveReconnect("stream error");
- if(!liveWatchdogTimer)liveWatchdogTimer=setInterval(()=>{if(!lastStreamTickAt||Date.now()-lastStreamTickAt>20000){if(liveStreamState.includes("LIVE"))scheduleLiveReconnect("tick watchdog timeout");}},5000);
 }
 function stopLiveStream(){
  if(liveReconnectTimer){clearTimeout(liveReconnectTimer);liveReconnectTimer=null}
- stopFallback();if(liveWatchdogTimer){clearInterval(liveWatchdogTimer);liveWatchdogTimer=null}
- if(liveStream){try{liveStream.close()}catch(e){}liveStream=null}
- setLiveStreamState("OFF · no OTC markets selected");
+ if(liveWatchdogTimer){clearInterval(liveWatchdogTimer);liveWatchdogTimer=null}
+ if(liveStream){liveStream.close();liveStream=null}
+ setLiveStreamState("OFF · no OTC markets selected")
 }
+function stopLiveStream(){if(liveStream){liveStream.close();liveStream=null}setLiveStreamState("OFF · no OTC markets selected")}
 function renderScanner(){
  let arr=[...watch].map(id=>results[id]).filter(Boolean),rows=[...arr].sort((a,b)=>b.analysis.score-a.analysis.score);
  $("scannerBody").innerHTML=rows.length?rows.map(r=>{let s=r.analysis,shownDirection=s.direction==="CALL"?"BUY":s.direction==="PUT"?"SELL":"—",cls=shownDirection==="BUY"?"call":shownDirection==="SELL"?"put":"wait",change=r.change,timerKey=`${r.id}|${s.direction}|${s.candleTime}`;if(s.direction!=="WAIT"&&!signalExpiries[timerKey])signalExpiries[timerKey]=Date.now()+30000;let expires=signalExpiries[timerKey]||0;return `<tr data-asset="${r.id}"><td class="asset">${r.name}</td><td>${fmt(r.livePrice??r.price)}${r.livePrice!==undefined?'<small class="green"> LIVE</small>':''}</td><td class="${(r.liveChange??change)>=0?"green":"red"}">${(r.liveChange??change)===null?"—":((r.liveChange??change)>=0?"+":"")+fmt(r.liveChange??change)}</td><td class="${s.trend==="UP"?"green":s.trend==="DOWN"?"red":"muted"}">${s.trend||"—"}</td><td>${Number.isFinite(s.macdHistogram)?s.macdHistogram.toPrecision(4):"—"}</td><td><b>${s.score}</b></td><td><span class="tag ${cls}">${shownDirection}</span>${expires?`<small class="row-countdown" data-expiry="${expires}">00:30</small>`:""}</td><td><span class="${s.signalLevel==="CONFIRMED"?"green":"blue"}">${s.signalLevel||"EARLY"}</span></td></tr>`}).join(""):'<tr><td colspan="8" class="empty">No results yet. Start a scan.</td></tr>';
