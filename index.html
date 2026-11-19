@@ -2018,6 +2018,19 @@ function apexLayerScore(bars,asset){
  const ema=(a,p)=>{if(a.length<p)return NaN;const k=2/(p+1);let v=a.slice(0,p).reduce((sum,x)=>sum+x,0)/p;for(let i=p;i<a.length;i++)v=a[i]*k+v*(1-k);return v;};
  const rsiWilder=(values,period=14)=>{if(values.length<=period)return NaN;let gain=0,loss=0;for(let i=1;i<=period;i++){const d=values[i]-values[i-1];gain+=Math.max(0,d);loss+=Math.max(0,-d);}let ag=gain/period,al=loss/period;for(let i=period+1;i<values.length;i++){const d=values[i]-values[i-1];ag=(ag*(period-1)+Math.max(0,d))/period;al=(al*(period-1)+Math.max(0,-d))/period;}return al===0?100:100-100/(1+ag/al);};
  const rsi=rsiWilder(closes,14),previousRsi=rsiWilder(closes.slice(0,-1),14);
+ // Added indicator confluence: Donchian Channel (20), DeMarker (14), Parabolic SAR (0.02/0.20), CCI (20).
+ const donPeriod=20,donRecent=bars.slice(-donPeriod),donHigh=Math.max(...donRecent.map(b=>Number(b.high)),),donLow=Math.min(...donRecent.map(b=>Number(b.low))),donMid=(donHigh+donLow)/2;
+ const donPrev=bars.slice(-donPeriod-1,-1),donPrevHigh=donPrev.length?Math.max(...donPrev.map(b=>Number(b.high))):donHigh,donPrevLow=donPrev.length?Math.min(...donPrev.map(b=>Number(b.low))):donLow;
+ const donchianUp=Number(last.close)>donPrevHigh,donchianDown=Number(last.close)<donPrevLow,donchianBull=donchianUp||Number(last.close)>donMid&&Number(last.close)>Number(prev.close),donchianBear=donchianDown||Number(last.close)<donMid&&Number(last.close)<Number(prev.close);
+ const demPeriod=14,demUp=[],demDown=[];for(let i=Math.max(1,n-demPeriod);i<n;i++){demUp.push(Math.max(highs[i]-highs[i-1],0));demDown.push(Math.max(lows[i-1]-lows[i],0));}
+ const demAvgUp=demUp.length?demUp.reduce((a,b)=>a+b,0)/demUp.length:0,demAvgDown=demDown.length?demDown.reduce((a,b)=>a+b,0)/demDown.length:0,demSum=demAvgUp+demAvgDown,demarker=demSum?demAvgUp/demSum:0.5;
+ const demarkerBull=demarker>=.55&&demarker>.5,demarkerBear=demarker<=.45&&demarker<.5;
+ // Calculate Parabolic SAR iteratively across bars, clamped to the prior two highs/lows.
+ let sarBull=Number(bars[1].close)>=Number(bars[0].close),sar= sarBull?Number(bars[0].low):Number(bars[0].high),ep=sarBull?Number(bars[1].high):Number(bars[1].low),af=.02;
+ for(let i=2;i<n;i++){let next=sar+af*(ep-sar);next=sarBull?Math.min(next,Number(bars[i-1].low),Number(bars[i-2].low)):Math.max(next,Number(bars[i-1].high),Number(bars[i-2].high));if(sarBull&&Number(bars[i].low)<next){sarBull=false;sar=ep;ep=Number(bars[i].low);af=.02;}else if(!sarBull&&Number(bars[i].high)>next){sarBull=true;sar=ep;ep=Number(bars[i].high);af=.02;}else{sar=next;if(sarBull&&Number(bars[i].high)>ep){ep=Number(bars[i].high);af=Math.min(.2,af+.02);}if(!sarBull&&Number(bars[i].low)<ep){ep=Number(bars[i].low);af=Math.min(.2,af+.02);}}}
+ const psarBull=Number(last.close)>sar,psarBear=Number(last.close)<sar;
+ const cciCalc=(slice)=>{if(slice.length<20)return NaN;const tail=slice.slice(-20),tp=tail.map(b=>(Number(b.high)+Number(b.low)+Number(b.close))/3),mean=tp.reduce((a,b)=>a+b,0)/tp.length,md=tp.reduce((a,b)=>a+Math.abs(b-mean),0)/tp.length;return md?((tp.at(-1)-mean)/(.015*md)):0;};
+ const cci=cciCalc(bars),previousCci=cciCalc(bars.slice(0,-1)),cciBull=Number.isFinite(cci)&&cci>0&&cci>previousCci,cciBear=Number.isFinite(cci)&&cci<0&&cci<previousCci;
  const e9=ema(closes,9),e21=ema(closes,21),e34=ema(closes,34),macd=macdValues(closes,12,26,9);
  const trueRanges=[];for(let i=1;i<n;i++)trueRanges.push(Math.max(Number(bars[i].high)-Number(bars[i].low),Math.abs(Number(bars[i].high)-Number(bars[i-1].close)),Math.abs(Number(bars[i].low)-Number(bars[i-1].close))));
  const atr=trueRanges.slice(-14).reduce((a,b)=>a+b,0)/Math.max(1,Math.min(14,trueRanges.length));
@@ -2054,9 +2067,9 @@ function apexLayerScore(bars,asset){
  const rsiExhausted=(dominant==="CALL"&&rsi>=76)||(dominant==="PUT"&&rsi<=24);
  // Weighted directional evidence replaces the old hard requirement of 4 out of 6.
  // MACD and raw price momentum stay in ONE combined bucket to avoid double-counting.
- const weights={trend:20,momentum:20,rsi:20,candle:15,structure:15,levels:10};
- const bullScore=(trendUp?weights.trend:0)+(momentumUp?weights.momentum:0)+(rsiUp?weights.rsi:0)+(bullCandle?weights.candle:0)+(structureUp?weights.structure:0)+(supportReject?weights.levels:0);
- const bearScore=(trendDown?weights.trend:0)+(momentumDown?weights.momentum:0)+(rsiDown?weights.rsi:0)+(bearCandle?weights.candle:0)+(structureDown?weights.structure:0)+(resistanceReject?weights.levels:0);
+ const weights={trend:15,momentum:15,rsi:15,candle:10,structure:10,levels:10,donchian:10,demarker:5,psar:5,cci:5};
+ const bullScore=(trendUp?weights.trend:0)+(momentumUp?weights.momentum:0)+(rsiUp?weights.rsi:0)+(bullCandle?weights.candle:0)+(structureUp?weights.structure:0)+(supportReject?weights.levels:0)+(donchianBull?weights.donchian:0)+(demarkerBull?weights.demarker:0)+(psarBull?weights.psar:0)+(cciBull?weights.cci:0);
+ const bearScore=(trendDown?weights.trend:0)+(momentumDown?weights.momentum:0)+(rsiDown?weights.rsi:0)+(bearCandle?weights.candle:0)+(structureDown?weights.structure:0)+(resistanceReject?weights.levels:0)+(donchianBear?weights.donchian:0)+(demarkerBear?weights.demarker:0)+(psarBear?weights.psar:0)+(cciBear?weights.cci:0);
  const edge=Math.abs(bullScore-bearScore),weightedDirection=bullScore>bearScore?"CALL":bearScore>bullScore?"PUT":"WAIT";
  const weightedScore=Math.max(bullScore,bearScore);
  // EARLY opportunities are heads-up alerts only: lower threshold, but still require
@@ -2064,12 +2077,16 @@ function apexLayerScore(bars,asset){
  const earlyEdge=edge>=10,earlyEligible=fresh&&!chop&&!extreme&&!rsiExhausted&&weightedDirection!=="WAIT"&&weightedScore>=35&&earlyEdge&&aligned>=2;
  const earlyRawDirection=earlyEligible?weightedDirection:"WAIT";
  const weightedLayers=[
-  {name:"TREND · 20",value:trendUp?"BULL +20":trendDown?"BEAR +20":"NEUTRAL",bull:trendUp,bear:trendDown},
-  {name:"MACD + MOMENTUM · 20",value:momentumUp?"BULL +20":momentumDown?"BEAR +20":"NEUTRAL",bull:momentumUp,bear:momentumDown},
-  {name:"RSI 14 · 20",value:(Number.isFinite(rsi)?rsi.toFixed(1):"—")+" · "+(rsiUp?"BULL +20":rsiDown?"BEAR +20":"NEUTRAL"),bull:rsiUp,bear:rsiDown},
-  {name:"CANDLE ACTION · 15",value:bullCandle?"BULL +15":bearCandle?"BEAR +15":"NEUTRAL",bull:bullCandle,bear:bearCandle},
-  {name:"STRUCTURE · 15",value:structureUp?"BULL +15":structureDown?"BEAR +15":"NEUTRAL",bull:structureUp,bear:structureDown},
-  {name:"S/R REJECTION · 10",value:supportReject?"BULL +10":resistanceReject?"BEAR +10":"NEUTRAL",bull:supportReject,bear:resistanceReject}
+  {name:"TREND · 15",value:trendUp?"BULL +10":trendDown?"BEAR +10":"NEUTRAL",bull:trendUp,bear:trendDown},
+  {name:"MACD + MOMENTUM · 15",value:momentumUp?"BULL +10":momentumDown?"BEAR +10":"NEUTRAL",bull:momentumUp,bear:momentumDown},
+  {name:"RSI 14 · 15",value:(Number.isFinite(rsi)?rsi.toFixed(1):"—")+" · "+(rsiUp?"BULL +10":rsiDown?"BEAR +10":"NEUTRAL"),bull:rsiUp,bear:rsiDown},
+  {name:"CANDLE ACTION · 10",value:bullCandle?"BULL +10":bearCandle?"BEAR +10":"NEUTRAL",bull:bullCandle,bear:bearCandle},
+  {name:"STRUCTURE · 10",value:structureUp?"BULL +10":structureDown?"BEAR +10":"NEUTRAL",bull:structureUp,bear:structureDown},
+  {name:"S/R REJECTION · 10",value:supportReject?"BULL +10":resistanceReject?"BEAR +10":"NEUTRAL",bull:supportReject,bear:resistanceReject},
+  {name:"DONCHIAN · 10",value:donchianUp?"BULL BREAKOUT":donchianDown?"BEAR BREAKOUT":donchianBull?"BULL CHANNEL BIAS":donchianBear?"BEAR CHANNEL BIAS":"MID-CHANNEL",bull:donchianBull,bear:donchianBear},
+  {name:"DEMARKER · 5",value:`${(demarker*100).toFixed(1)}% · ${demarkerBull?"BULLISH":demarkerBear?"BEARISH":"NEUTRAL"}`,bull:demarkerBull,bear:demarkerBear},
+  {name:"PARABOLIC SAR · 5",value:`SAR ${sar.toPrecision(6)} · ${psarBull?"BULLISH":"BEARISH"}`,bull:psarBull,bear:psarBear},
+  {name:"CCI 20 · 5",value:`${Number.isFinite(cci)?cci.toFixed(1):"—"} · ${cciBull?"RISING POSITIVE":cciBear?"FALLING NEGATIVE":"NEUTRAL"}`,bull:cciBull,bear:cciBear}
  ];
  if(!fresh)reason="WAIT · feed is stale; a fresh live tick or newly closed candle is required.";
  else if(chop)reason="WAIT · compression / indecision detected; avoid forcing a direction.";
@@ -2084,7 +2101,7 @@ function apexLayerScore(bars,asset){
   reason="EARLY SETUP · "+(weightedDirection==="WAIT"?"no clear side":weightedDirection+" bias")+" at "+weightedScore+"/100; need 65 points and at least 15 points of directional separation. Continue monitoring.";
  }
  const entry=Number(last.close),stop=rawDirection==="CALL"?Math.min(Number(last.low),entry-atr):rawDirection==="PUT"?Math.max(Number(last.high),entry+atr):null,target=rawDirection==="CALL"?entry+(entry-stop)*1.5:rawDirection==="PUT"?entry-(stop-entry)*1.5:null;
- const result={direction:rawDirection,rawDirection,earlyRawDirection,earlyDirection:earlyRawDirection,earlyScore:earlyEligible?weightedScore:0,earlyEdge:earlyEligible?edge:0,earlyReason:earlyEligible?`Early ${earlyRawDirection} setup · ${weightedScore}/100 with ${edge}-point separation. Heads-up only; wait for confirmed entry.`:"No early opportunity currently qualifies.",score,confidence_score:score,signalLevel:rawDirection==="WAIT"?(earlyEligible?"EARLY OPPORTUNITY":weightedScore>=55?"EARLY":"WAIT"):(score>=80?"STRONG":score>=70?"QUALIFIED":"EARLY QUALIFIED"),reason,fresh,age:Math.min(tickAge,candleAge),trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry,stopLoss:stop,takeProfit:target,candleTime:last.time,candleTimeMs:Number(last.timeMs),recommended_expiry:"30s",atr,rsi,previousRsi,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,support:levels.support?.price??null,resistance:levels.resistance?.price??null,detected_patterns:apexCandleRead(bars).patterns?.map(x=>x.name)||[],confluences:layers.filter(x=>rawDirection==="CALL"?x.bull:rawDirection==="PUT"?x.bear:false).map(x=>x.name),evidence_count:aligned,weighted_score:score,bull_score:bullScore,bear_score:bearScore,score_edge:edge,layers:weightedLayers,breakdown:{trend:weightedLayers[0].value,momentum:weightedLayers[1].value,rsi:weightedLayers[2].value,price:weightedLayers[3].value,structure:weightedLayers[4].value,levels:weightedLayers[5].value,volatility:`ATR ${volatility.toFixed(4)}%`,feed:fresh?`FRESH · tick ${tickAge.toFixed(1)}s / candle ${candleAge.toFixed(1)}s`:`STALE · candle ${candleAge.toFixed(1)}s`}};
+ const result={direction:rawDirection,rawDirection,earlyRawDirection,earlyDirection:earlyRawDirection,earlyScore:earlyEligible?weightedScore:0,earlyEdge:earlyEligible?edge:0,earlyReason:earlyEligible?`Early ${earlyRawDirection} setup · ${weightedScore}/100 with ${edge}-point separation. Heads-up only; wait for confirmed entry.`:"No early opportunity currently qualifies.",score,confidence_score:score,signalLevel:rawDirection==="WAIT"?(earlyEligible?"EARLY OPPORTUNITY":weightedScore>=55?"EARLY":"WAIT"):(score>=80?"STRONG":score>=70?"QUALIFIED":"EARLY QUALIFIED"),reason,fresh,age:Math.min(tickAge,candleAge),trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry,stopLoss:stop,takeProfit:target,candleTime:last.time,candleTimeMs:Number(last.timeMs),recommended_expiry:"30s",atr,rsi,previousRsi,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,donchian:{upper:donHigh,lower:donLow,mid:donMid,bull:donchianBull,bear:donchianBear},demarker:demarker,parabolicSar:sar,psarDirection:psarBull?"BULL":"BEAR",cci:cci,support:levels.support?.price??null,resistance:levels.resistance?.price??null,detected_patterns:apexCandleRead(bars).patterns?.map(x=>x.name)||[],confluences:layers.filter(x=>rawDirection==="CALL"?x.bull:rawDirection==="PUT"?x.bear:false).map(x=>x.name),evidence_count:aligned,weighted_score:score,bull_score:bullScore,bear_score:bearScore,score_edge:edge,layers:weightedLayers,breakdown:{trend:weightedLayers[0].value,momentum:weightedLayers[1].value,rsi:weightedLayers[2].value,price:weightedLayers[3].value,structure:weightedLayers[4].value,levels:weightedLayers[5].value,donchian:weightedLayers[6].value,demarker:weightedLayers[7].value,psar:weightedLayers[8].value,cci:weightedLayers[9].value,volatility:`ATR ${volatility.toFixed(4)}%`,feed:fresh?`FRESH · tick ${tickAge.toFixed(1)}s / candle ${candleAge.toFixed(1)}s`:`STALE · candle ${candleAge.toFixed(1)}s`}};
  result.structured={signal:rawDirection==="CALL"?"BUY":rawDirection==="PUT"?"SELL":"WAIT",confidence_score:score,detected_patterns:[...result.detected_patterns,...result.confluences],recommended_expiry:"30s",reasoning:reason};return result;
 }
 analyze=function(candles,asset){return apexLayerScore(candles,asset);};
