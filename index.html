@@ -2026,11 +2026,16 @@ function apexIntelligentHeartbeat(){
  if(sec===0)apexPhaseMinuteKey=key;
 }
 
-// Keep reverse-mode behavior but expose the effective direction in the structured UI payload.
-const apexOriginalApplyReverseSignal=applyReverseSignal;
+// CCI-only mode: do not reverse, vote, or reinterpret the CCI direction.
 applyReverseSignal=function(r){
- const side=apexOriginalApplyReverseSignal(r);
- if(r?.analysis?.structured){
+ if(!r?.analysis)return "WAIT";
+ const side=r.analysis.direction||"WAIT";
+ r.analysis.rawDirection=side;
+ r.analysis.earlyRawDirection=side;
+ r.analysis.earlyDirection=side;
+ r.analysis.reverseMode=false;
+ r.analysis.reverseLabel="CCI direction used directly · no reversal";
+ if(r.analysis.structured){
   r.analysis.structured.signal=side==="CALL"?"BUY":side==="PUT"?"SELL":"WAIT";
   r.analysis.structured.confidence_score=Number(r.analysis.score)||0;
   window.APEX_LAST_ANALYSIS=r.analysis.structured;
@@ -2076,7 +2081,7 @@ handleLiveTick=function(event){
 const signalCallout=$("signalCallout");
 if(signalCallout&&!$("apexIntelligentEngine")){
  const card=document.createElement("section");card.id="apexIntelligentEngine";
- card.innerHTML='<div class="apex-engine-head"><b>APEX SUPER INTELLIGENCE · 30S · UTC-10</b><span id="apexPhase">PHASE 1 · MARKET INTELLIGENCE</span></div><div class="apex-engine-grid"><div><div class="apex-engine-signal wait" id="apexEngineSignal">WAIT</div><div class="apex-engine-meta"><span>WEIGHTED SETUP SCORE</span><span>Expiry: <b id="apexEngineExpiry">30s</b></span></div></div><div id="apexEngineScore">0/100</div></div><div id="apexLayerGrid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px"></div><div id="apexEnginePatterns" style="font-size:9px;color:#a9bfdc;margin-top:7px">Waiting for completed candle patterns…</div><p id="apexEngineReason">Waiting for completed 30-second candle.</p>';
+ card.innerHTML='<div class="apex-engine-head"><b>APEX CCI TRUST ENGINE · 30S</b><span id="apexPhase">PHASE 1 · MARKET INTELLIGENCE</span></div><div class="apex-engine-grid"><div><div class="apex-engine-signal wait" id="apexEngineSignal">WAIT</div><div class="apex-engine-meta"><span>CCI SIGNAL SCORE</span><span>Expiry: <b id="apexEngineExpiry">30s</b></span></div></div><div id="apexEngineScore">0/100</div></div><div id="apexLayerGrid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px"></div><div id="apexEnginePatterns" style="font-size:9px;color:#a9bfdc;margin-top:7px">CCI 20 is the only signal authority…</div><p id="apexEngineReason">Waiting for completed 30-second candle.</p>';
  signalCallout.parentNode.insertBefore(card,signalCallout);
 }
 apexRenderIntelligentPanel();
@@ -2094,105 +2099,39 @@ let apex30State={phase:"WAITING FOR 30-SECOND DATA",detail:"Waiting for native 3
 function apexServerNow(){return Date.now()+apexServerClockOffsetMs;}
 function apexCandleCountdown(){const now=apexServerNow(),next=(Math.floor(now/APEX_BAR_MS)+1)*APEX_BAR_MS;return Math.max(0,Math.min(29,Math.ceil((next-now)/1000)));}
 function apexLayerScore(bars,asset){
- const n=bars.length,last=bars[n-1],prev=bars[n-2],closes=bars.map(x=>Number(x.close)),highs=bars.map(x=>Number(x.high)),lows=bars.map(x=>Number(x.low));
- const wait=(reason)=>({direction:"WAIT",rawDirection:"WAIT",earlyRawDirection:"WAIT",earlyDirection:"WAIT",earlyScore:0,earlyEdge:0,earlyReason:"No early setup qualifies.",score:0,confidence_score:0,signalLevel:"WAIT",fresh:false,age:Infinity,reason,candleTime:last?.time||"",candleTimeMs:Number(last?.timeMs||0),rsi:null,atr:null,layers:[],confluences:[],detected_patterns:[],structured:{signal:"WAIT",confidence_score:0,detected_patterns:[],recommended_expiry:"30s",reasoning:reason}});
- if(n<35)return wait(`Building native 30-second history · ${n}/35 completed candles`);
+ const n=bars.length,last=bars[n-1],prev=bars[n-2];
+ const wait=(reason,cci=null,prevCci=null)=>({direction:"WAIT",rawDirection:"WAIT",earlyRawDirection:"WAIT",earlyDirection:"WAIT",earlyScore:0,earlyEdge:0,earlyReason:"CCI-only engine did not qualify a direction.",score:0,confidence_score:0,signalLevel:"WAIT",fresh:false,age:Infinity,reason,candleTime:last?.time||"",candleTimeMs:Number(last?.timeMs||0),cci,previousCci:prevCci,atr:null,layers:[{name:"CCI 20 · ONLY AUTHORITY",value:cci==null?"WAIT · CCI unavailable":`${Number(cci).toFixed(1)} · WAIT`,bull:false,bear:false}],confluences:[],detected_patterns:[],structured:{signal:"WAIT",confidence_score:0,detected_patterns:[],recommended_expiry:"30s",reasoning:reason}});
+ if(n<20)return wait(`Building CCI history · ${n}/20 completed candles`);
  if(bars.some((c,i)=>![c.open,c.high,c.low,c.close,c.timeMs].every(v=>Number.isFinite(Number(v)))||Number(c.high)<Number(c.low)||Number(c.high)<Math.max(Number(c.open),Number(c.close))||Number(c.low)>Math.min(Number(c.open),Number(c.close))||Number(c.timeMs)<=0||(i>0&&Number(c.timeMs)<=Number(bars[i-1].timeMs))))return wait("WAIT · candle data is invalid, duplicated or out of order.");
  const now=Date.now()+Number(apexServerClockOffsetMs||0);
- if(Number(last.timeMs)>now+3000)return wait("WAIT · provider candle timestamp is ahead of the synchronized clock.");
- const ema=(a,p)=>{if(a.length<p)return NaN;const k=2/(p+1);let v=a.slice(0,p).reduce((sum,x)=>sum+x,0)/p;for(let i=p;i<a.length;i++)v=a[i]*k+v*(1-k);return v;};
- const rsiWilder=(values,period=14)=>{if(values.length<=period)return NaN;let gain=0,loss=0;for(let i=1;i<=period;i++){const d=values[i]-values[i-1];gain+=Math.max(0,d);loss+=Math.max(0,-d);}let ag=gain/period,al=loss/period;for(let i=period+1;i<values.length;i++){const d=values[i]-values[i-1];ag=(ag*(period-1)+Math.max(0,d))/period;al=(al*(period-1)+Math.max(0,-d))/period;}return al===0?100:100-100/(1+ag/al);};
- const rsi=rsiWilder(closes,14),previousRsi=rsiWilder(closes.slice(0,-1),14);
- const e9=ema(closes,9),e21=ema(closes,21),e34=ema(closes,34),macd=macdValues(closes,12,26,9);
- const trueRanges=[],plusDM=[],minusDM=[];
- for(let i=1;i<n;i++){
-  const up=Number(bars[i].high)-Number(bars[i-1].high),down=Number(bars[i-1].low)-Number(bars[i].low);
-  plusDM.push(up>down&&up>0?up:0);minusDM.push(down>up&&down>0?down:0);
-  trueRanges.push(Math.max(Number(bars[i].high)-Number(bars[i].low),Math.abs(Number(bars[i].high)-Number(bars[i-1].close)),Math.abs(Number(bars[i].low)-Number(bars[i-1].close))));
- }
- const atr=trueRanges.slice(-14).reduce((a,b)=>a+b,0)/Math.max(1,Math.min(14,trueRanges.length));
- const tr14=trueRanges.slice(-14).reduce((a,b)=>a+b,0),pdi=tr14?100*plusDM.slice(-14).reduce((a,b)=>a+b,0)/tr14:0,mdi=tr14?100*minusDM.slice(-14).reduce((a,b)=>a+b,0)/tr14:0;
- const dx= pdi+mdi ? 100*Math.abs(pdi-mdi)/(pdi+mdi):0;
- const dxSeries=[];
- for(let k=14;k<=trueRanges.length;k++){
-  const tr=trueRanges.slice(k-14,k).reduce((a,b)=>a+b,0);
-  const pd=tr?100*plusDM.slice(k-14,k).reduce((a,b)=>a+b,0)/tr:0,md=tr?100*minusDM.slice(k-14,k).reduce((a,b)=>a+b,0)/tr:0;
-  dxSeries.push(pd+md?100*Math.abs(pd-md)/(pd+md):0);
- }
- const adx=dxSeries.slice(-14).reduce((a,b)=>a+b,0)/Math.max(1,dxSeries.slice(-14).length);
- const typical=bars.slice(-20).map(c=>(Number(c.high)+Number(c.low)+Number(c.close))/3),tpMean=typical.reduce((a,b)=>a+b,0)/typical.length;
- const meanDev=typical.reduce((a,b)=>a+Math.abs(b-tpMean),0)/typical.length;
- const cci=meanDev?((typical.at(-1)-tpMean)/(.015*meanDev)):0;
- const stochWindow=bars.slice(-14),stochHigh=Math.max(...stochWindow.map(c=>Number(c.high))),stochLow=Math.min(...stochWindow.map(c=>Number(c.low)));
- const stochK=stochHigh>stochLow?100*(Number(last.close)-stochLow)/(stochHigh-stochLow):50;
- const stochKs=[];
- for(let i=Math.max(13,n-16);i<n;i++){const w=bars.slice(i-13,i+1),hi=Math.max(...w.map(c=>Number(c.high))),lo=Math.min(...w.map(c=>Number(c.low)));stochKs.push(hi>lo?100*(Number(bars[i].close)-lo)/(hi-lo):50);}
- const stochD=stochKs.slice(-3).reduce((a,b)=>a+b,0)/Math.max(1,Math.min(3,stochKs.length)),prevStochK=stochKs.at(-2)??stochK;
- const range=Math.max(1e-12,Number(last.high)-Number(last.low)),body=Math.abs(Number(last.close)-Number(last.open)),bodyPct=body/range,upper=Number(last.high)-Math.max(Number(last.open),Number(last.close)),lower=Math.min(Number(last.open),Number(last.close))-Number(last.low);
- const levels=findSupportResistance(bars),tol=Math.max(atr*.28,Math.abs(Number(last.close))*.00002);
- const priorLow=Math.min(...lows.slice(-13,-1)),priorHigh=Math.max(...highs.slice(-13,-1));
- const sweepLow=Number(last.low)<priorLow-tol&&Number(last.close)>priorLow;
- const sweepHigh=Number(last.high)>priorHigh+tol&&Number(last.close)<priorHigh;
- const supportReject=!!levels.support&&Number(last.low)<=levels.support.price+tol&&Number(last.close)>levels.support.price&&lower/range>.2;
- const resistanceReject=!!levels.resistance&&Number(last.high)>=levels.resistance.price-tol&&Number(last.close)<levels.resistance.price&&upper/range>.2;
- const bullCandle=Number(last.close)>Number(last.open)&&((Number(last.close)>Number(prev.close)&&bodyPct>.35)||bodyPct>.62);
- const bearCandle=Number(last.close)<Number(last.open)&&((Number(last.close)<Number(prev.close)&&bodyPct>.35)||bodyPct>.62);
- const trendUp=e9>e21&&e21>e34,trendDown=e9<e21&&e21<e34;
- const macdUp=!!macd&&macd.line>macd.signal&&macd.histogram>0,macdDown=!!macd&&macd.line<macd.signal&&macd.histogram<0;
- const histUp=!!macd&&macd.histogram>(macd.previousHistogram??-Infinity),histDown=!!macd&&macd.histogram<(macd.previousHistogram??Infinity);
- const momentum=closes.at(-1)-closes.at(-7),momentumUp=momentum>atr*.25,momentumDown=momentum< -atr*.25;
- const momentumUpOK=macdUp&&(momentumUp||histUp),momentumDownOK=macdDown&&(momentumDown||histDown);
- const rsiUp=Number.isFinite(rsi)&&Number.isFinite(previousRsi)&&rsi>=50&&rsi>previousRsi+.1&&rsi<74;
- const rsiDown=Number.isFinite(rsi)&&Number.isFinite(previousRsi)&&rsi<=50&&rsi<previousRsi-.1&&rsi>26;
- const stochUp=stochK>stochD&&stochK>prevStochK&&stochK<85,stochDown=stochK<stochD&&stochK<prevStochK&&stochK>15;
- const cciUp=cci>25&&cci<180,cciDown=cci< -25&&cci> -180;
- const structureUp=closes.at(-1)>closes.at(-4)&&highs.at(-1)>Math.max(...highs.slice(-4,-1))&&lows.at(-1)>=Math.min(...lows.slice(-4,-1));
- const structureDown=closes.at(-1)<closes.at(-4)&&lows.at(-1)<Math.min(...lows.slice(-4,-1))&&highs.at(-1)<=Math.max(...highs.slice(-4,-1));
- const bullishPattern=(apexCandleRead(bars).patterns||[]).some(p=>p.direction==="BULLISH"),bearishPattern=(apexCandleRead(bars).patterns||[]).some(p=>p.direction==="BEARISH");
- const bullishLocation=supportReject||sweepLow,bearishLocation=resistanceReject||sweepHigh;
- const tick=liveTicks[asset.id],tickAge=tick?Math.max(0,(Date.now()-Number(tick.receivedAt||0))/1000):Infinity;
- const candleAge=Math.max(0,(now-(Number(last.timeMs)+APEX_BAR_MS))/1000),fresh=tickAge<=8||candleAge<=38;
- const volatility=atr/Math.max(Math.abs(Number(last.close)),1e-12)*100;
- const recentAtr=trueRanges.slice(-42),atrMedian=[...recentAtr].sort((a,b)=>a-b)[Math.floor(recentAtr.length/2)]||atr;
- const volExpansion=atrMedian>0&&atr>atrMedian*2.8,veryQuiet=adx<11&&Math.abs(momentum)<atr*.16;
- const trendBull=trendUp&&adx>=14&&pdi>mdi,trendBear=trendDown&&adx>=14&&mdi>pdi;
- const groups=[
-  {name:"TREND + ADX",value:trendBull?`BULL · ADX ${adx.toFixed(1)}`:trendBear?`BEAR · ADX ${adx.toFixed(1)}`:`MIXED · ADX ${adx.toFixed(1)}`,bull:trendBull,bear:trendBear,weight:20},
-  {name:"MACD + MOMENTUM",value:momentumUpOK?"BULLISH SHIFT":momentumDownOK?"BEARISH SHIFT":"NO ALIGNMENT",bull:momentumUpOK,bear:momentumDownOK,weight:16},
-  {name:"RSI 14",value:`${rsi.toFixed(1)} · ${rsiUp?"RISING":rsiDown?"FALLING":"NEUTRAL"}`,bull:rsiUp,bear:rsiDown,weight:8},
-  {name:"STOCHASTIC 14/3",value:`K ${stochK.toFixed(1)} / D ${stochD.toFixed(1)}`,bull:stochUp,bear:stochDown,weight:8},
-  {name:"CCI 20",value:`${cci.toFixed(1)} · ${cciUp?"BULLISH":cciDown?"BEARISH":"NEUTRAL"}`,bull:cciUp,bear:cciDown,weight:8},
-  {name:"CANDLE PATTERN",value:bullishPattern?"BULLISH PATTERN":bearishPattern?"BEARISH PATTERN":"NO CLEAR PATTERN",bull:bullishPattern,bear:bearishPattern,weight:14},
-  {name:"MARKET STRUCTURE",value:structureUp?"BULLISH BOS / HIGHER SWING":structureDown?"BEARISH BOS / LOWER SWING":"NO STRUCTURE BREAK",bull:structureUp,bear:structureDown,weight:14},
-  {name:"LIQUIDITY + LEVELS",value:sweepLow?"SELL-SIDE SWEEP / RECLAIM":sweepHigh?"BUY-SIDE SWEEP / REJECTION":supportReject?"SUPPORT REJECTION":resistanceReject?"RESISTANCE REJECTION":"NO KEY REACTION",bull:bullishLocation,bear:bearishLocation,weight:10},
-  {name:"VOLATILITY FILTER",value:volExpansion?"EXPANSION · CAUTION":veryQuiet?"LOW ENERGY · CHOP":"NORMAL RANGE",bull:false,bear:false,weight:0}
- ];
- const bullScore=groups.reduce((sum,g)=>sum+(g.bull?g.weight:0),0),bearScore=groups.reduce((sum,g)=>sum+(g.bear?g.weight:0),0);
- const edge=Math.abs(bullScore-bearScore),weightedDirection=bullScore>bearScore?"CALL":bearScore>bullScore?"PUT":"WAIT",weightedScore=Math.max(bullScore,bearScore);
- const aligned=Math.max(groups.filter(g=>g.bull).length,groups.filter(g=>g.bear).length);
- const chop=veryQuiet||(adx<10&&!trendUp&&!trendDown),exhausted=(weightedDirection==="CALL"&&(rsi>=76||stochK>=96))||(weightedDirection==="PUT"&&(rsi<=24||stochK<=4));
- const veto=!fresh||chop||volExpansion||exhausted;
- const earlyEligible=!veto&&weightedDirection!=="WAIT"&&weightedScore>=42&&edge>=15&&aligned>=3;
- const confirmedEligible=!veto&&weightedDirection!=="WAIT"&&weightedScore>=66&&edge>=20&&aligned>=4;
- const earlyRawDirection=earlyEligible?weightedDirection:"WAIT";
- let rawDirection=confirmedEligible?weightedDirection:"WAIT";
- let score=weightedScore;
- let reason;
- if(!fresh)reason="WAIT · feed is stale; require a fresh stream tick or recently closed 30-second candle.";
- else if(chop)reason="WAIT · ADX and price range indicate low-energy chop; no forced direction.";
- else if(volExpansion)reason="WAIT · abnormal ATR expansion; avoid chasing a volatility spike.";
- else if(exhausted)reason=`WAIT · momentum is stretched (RSI ${rsi.toFixed(1)}, Stochastic ${stochK.toFixed(1)}); wait for reset.`;
- else if(confirmedEligible)reason=`${rawDirection} confirmed · ${weightedScore}/100 evidence, ${edge}-point separation and ${aligned} aligned groups. Entry is released only after the 30-second bar closes.`;
- else if(earlyEligible)reason=`EARLY ${earlyRawDirection} setup · ${weightedScore}/100 evidence across ${aligned} groups, ${edge}-point separation. Heads-up only; confirmed entry has not qualified.`;
- else reason=`WAIT · ${weightedDirection==="WAIT"?"no directional edge":weightedDirection+" bias"} at ${weightedScore}/100; require 42+ early evidence, 3 aligned groups and 15-point separation.`;
- const patternRead=apexCandleRead(bars),patternNames=(patternRead.patterns||[]).filter(p=>p.direction!=="WAIT").map(p=>p.name);
- const entry=Number(last.close),stop=rawDirection==="CALL"?Math.min(Number(last.low),entry-atr):rawDirection==="PUT"?Math.max(Number(last.high),entry+atr):null,target=rawDirection==="CALL"?entry+(entry-stop)*1.5:rawDirection==="PUT"?entry-(stop-entry)*1.5:null;
- const layers=groups.map(g=>({name:g.name,value:g.value,bull:g.bull,bear:g.bear}));
- const confluences=groups.filter(g=>rawDirection==="CALL"?g.bull:rawDirection==="PUT"?g.bear:earlyRawDirection==="CALL"?g.bull:earlyRawDirection==="PUT"?g.bear:false).map(g=>g.name);
- const result={direction:rawDirection,rawDirection,earlyRawDirection,earlyDirection:earlyRawDirection,earlyScore:earlyEligible?weightedScore:0,earlyEdge:earlyEligible?edge:0,earlyReason:earlyEligible?`Early ${earlyRawDirection} setup · ${weightedScore}/100, ${aligned} aligned groups and ${edge}-point separation. Heads-up only; wait for confirmed entry.`:"No early opportunity currently qualifies.",score,confidence_score:score,signalLevel:confirmedEligible?(weightedScore>=82?"STRONG":"CONFIRMED"):earlyEligible?"EARLY OPPORTUNITY":"WAIT",reason,fresh,age:Math.min(tickAge,candleAge),trend:trendBull?"UP":trendBear?"DOWN":"MIXED",entry,stopLoss:stop,takeProfit:target,candleTime:last.time,candleTimeMs:Number(last.timeMs),recommended_expiry:"30s",atr,rsi,adx,plusDI:pdi,minusDI:mdi,stochasticK:stochK,stochasticD:stochD,cci,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,support:levels.support?.price??null,resistance:levels.resistance?.price??null,detected_patterns:patternNames,confluences,evidence_count:aligned,weighted_score:score,bull_score:bullScore,bear_score:bearScore,score_edge:edge,layers,breakdown:{trend:layers[0].value,momentum:layers[1].value,rsi:layers[2].value,stochastic:layers[3].value,cci:layers[4].value,patterns:layers[5].value,structure:layers[6].value,liquidity:layers[7].value,volatility:layers[8].value,feed:fresh?`FRESH · tick ${tickAge.toFixed(1)}s / candle ${candleAge.toFixed(1)}s`:`STALE · candle ${candleAge.toFixed(1)}s`}};
- result.structured={signal:rawDirection==="CALL"?"BUY":rawDirection==="PUT"?"SELL":earlyRawDirection==="CALL"?"EARLY BUY":earlyRawDirection==="PUT"?"EARLY SELL":"WAIT",confidence_score:score,detected_patterns:[...patternNames,...confluences],recommended_expiry:"30s",reasoning:reason};
+ if(Number(last.timeMs)>now+3000)return wait("WAIT · candle timestamp is ahead of synchronized clock.");
+ // CCI(20) uses typical price and mean absolute deviation. CCI alone drives direction.
+ const calcCCI=(data)=>{
+  if(data.length<20)return null;
+  const w=data.slice(-20),tp=w.map(c=>(Number(c.high)+Number(c.low)+Number(c.close))/3);
+  const mean=tp.reduce((a,b)=>a+b,0)/tp.length;
+  const md=tp.reduce((a,b)=>a+Math.abs(b-mean),0)/tp.length;
+  return md>0?(tp.at(-1)-mean)/(.015*md):0;
+ };
+ const cci=calcCCI(bars),previousCci=calcCCI(bars.slice(0,-1));
+ const candleAge=Math.max(0,(now-Number(last.timeMs)-APEX_BAR_MS)/1000);
+ const fresh=candleAge<=90,age=candleAge;
+ if(!Number.isFinite(cci)||!Number.isFinite(previousCci))return wait("WAIT · CCI calculation unavailable.",cci,previousCci);
+ if(!fresh)return wait(`WAIT · candle data stale (${candleAge.toFixed(0)}s).`,cci,previousCci);
+ let rawDirection="WAIT",reason="WAIT · CCI is neutral, indecisive, or not producing a qualifying directional move.";
+ // Direction is based strictly on CCI zone and movement. No other indicator can confirm or veto it.
+ if(cci>=100&&cci>previousCci){rawDirection="CALL";reason=`CCI BUY · CCI ${cci.toFixed(1)} is above +100 and rising.`;}
+ else if(cci<=-100&&cci<previousCci){rawDirection="PUT";reason=`CCI SELL · CCI ${cci.toFixed(1)} is below -100 and falling.`;}
+ else if(cci>0&&cci>=50&&cci>previousCci){rawDirection="CALL";reason=`CCI BUY · positive CCI momentum is rising (${cci.toFixed(1)}).`;}
+ else if(cci<0&&cci<=-50&&cci<previousCci){rawDirection="PUT";reason=`CCI SELL · negative CCI momentum is falling (${cci.toFixed(1)}).`;}
+ const score=rawDirection==="WAIT"?Math.min(49,Math.round(Math.abs(cci)/3)):Math.min(95,60+Math.round(Math.min(35,Math.abs(cci)/5)));
+ const side=rawDirection==="CALL"?"BUY":rawDirection==="PUT"?"SELL":"WAIT";
+ const layer={name:"CCI 20 · ONLY AUTHORITY",value:`${cci.toFixed(1)} · ${rawDirection==="CALL"?"BULLISH":rawDirection==="PUT"?"BEARISH":"NEUTRAL"} · ${cci>previousCci?"RISING":cci<previousCci?"FALLING":"FLAT"}`,bull:rawDirection==="CALL",bear:rawDirection==="PUT"};
+ const result={direction:rawDirection,rawDirection,earlyRawDirection:rawDirection,earlyDirection:rawDirection,earlyScore:rawDirection==="WAIT"?0:score,earlyEdge:rawDirection==="WAIT"?0:score,earlyReason:rawDirection==="WAIT"?"CCI has not qualified a signal.":reason,score,confidence_score:score,signalLevel:rawDirection==="WAIT"?"WAIT":"CCI SIGNAL",reason,fresh,age,trend:rawDirection==="CALL"?"UP":rawDirection==="PUT"?"DOWN":"MIXED",entry:Number(last.close),stopLoss:null,takeProfit:null,candleTime:last.time,candleTimeMs:Number(last.timeMs),recommended_expiry:"30s",cci,previousCci,atr:null,rsi:null,adx:null,plusDI:null,minusDI:null,stochasticK:null,stochasticD:null,macdLine:null,macdSignal:null,macdHistogram:null,support:null,resistance:null,detected_patterns:[],confluences:["CCI 20"],evidence_count:1,weighted_score:score,bull_score:rawDirection==="CALL"?score:0,bear_score:rawDirection==="PUT"?score:0,score_edge:score,layers:[layer],breakdown:{cci:`CCI 20 ${cci.toFixed(1)} · ${cci>previousCci?"rising":"falling"}`,feed:"Fresh completed 30-second candle"}};
+ result.structured={signal:side,confidence_score:score,detected_patterns:["CCI 20"],recommended_expiry:"30s",reasoning:reason};
  return result;
 }
+
 analyze=function(candles,asset){return apexLayerScore(candles,asset);};
 function apexRenderIntelligentPanel(){
  const id=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart,r=results[id],a=r?.analysis||{},left=apexCandleCountdown(),sec=30-left;
@@ -2230,7 +2169,7 @@ function apexIntelligentHeartbeat(){
  }
 }
 // Keep the selected chart locked to the native 30-second feed.
-setChartTimeframe=function(){chartTimeframe=.5;document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===.5));if($("tfNote"))$("tfNote").textContent="30-second native OTC candles · scanner locked";if($("chartMeta"))$("chartMeta").textContent="30-second candle structure · EMA / ADX · MACD · RSI · Stochastic · CCI · structure";drawChart();};
+setChartTimeframe=function(){chartTimeframe=.5;document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===.5));if($("tfNote"))$("tfNote").textContent="30-second native OTC candles · scanner locked";if($("chartMeta"))$("chartMeta").textContent="30-second candles · CCI 20 ONLY decides signal";drawChart();};
 if(typeof candleDurationSeconds==="function")candleDurationSeconds=function(){return 30;};
 const apexOriginalCountdownsV30=updateCountdowns;updateCountdowns=function(){apexOriginalCountdownsV30();const el=$("candleCountdown");if(el)el.textContent=`00:${String(apexCandleCountdown()).padStart(2,"0")}`;apexRenderIntelligentPanel();};
 function apexStartScheduler(){
@@ -2266,12 +2205,12 @@ function apexPauseScheduler(){
 }
 $("startBtn").onclick=apexStartScheduler;$("pauseBtn").onclick=apexPauseScheduler;
 $("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";$("interval").onchange=()=>{$("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";saveState();};
-const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · adaptive EARLY BUY/SELL heads-up from 35/100 with 2 aligned layers · confirmed entries remain 65/100 + 15-point edge · MACD and momentum counted once · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
-const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · EARLY opportunity alerts · confirmed entry 65/100 · +5s post-close scan · UTC-10 chart display.";
+const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>CCI Trust Engine:</b> Native OTCharts 30-second candles · CCI 20 is the ONLY signal authority · no indicator voting or AI override · scan five seconds after candle close. Stale or invalid data returns WAIT. Paper trading only; no broker orders are placed.";
+const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · CCI 20 ONLY signal authority · +5s post-close scan.";
 const hero=$("heroLiveLabel");if(hero)hero.textContent="30-second market intelligence · next-candle callouts";
 const tfNote=$("tfNote");if(tfNote)tfNote.textContent="30-second native OTC candles · scanner locked";
 const ci=$("candleIntel");if(ci)ci.innerHTML=ci.innerHTML.replaceAll("5M CLOSED BAR","30S CLOSED BAR").replaceAll("1M CLOSED BAR","30S CLOSED BAR");
-if($("apexIntelligentEngine")){const head=$("apexIntelligentEngine").querySelector(".apex-engine-head b");if(head)head.textContent="APEX SUPER INTELLIGENCE · 30S · UTC-10";}
+if($("apexIntelligentEngine")){const head=$("apexIntelligentEngine").querySelector(".apex-engine-head b");if(head)head.textContent="APEX CCI TRUST ENGINE · 30S";}
 const signalCallout=$("signalCallout");
 if(signalCallout&&!$("apexIntelligentEngine")){
  const card=document.createElement("section");card.id="apexIntelligentEngine";card.style.cssText="margin:10px 0;padding:12px;border:1px solid #365d9b;border-radius:12px;background:linear-gradient(145deg,#10254c,#08152c)";
