@@ -2327,4 +2327,43 @@ updateCountdowns=function(){
  }
 };
 </script>
+
+<style id="apex-v92-manual-scan-ui">
+#scanNow{display:flex!important;width:188px!important;height:188px!important;min-height:188px!important;margin:16px auto!important;border-radius:50%!important;align-items:center!important;justify-content:center!important;text-align:center!important;padding:22px!important;white-space:normal!important;font-size:17px!important;letter-spacing:.08em!important;font-weight:1000!important;background:radial-gradient(circle at 30% 25%,#b9fff4,#35d8c7 45%,#087f9a 78%,#0b3350)!important;color:#06252d!important;border:3px solid #73fff0!important;box-shadow:0 0 24px #2cd7c577,inset 0 0 18px #eaffff99!important;transition:all .2s ease!important}
+#scanNow:disabled{opacity:1!important;filter:saturate(.75)!important;box-shadow:0 0 28px #39d7d077,inset 0 0 20px #d8ffff88!important}
+#scanNow:hover{transform:scale(1.03)!important}
+#scanNow.scan-active{animation:apexManualPulse 1s infinite alternate!important;background:radial-gradient(circle,#b6fff6,#38d9c6 50%,#126b98)!important}
+@keyframes apexManualPulse{from{box-shadow:0 0 18px #3de0c477,inset 0 0 10px #eaffff66}to{box-shadow:0 0 38px #3de0c4cc,inset 0 0 22px #ffffffaa}}
+#startBtn,#pauseBtn{display:none!important}
+</style>
+<script id="apex-v92-manual-only">
+// V9.2: manual scan gate. Live stream remains connected; scan/signal generation is user-triggered only.
+let apexManualScanAuthorized=false;
+const apexV92OriginalScan=scan;
+scan=async function(){
+ if(!apexManualScanAuthorized){return;}
+ return await apexV92OriginalScan();
+};
+const apexV92OriginalAddSignal=addSignal;
+addSignal=function(r){if(!apexManualScanAuthorized)return;return apexV92OriginalAddSignal(r);};
+// Keep the phase/countdown display alive, but never let its heartbeat trigger a scan.
+apexIntelligentHeartbeat=function(){apexRenderIntelligentPanel();};
+if(typeof apexPauseScheduler==='function')apexPauseScheduler();
+running=false;clearInterval(cycle);cycle=null;apexPendingScheduledScan=false;
+const scanButton=$('scanNow');
+if(scanButton){
+ scanButton.textContent='TAP TO\nSCAN';scanButton.classList.remove('scan-active');scanButton.disabled=false;
+ scanButton.onclick=async()=>{
+  if(busy)return;
+  apexManualScanAuthorized=true;scanButton.disabled=true;scanButton.classList.add('scan-active');scanButton.textContent='SCANNING…';
+  try{await scan();}
+  finally{apexManualScanAuthorized=false;scanButton.disabled=false;scanButton.classList.remove('scan-active');scanButton.textContent='TAP TO\nSCAN';}
+ };
+}
+if($('scanStateBadge'))$('scanStateBadge').textContent='MANUAL SCAN';
+if($('progressText'))$('progressText').textContent='Ready · tap the Scan button to analyze the selected pair';
+// Disable any legacy auto-start UI handlers and suppress the initial page-load scan.
+$('startBtn').onclick=()=>{};$('pauseBtn').onclick=()=>{};
+</script>
+
 </body></html>
