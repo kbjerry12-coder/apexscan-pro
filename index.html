@@ -2081,7 +2081,7 @@ handleLiveTick=function(event){
 const signalCallout=$("signalCallout");
 if(signalCallout&&!$("apexIntelligentEngine")){
  const card=document.createElement("section");card.id="apexIntelligentEngine";
- card.innerHTML='<div class="apex-engine-head"><b>APEX CCI TRUST ENGINE · 30S</b><span id="apexPhase">PHASE 1 · MARKET INTELLIGENCE</span></div><div class="apex-engine-grid"><div><div class="apex-engine-signal wait" id="apexEngineSignal">WAIT</div><div class="apex-engine-meta"><span>CCI SIGNAL SCORE</span><span>Expiry: <b id="apexEngineExpiry">30s</b></span></div></div><div id="apexEngineScore">0/100</div></div><div id="apexLayerGrid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px"></div><div id="apexEnginePatterns" style="font-size:9px;color:#a9bfdc;margin-top:7px">CCI 20 is the only signal authority…</div><p id="apexEngineReason">Waiting for completed 30-second candle.</p>';
+ card.innerHTML='<div class="apex-engine-head"><b>APEX MULTI-INDICATOR ENGINE · 30S</b><span id="apexPhase">PHASE 1 · MARKET INTELLIGENCE</span></div><div class="apex-engine-grid"><div><div class="apex-engine-signal wait" id="apexEngineSignal">WAIT</div><div class="apex-engine-meta"><span>CONFLUENCE SCORE</span><span>Expiry: <b id="apexEngineExpiry">30s</b></span></div></div><div id="apexEngineScore">0/100</div></div><div id="apexLayerGrid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px"></div><div id="apexEnginePatterns" style="font-size:9px;color:#a9bfdc;margin-top:7px">Donchian · DeMarker · SAR · CCI working together…</div><p id="apexEngineReason">Waiting for completed 30-second candle.</p>';
  signalCallout.parentNode.insertBefore(card,signalCallout);
 }
 apexRenderIntelligentPanel();
@@ -2100,36 +2100,39 @@ function apexServerNow(){return Date.now()+apexServerClockOffsetMs;}
 function apexCandleCountdown(){const now=apexServerNow(),next=(Math.floor(now/APEX_BAR_MS)+1)*APEX_BAR_MS;return Math.max(0,Math.min(29,Math.ceil((next-now)/1000)));}
 function apexLayerScore(bars,asset){
  const n=bars.length,last=bars[n-1],prev=bars[n-2];
- const wait=(reason,cci=null,prevCci=null)=>({direction:"WAIT",rawDirection:"WAIT",earlyRawDirection:"WAIT",earlyDirection:"WAIT",earlyScore:0,earlyEdge:0,earlyReason:"CCI-only engine did not qualify a direction.",score:0,confidence_score:0,signalLevel:"WAIT",fresh:false,age:Infinity,reason,candleTime:last?.time||"",candleTimeMs:Number(last?.timeMs||0),cci,previousCci:prevCci,atr:null,layers:[{name:"CCI 20 · ONLY AUTHORITY",value:cci==null?"WAIT · CCI unavailable":`${Number(cci).toFixed(1)} · WAIT`,bull:false,bear:false}],confluences:[],detected_patterns:[],structured:{signal:"WAIT",confidence_score:0,detected_patterns:[],recommended_expiry:"30s",reasoning:reason}});
- if(n<20)return wait(`Building CCI history · ${n}/20 completed candles`);
- if(bars.some((c,i)=>![c.open,c.high,c.low,c.close,c.timeMs].every(v=>Number.isFinite(Number(v)))||Number(c.high)<Number(c.low)||Number(c.high)<Math.max(Number(c.open),Number(c.close))||Number(c.low)>Math.min(Number(c.open),Number(c.close))||Number(c.timeMs)<=0||(i>0&&Number(c.timeMs)<=Number(bars[i-1].timeMs))))return wait("WAIT · candle data is invalid, duplicated or out of order.");
- const now=Date.now()+Number(apexServerClockOffsetMs||0);
- if(Number(last.timeMs)>now+3000)return wait("WAIT · candle timestamp is ahead of synchronized clock.");
- // CCI(20) uses typical price and mean absolute deviation. CCI alone drives direction.
- const calcCCI=(data)=>{
-  if(data.length<20)return null;
-  const w=data.slice(-20),tp=w.map(c=>(Number(c.high)+Number(c.low)+Number(c.close))/3);
-  const mean=tp.reduce((a,b)=>a+b,0)/tp.length;
-  const md=tp.reduce((a,b)=>a+Math.abs(b-mean),0)/tp.length;
-  return md>0?(tp.at(-1)-mean)/(.015*md):0;
- };
+ const wait=(reason)=>({direction:"WAIT",rawDirection:"WAIT",earlyRawDirection:"WAIT",earlyDirection:"WAIT",earlyScore:0,earlyEdge:0,earlyReason:reason,score:0,confidence_score:0,signalLevel:"WAIT",fresh:false,age:Infinity,reason,candleTime:last?.time||"",candleTimeMs:Number(last?.timeMs||0),cci:null,previousCci:null,atr:null,layers:[],confluences:[],detected_patterns:[],structured:{signal:"WAIT",confidence_score:0,detected_patterns:[],recommended_expiry:"30s",reasoning:reason}});
+ if(n<25)return wait(`Building indicator history · ${n}/25 candles`);
+ if(bars.some((c,i)=>![c.open,c.high,c.low,c.close,c.timeMs].every(v=>Number.isFinite(Number(v)))||Number(c.high)<Number(c.low)||Number(c.high)<Math.max(Number(c.open),Number(c.close))||Number(c.low)>Math.min(Number(c.open),Number(c.close))||Number(c.timeMs)<=0||(i>0&&Number(c.timeMs)<=Number(bars[i-1].timeMs))))return wait("WAIT · candle data invalid or out of order.");
+ const now=apexServerNow(), age=Math.max(0,(now-Number(last.timeMs)-APEX_BAR_MS)/1000),fresh=age<=90;
+ if(!fresh)return wait(`WAIT · data stale (${age.toFixed(0)}s).`);
+ const typical=c=>((Number(c.high)+Number(c.low)+Number(c.close))/3);
+ const calcCCI=(data)=>{const w=data.slice(-20);if(w.length<20)return null;const t=w.map(typical),m=t.reduce((a,b)=>a+b,0)/20,md=t.reduce((a,b)=>a+Math.abs(b-m),0)/20;return md?(t.at(-1)-m)/(.015*md):0;};
  const cci=calcCCI(bars),previousCci=calcCCI(bars.slice(0,-1));
- const candleAge=Math.max(0,(now-Number(last.timeMs)-APEX_BAR_MS)/1000);
- const fresh=candleAge<=90,age=candleAge;
- if(!Number.isFinite(cci)||!Number.isFinite(previousCci))return wait("WAIT · CCI calculation unavailable.",cci,previousCci);
- if(!fresh)return wait(`WAIT · candle data stale (${candleAge.toFixed(0)}s).`,cci,previousCci);
- let rawDirection="WAIT",reason="WAIT · CCI is neutral, indecisive, or not producing a qualifying directional move.";
- // Direction is based strictly on CCI zone and movement. No other indicator can confirm or veto it.
- if(cci>=100&&cci>previousCci){rawDirection="CALL";reason=`CCI BUY · CCI ${cci.toFixed(1)} is above +100 and rising.`;}
- else if(cci<=-100&&cci<previousCci){rawDirection="PUT";reason=`CCI SELL · CCI ${cci.toFixed(1)} is below -100 and falling.`;}
- else if(cci>0&&cci>=50&&cci>previousCci){rawDirection="CALL";reason=`CCI BUY · positive CCI momentum is rising (${cci.toFixed(1)}).`;}
- else if(cci<0&&cci<=-50&&cci<previousCci){rawDirection="PUT";reason=`CCI SELL · negative CCI momentum is falling (${cci.toFixed(1)}).`;}
- const score=rawDirection==="WAIT"?Math.min(49,Math.round(Math.abs(cci)/3)):Math.min(95,60+Math.round(Math.min(35,Math.abs(cci)/5)));
- const side=rawDirection==="CALL"?"BUY":rawDirection==="PUT"?"SELL":"WAIT";
- const layer={name:"CCI 20 · ONLY AUTHORITY",value:`${cci.toFixed(1)} · ${rawDirection==="CALL"?"BULLISH":rawDirection==="PUT"?"BEARISH":"NEUTRAL"} · ${cci>previousCci?"RISING":cci<previousCci?"FALLING":"FLAT"}`,bull:rawDirection==="CALL",bear:rawDirection==="PUT"};
- const result={direction:rawDirection,rawDirection,earlyRawDirection:rawDirection,earlyDirection:rawDirection,earlyScore:rawDirection==="WAIT"?0:score,earlyEdge:rawDirection==="WAIT"?0:score,earlyReason:rawDirection==="WAIT"?"CCI has not qualified a signal.":reason,score,confidence_score:score,signalLevel:rawDirection==="WAIT"?"WAIT":"CCI SIGNAL",reason,fresh,age,trend:rawDirection==="CALL"?"UP":rawDirection==="PUT"?"DOWN":"MIXED",entry:Number(last.close),stopLoss:null,takeProfit:null,candleTime:last.time,candleTimeMs:Number(last.timeMs),recommended_expiry:"30s",cci,previousCci,atr:null,rsi:null,adx:null,plusDI:null,minusDI:null,stochasticK:null,stochasticD:null,macdLine:null,macdSignal:null,macdHistogram:null,support:null,resistance:null,detected_patterns:[],confluences:["CCI 20"],evidence_count:1,weighted_score:score,bull_score:rawDirection==="CALL"?score:0,bear_score:rawDirection==="PUT"?score:0,score_edge:score,layers:[layer],breakdown:{cci:`CCI 20 ${cci.toFixed(1)} · ${cci>previousCci?"rising":"falling"}`,feed:"Fresh completed 30-second candle"}};
- result.structured={signal:side,confidence_score:score,detected_patterns:["CCI 20"],recommended_expiry:"30s",reasoning:reason};
- return result;
+ const channel=bars.slice(-20),upper=Math.max(...channel.map(c=>Number(c.high))),lower=Math.min(...channel.map(c=>Number(c.low))),mid=(upper+lower)/2,close=Number(last.close);
+ const channelWidth=Math.max(upper-lower,1e-12),pos=(close-lower)/channelWidth;
+ let donBull=0,donBear=0,donText="mid-channel";if(close>upper-(channelWidth*.08)){donBull=1;donText="upper-channel pressure";}else if(close<lower+(channelWidth*.08)){donBear=1;donText="lower-channel pressure";}else if(close>mid){donBull=.45;donText="upper half";}else{donBear=.45;donText="lower half";}
+ // DeMarker(14): normalized higher-high and lower-low movement.
+ let up=0,down=0;for(let i=n-14;i<n;i++){const a=bars[i],b=bars[i-1];up+=Math.max(Number(a.high)-Number(b.high),0);down+=Math.max(Number(b.low)-Number(a.low),0);}const dem=up+down?up/(up+down):.5;
+ const demBull=dem>=.58?1:dem>=.52?.5:0,demBear=dem<=.42?1:dem<=.48?.5:0;
+ // Parabolic SAR (classic iterative approximation, 0.02 acceleration, capped at 0.20).
+ let bull=Number(bars[1].close)>=Number(bars[1].open),ep=bull?Number(bars[1].high):Number(bars[1].low),sar=bull?Number(bars[0].low):Number(bars[0].high),af=.02;
+ for(let i=2;i<n;i++){const b=bars[i],prior=bars[i-1],prior2=bars[i-2];sar=sar+af*(ep-sar);if(bull)sar=Math.min(sar,Number(prior.low),Number(prior2.low));else sar=Math.max(sar,Number(prior.high),Number(prior2.high));if(bull&&Number(b.low)<sar){bull=false;sar=ep;ep=Number(b.low);af=.02;}else if(!bull&&Number(b.high)>sar){bull=true;sar=ep;ep=Number(b.high);af=.02;}else if(bull&&Number(b.high)>ep){ep=Number(b.high);af=Math.min(.2,af+.02);}else if(!bull&&Number(b.low)<ep){ep=Number(b.low);af=Math.min(.2,af+.02);}}
+ const sarBull=bull&&sar<close?1:0,sarBear=!bull&&sar>close?1:0;
+ const cciBull=cci!=null&&previousCci!=null?(cci>=50&&cci>previousCci?1:cci>0&&cci>previousCci?.5:0):0,cciBear=cci!=null&&previousCci!=null?(cci<=-50&&cci<previousCci?1:cci<0&&cci<previousCci?.5:0):0;
+ const bullPts=donBull*25+demBull*25+sarBull*25+cciBull*25,bearPts=donBear*25+demBear*25+sarBear*25+cciBear*25;
+ let dir="WAIT",reason="Indicators disagree or confluence is too weak; WAIT.";if(bullPts>=65&&bullPts-bearPts>=20){dir="CALL";reason=`Multi-indicator BUY setup · Donchian ${donText}, DeMarker ${dem.toFixed(2)}, SAR bullish, CCI ${cci?.toFixed(1)}.`;}else if(bearPts>=65&&bearPts-bullPts>=20){dir="PUT";reason=`Multi-indicator SELL setup · Donchian ${donText}, DeMarker ${dem.toFixed(2)}, SAR bearish, CCI ${cci?.toFixed(1)}.`;}
+ const score=Math.round(Math.max(bullPts,bearPts)),side=dir==="CALL"?"BUY":dir==="PUT"?"SELL":"WAIT";
+ const layers=[{name:"Donchian · 20",value:`${donText} · ${pos.toFixed(2)} channel position`,bull:donBull>0,bear:donBear>0},{name:"DeMarker · 14",value:`${dem.toFixed(2)} · ${dem>.5?"buying pressure":"selling pressure"}`,bull:demBull>0,bear:demBear>0},{name:"Parabolic SAR",value:`${bull?"SAR below price":"SAR above price"}`,bull:sarBull>0,bear:sarBear>0},{name:"CCI · 20",value:`${cci?.toFixed(1)??"—"} · ${cci>previousCci?"rising":"falling"}`,bull:cciBull>0,bear:cciBear>0}];
+ const result={direction:dir,rawDirection:dir,earlyRawDirection:dir,earlyDirection:dir,earlyScore:score,earlyEdge:score,earlyReason:reason,score,confidence_score:score,signalLevel:dir==="WAIT"?"WAIT":score>=80?"STRONG CONFLUENCE":"QUALIFIED SETUP",reason,fresh,age,trend:dir==="CALL"?"UP":dir==="PUT"?"DOWN":"MIXED",entry:close,candleTime:last.time,candleTimeMs:Number(last.timeMs),recommended_expiry:"30s",cci,previousCci,demarker:dem,parabolicSar:sar,donchianUpper:upper,donchianLower:lower,detected_patterns:[],confluences:layers.filter(x=>dir==="CALL"?x.bull:dir==="PUT"?x.bear:false).map(x=>x.name),evidence_count:layers.length,weighted_score:score,bull_score:Math.round(bullPts),bear_score:Math.round(bearPts),score_edge:Math.abs(bullPts-bearPts),layers,breakdown:{donchian:donText,demarker:dem.toFixed(2),sar:bull?"bullish":"bearish",cci:cci?.toFixed(1),feed:"Fresh completed candle"}};
+ result.structured={signal:side,confidence_score:score,detected_patterns:layers.map(x=>x.name),recommended_expiry:"30s",reasoning:reason};window.APEX_LAST_ANALYSIS=result.structured;return result;
+}
+// Early prediction uses the forming 30-second candle, not only completed candles.
+function apexEarlyPrediction(r){
+ const candles=r?.candles||[],now=apexServerNow(),bars=candles.filter(c=>Number(c.timeMs)>0&&Number(c.timeMs)<=now+1000).slice(-60);
+ if(bars.length<25)return {direction:"WAIT",score:0,reason:`Building early-signal history · ${bars.length}/25 candles`};
+ const live=bars.at(-1),base=bars.slice(0,-1);if(!live||!base.length)return {direction:"WAIT",score:0,reason:"No live candle available"};
+ const px=Number(r.livePrice||live.close),cur={...live,close:px,high:Math.max(Number(live.high),px),low:Math.min(Number(live.low),px)};bars[bars.length-1]=cur;
+ const prediction=apexLayerScore(bars,ASSETS.find(x=>x.id===r.id));return {direction:prediction.direction,score:prediction.score,reason:prediction.reason,layers:prediction.layers,price:px,forming:true};
 }
 
 analyze=function(candles,asset){return apexLayerScore(candles,asset);};
@@ -2138,6 +2141,7 @@ function apexRenderIntelligentPanel(){
  const phase=left<=2?"PHASE 2 · PRE-CLOSE SNAPSHOT":left<=8?"PHASE 2 · FINAL CONFIRMATION":"PHASE 1 · MARKET INTELLIGENCE";
  const phaseEl=$("apexPhase"),clockEl=$("candleCountdown");if(phaseEl)phaseEl.textContent=`${phase} · T-${String(left).padStart(2,"0")}s`;if(clockEl)clockEl.textContent=`00:${String(left).padStart(2,"0")}`;
  const earlySide=a.earlyDirection||"WAIT";
+ const early=apexEarlyPrediction(r);let earlyBox=$("apexEarlyPrediction");if(!earlyBox){earlyBox=document.createElement("div");earlyBox.id="apexEarlyPrediction";earlyBox.style.cssText="margin:7px 0;padding:8px;border-radius:8px;background:#102640;border:1px solid #355d87;font-size:10px;font-weight:800";const card=$("apexIntelligentEngine");if(card)card.insertBefore(earlyBox,card.querySelector(".apex-engine-grid")||card.firstChild);}if(earlyBox){const earlySideText=early.direction==="CALL"?"EARLY BUY":early.direction==="PUT"?"EARLY SELL":"EARLY WAIT";earlyBox.textContent=`${earlySideText} · ${early.score}/100 · ${early.reason}`;earlyBox.style.color=early.direction==="CALL"?"#73f0bd":early.direction==="PUT"?"#ff8f9d":"#a9bfdc";}
  const side=a.direction==="CALL"?"BUY":a.direction==="PUT"?"SELL":earlySide==="CALL"?"EARLY BUY":earlySide==="PUT"?"EARLY SELL":"WAIT",sig=$("apexEngineSignal");if(sig){sig.textContent=side;sig.className="apex-engine-signal "+(side.includes("BUY")?"buy":side.includes("SELL")?"sell":"wait");}
  const score=$("apexEngineScore"),patterns=$("apexEnginePatterns"),reason=$("apexEngineReason"),expiry=$("apexEngineExpiry");if(score)score.textContent=`${Number(a.score)||0}/100`;if(patterns)patterns.textContent=(a.detected_patterns||[]).join(" · ")||"No completed candle pattern detected";if(reason)reason.textContent=(a.direction==="WAIT"&&["CALL","PUT"].includes(earlySide)&&a.fresh?(a.earlyReason+" Confirmed entries remain separate."):a.reason)||"Waiting for completed 30-second candle.";if(expiry)expiry.textContent="30s";
  const phaseLabel=$("apexPhase");if(phaseLabel)phaseLabel.title=`30-second candle countdown: ${left}s`;
@@ -2169,7 +2173,7 @@ function apexIntelligentHeartbeat(){
  }
 }
 // Keep the selected chart locked to the native 30-second feed.
-setChartTimeframe=function(){chartTimeframe=.5;document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===.5));if($("tfNote"))$("tfNote").textContent="30-second native OTC candles · scanner locked";if($("chartMeta"))$("chartMeta").textContent="30-second candles · CCI 20 ONLY decides signal";drawChart();};
+setChartTimeframe=function(){chartTimeframe=.5;document.querySelectorAll(".tf-btn").forEach(b=>b.classList.toggle("active",Number(b.dataset.tf)===.5));if($("tfNote"))$("tfNote").textContent="30-second native OTC candles · scanner locked";if($("chartMeta"))$("chartMeta").textContent="30-second candles · multi-indicator confluence";drawChart();};
 if(typeof candleDurationSeconds==="function")candleDurationSeconds=function(){return 30;};
 const apexOriginalCountdownsV30=updateCountdowns;updateCountdowns=function(){apexOriginalCountdownsV30();const el=$("candleCountdown");if(el)el.textContent=`00:${String(apexCandleCountdown()).padStart(2,"0")}`;apexRenderIntelligentPanel();};
 function apexStartScheduler(){
@@ -2206,11 +2210,11 @@ function apexPauseScheduler(){
 $("startBtn").onclick=apexStartScheduler;$("pauseBtn").onclick=apexPauseScheduler;
 $("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";$("interval").onchange=()=>{$("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";saveState();};
 const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>CCI Trust Engine:</b> Native OTCharts 30-second candles · CCI 20 is the ONLY signal authority · no indicator voting or AI override · scan five seconds after candle close. Stale or invalid data returns WAIT. Paper trading only; no broker orders are placed.";
-const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · CCI 20 ONLY signal authority · +5s post-close scan.";
+const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · Donchian + DeMarker + Parabolic SAR + CCI · early prediction and close-confirmed signals.";
 const hero=$("heroLiveLabel");if(hero)hero.textContent="30-second market intelligence · next-candle callouts";
 const tfNote=$("tfNote");if(tfNote)tfNote.textContent="30-second native OTC candles · scanner locked";
 const ci=$("candleIntel");if(ci)ci.innerHTML=ci.innerHTML.replaceAll("5M CLOSED BAR","30S CLOSED BAR").replaceAll("1M CLOSED BAR","30S CLOSED BAR");
-if($("apexIntelligentEngine")){const head=$("apexIntelligentEngine").querySelector(".apex-engine-head b");if(head)head.textContent="APEX CCI TRUST ENGINE · 30S";}
+if($("apexIntelligentEngine")){const head=$("apexIntelligentEngine").querySelector(".apex-engine-head b");if(head)head.textContent="APEX MULTI-INDICATOR ENGINE · 30S";}
 const signalCallout=$("signalCallout");
 if(signalCallout&&!$("apexIntelligentEngine")){
  const card=document.createElement("section");card.id="apexIntelligentEngine";card.style.cssText="margin:10px 0;padding:12px;border:1px solid #365d9b;border-radius:12px;background:linear-gradient(145deg,#10254c,#08152c)";
