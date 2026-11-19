@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="9.1-adaptive-early-alerts-confirmed-entry">
-<title>APEXSCAN PRO · V9.1 ADAPTIVE EARLY ALERTS</title>
+<meta name="theme-color" content="#080d17"><meta name="apexscan-version" content="9.4-stable-single-stream-guarded-scan">
+<title>APEXSCAN PRO · V9.4 STABLE SCAN + STREAM</title>
 <meta name="description" content="APEXSCAN PRO OTC market analysis and paper-trading terminal">
 <style>
 :root{--bg:#080d17;--panel:#101a2a;--panel2:#0c1421;--line:#213149;--text:#eaf1fb;--muted:#91a3bb;--green:#28d9a0;--red:#ff637d;--blue:#72adff;--amber:#ffca70;--purple:#b69cff}
@@ -1221,7 +1221,7 @@ function drawChart(){
 }
 
 
-// One browser EventSource owns the selected-pair OTCharts stream; the scanner can select from the full OTC pair list.
+// One browser EventSource owns the selected-pair OTCharts stream. Stream ticks only refresh the selected-pair cache; the clock-guarded scan alone generates signals.
 let liveStream=null,liveStreamState="CONNECTING",liveTicks={},liveStreamRetryTimer=null,liveStreamRetryUntil=0;
  // Account-level OTCharts plan permits one stream: coordinate browser tabs with a lightweight lease.
  const APEX_STREAM_LOCK_KEY="apexscan_otc_stream_owner_v1";
@@ -1360,13 +1360,8 @@ function handleLiveTick(raw){
    candles.push({time:new Date(bucketStart).toISOString(),timeMs:bucketStart,open:previous?previous.close:price,high:price,low:price,close:price,live:true});
   }
   result.candles=normalizeAndDedupeOTCCandles(candles);
-  const asset=ASSETS.find(x=>x.id===id);
-  if(asset&&candles.length>=36){
-   const closed=closedOneMinuteCandles(candles);
-   result.analysis=closed.length>=35?analyze(closed,asset):{direction:"WAIT",score:0,reason:"Waiting for a completed candle before MACD confirmation",fresh:false,age:Infinity,signalLevel:"WAIT"};
-   result.analysis={...result.analysis};applyReverseSignal(result);
-   if(result.analysis.direction!=="WAIT")addSignal(result);
-  }
+  // Stream ticks update price/candle cache only. They never analyze or emit signals.
+  // Signal creation is reserved for the single clock-guarded scan cycle.
   renderScanner();
   if(selectedChart===id||$("chartAsset")?.value===id){drawChart();$("chartCaption").textContent=`${result.name} · LIVE ${fmt(price)} · updating each provider tick`;}
  }
@@ -1811,10 +1806,8 @@ function addSignal(r){
   busy=false;
   if($("scanNow"))$("scanNow").disabled=false;
   if(running&&$("scanStateBadge")&&$("scanStateBadge").textContent!="PAUSED")$("scanStateBadge").textContent="SUPER INTELLIGENCE ACTIVE";
-  if(running&&apexPendingScheduledScan){
-   apexPendingScheduledScan=false;
-   setTimeout(()=>{if(running&&!busy)scan();},0);
-  }
+  // No unguarded follow-up scan here. The clock-anchored scheduler retries
+  // the 00:01 boundary while a scan is busy and owns the only auto-scan permit.
  }
 }
 function openPaperTrade(r,side,isAutomatic=true,signalKey=""){
@@ -2442,6 +2435,16 @@ updateTop=function(rows){
   signalExpiryAt=next-apexServerClockOffsetMs;
  }else signalExpiryAt=0;
 };
+</script>
+
+
+<script id="apex-v94-stability-patch">
+(()=>{
+ const notice=document.querySelector('.notice');
+ if(notice)notice.innerHTML='<b>Stream integrity:</b> One selected-pair live stream updates the cached price and 30-second candle only. It does not generate signals. Automatic analysis runs once at the 00:01 boundary of each 30-second cycle; a busy scan is not followed by an unguarded duplicate. Cached candles are reused when fresh, and REST history is used only for missing/stale recovery. Paper trading records signals only and never launches scans or feed requests. Signals/paper tracking only; no Pocket Option orders.';
+ const foot=document.getElementById('scanFoot');
+ if(foot)foot.textContent='One selected-pair stream · one clock-guarded scan at 00:01 per 30-second cycle · early and confirmed outputs from the same scan.';
+})();
 </script>
 
 </body></html>
