@@ -2259,4 +2259,15 @@ renderCandleIntel=function(r){
 })();
 </script>
 
+<script id="apex-deep-scan-auto-sync">
+(()=>{
+ const btn=document.getElementById('apexDeepScanBtn'),statusEl=document.getElementById('apexDeepScanStatus'),resultEl=document.getElementById('apexDeepScanResult');if(!btn||!statusEl||!resultEl)return;
+ const barMs=30000;let lockedBucket=null,autoBucket=null;
+ const bucketNow=()=>String(Math.floor(apexServerNow()/barMs));
+ btn.addEventListener('click',e=>{if(lockedBucket===bucketNow()){e.stopImmediatePropagation();statusEl.textContent='Signal locked for this 30-second candle; unlocks at 00:00.';}},true);
+ const observer=new MutationObserver(()=>{if(resultEl.style.display==='block'&&resultEl.innerHTML&&!resultEl.innerHTML.includes('Analysis in progress')){lockedBucket=bucketNow();btn.title='Locked until next 30-second candle';}});observer.observe(resultEl,{childList:true,subtree:true,characterData:true});
+ apexIntelligentHeartbeat=function(){const now=apexServerNow(),bucket=Math.floor(now/barMs),within=now-bucket*barMs,key=String(bucket),remaining=barMs-within;apexRenderIntelligentPanel();apex30State.phase=remaining<=1200?'T-1S AUTO SCAN':'MONITORING LIVE CANDLE';apex30State.detail=remaining<=1200?'Regular scan and Deep Scan synchronize; the Deep Scan direction is locked for this candle.':'Deep Scan auto-runs with the regular scan near candle close.';if(remaining<=1200&&remaining>0&&apexPreCloseKey!==key&&running&&!busy){apexPreCloseKey=key;apex30State.phase='T-1S REGULAR + DEEP SCAN';apex30State.detail='Regular scan and Deep Scan run together once; Deep Scan direction remains locked until 00:00.';scan();if(autoBucket!==key){autoBucket=key;lockedBucket=null;setTimeout(()=>{if(autoBucket===key&&btn&&!btn.disabled)btn.click();},0);}}};
+ apexStartScheduler=function(){clearInterval(cycle);running=true;apexPreCloseKey='';lockedBucket=null;autoBucket=null;document.getElementById('startBtn').disabled=true;document.getElementById('pauseBtn').disabled=false;document.getElementById('scanStateBadge').textContent='30S REGULAR + DEEP AUTO';status('30-SECOND AUTO SCAN · REGULAR + DEEP · SIGNAL LOCK',true);apex30State.phase='MONITORING LIVE CANDLE';apex30State.detail='Regular scan and Deep Scan are linked. Both run once at the regular scan trigger; Deep Scan signal is locked until 00:00.';cycle=setInterval(apexIntelligentHeartbeat,100);};
+})();
+</script>
 </body></html>
