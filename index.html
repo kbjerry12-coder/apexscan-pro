@@ -2155,4 +2155,58 @@ renderCandleIntel=function(r){
  updateUpcoming();updateCandleTracker();
 })();
 </script>
+<script id="apex-v11-preclose-indicator-update">
+(()=>{
+ // V11: remove RSI; add Envelopes + Alligator; evaluate the forming 30s candle at T-1s.
+ const version="V11-PRECLOSE-ENVELOPES-ALLIGATOR";
+ const ema=(vals,period)=>{if(!vals.length)return [];const k=2/(period+1);let v=vals[0],out=[v];for(let i=1;i<vals.length;i++){v=vals[i]*k+v*(1-k);out.push(v);}return out;};
+ const sma=(vals,period)=>vals.slice(-period).reduce((a,b)=>a+b,0)/Math.max(1,vals.slice(-period).length);
+ const smma=(vals,period)=>{if(!vals.length)return [];let v=vals.slice(0,Math.min(period,vals.length)).reduce((a,b)=>a+b,0)/Math.max(1,Math.min(period,vals.length)),out=[];for(let i=0;i<vals.length;i++){if(i<period)v=vals.slice(0,i+1).reduce((a,b)=>a+b,0)/(i+1);else v=(v*(period-1)+vals[i])/period;out.push(v);}return out;};
+ function scoreLive(bars,asset){
+  const b=(bars||[]).slice(-120),n=b.length,last=b.at(-1),prev=b.at(-2);
+  const wait=(reason)=>({direction:"WAIT",rawDirection:"WAIT",earlyDirection:"WAIT",earlyRawDirection:"WAIT",score:0,earlyScore:0,confidence_score:0,signalLevel:"WAIT",fresh:false,age:Infinity,reason,earlyReason:reason,candleTime:last?.time,candleTimeMs:Number(last?.timeMs||0),recommended_expiry:"30s",layers:[],confluences:[],structured:{signal:"WAIT",confidence_score:0,detected_patterns:[],recommended_expiry:"30s",reasoning:reason}});
+  if(n<35)return wait(`Building indicator history · ${n}/35 candles needed`);
+  if(!last||!prev)return wait("Waiting for valid forming candle data");
+  const closes=b.map(x=>Number(x.close)),highs=b.map(x=>Number(x.high)),lows=b.map(x=>Number(x.low)),opens=b.map(x=>Number(x.open));
+  if(b.some(x=>![x.open,x.high,x.low,x.close,x.timeMs].every(v=>Number.isFinite(Number(v)))))return wait("Invalid OHLC data · signal blocked");
+  const t=liveTicks[asset.id],tickAge=t?Math.max(0,(Date.now()-Number(t.receivedAt||0))/1000):Infinity,candleAge=Number(last.timeMs)?Math.max(0,(Date.now()-Number(last.timeMs))/1000):Infinity,fresh=tickAge<=15||candleAge<=35;
+  // Donchian Channel(20), based on prior bars to avoid self-defining extremes.
+  const dc=b.slice(-21,-1),donHi=Math.max(...dc.map(x=>Number(x.high))),donLo=Math.min(...dc.map(x=>Number(x.low))),donMid=(donHi+donLo)/2;
+  const donBull=last.close>donMid&&last.close>prev.close,donBear=last.close<donMid&&last.close<prev.close,donBreakUp=last.close>donHi,donBreakDown=last.close<donLo;
+  // DeMarker 14
+  let up=0,down=0,pu=0,pd=0;for(let i=n-14;i<n;i++){up+=Math.max(0,highs[i]-highs[i-1]);down+=Math.max(0,lows[i-1]-lows[i]);}for(let i=n-15;i<n-1;i++){pu+=Math.max(0,highs[i]-highs[i-1]);pd+=Math.max(0,lows[i-1]-lows[i]);}const dem=up+down?up/(up+down):.5,demPrev=pu+pd?pu/(pu+pd):dem,demBull=dem>=.52&&dem>demPrev,demBear=dem<=.48&&dem<demPrev;
+  // OsMA 12/26/9
+  const e12=ema(closes,12),e26=ema(closes,26),ml=closes.map((v,i)=>e12[i]-e26[i]),sl=ema(ml,9),osma=ml.at(-1)-sl.at(-1),osmaPrev=ml.at(-2)-sl.at(-2),osmaBull=osma>0&&osma>osmaPrev,osmaBear=osma<0&&osma<osmaPrev;
+  // Envelopes: 20-period SMA with 0.10% band.
+  const envMid=sma(closes,20),envPct=.001,envUpper=envMid*(1+envPct),envLower=envMid*(1-envPct),envBull=last.close>envMid&&last.close>prev.close,envBear=last.close<envMid&&last.close<prev.close,envExtremeLow=last.low<=envLower,envExtremeHigh=last.high>=envUpper;
+  // Alligator (SMMA 13/8/5; forward shifts excluded because they are future plotting only).
+  const jaw=smma(closes,13).at(-1),teeth=smma(closes,8).at(-1),lips=smma(closes,5).at(-1),alligBull=lips>teeth&&teeth>jaw&&last.close>lips,alligBear=lips<teeth&&teeth<jaw&&last.close<lips;
+  const bullish=[donBull||donBreakUp,demBull,osmaBull,envBull||envExtremeLow,alligBull].filter(Boolean).length,bearish=[donBear||donBreakDown,demBear,osmaBear,envBear||envExtremeHigh,alligBear].filter(Boolean).length,dominant=bullish>bearish?"CALL":bearish>bullish?"PUT":"WAIT",align=Math.max(bullish,bearish),score=Math.round(align/5*100),
+  direction=fresh&&align>=3&&dominant!=="WAIT"?dominant:"WAIT",earlyDirection=fresh&&align>=3&&dominant!=="WAIT"?dominant:"WAIT";
+  const layers=[{name:"Donchian Channel · 20",value:donBreakUp?"BREAKOUT UP":donBreakDown?"BREAKOUT DOWN":donBull?"BULLISH":"BEARISH / MIXED",bull:donBull||donBreakUp,bear:donBear||donBreakDown},{name:"DeMarker · 14",value:dem.toFixed(3)+(demBull?" · BUY PRESSURE":demBear?" · SELL PRESSURE":" · NEUTRAL"),bull:demBull,bear:demBear},{name:"OsMA · 12/26/9",value:osma.toFixed(6)+(osmaBull?" · RISING":osmaBear?" · FALLING":" · FLAT"),bull:osmaBull,bear:osmaBear},{name:"Envelopes · SMA20 ±0.10%",value:`${envLower.toPrecision(6)} / ${envMid.toPrecision(6)} / ${envUpper.toPrecision(6)} · ${envExtremeLow?"LOWER BAND":envExtremeHigh?"UPPER BAND":envBull?"ABOVE MID":envBear?"BELOW MID":"NEUTRAL"}`,bull:envBull||envExtremeLow,bear:envBear||envExtremeHigh},{name:"Alligator · 13/8/5",value:alligBull?"BULLISH ALIGNMENT":alligBear?"BEARISH ALIGNMENT":"MIXED / SLEEPING",bull:alligBull,bear:alligBear}];
+  const reason=direction==="WAIT"?(fresh?`WAIT · ${align}/5 indicators aligned; require at least 3 matching indicators.`:"WAIT · live candle or tick data is stale."):`EARLY ${direction} · ${align}/5 indicators align on the still-forming candle, one second before close.`;
+  const raw=direction,confluences=layers.filter(x=>direction==="CALL"?x.bull:direction==="PUT"?x.bear:false).map(x=>x.name),entry=Number(last.close),patterns=[];
+  const result={direction:raw,rawDirection:raw,earlyDirection,earlyRawDirection:earlyDirection,earlyScore:direction==="WAIT"?0:score,earlyEdge:align,earlyReason:reason,score:direction==="WAIT"?Math.min(59,score):score,confidence_score:score,signalLevel:direction==="WAIT"?"WAIT":"EARLY PRE-CLOSE",reason, fresh,age:Math.min(tickAge,candleAge),trend:alligBull||donBull?"UP":alligBear||donBear?"DOWN":"MIXED",entry,stopLoss:direction==="CALL"?Number(last.low):direction==="PUT"?Number(last.high):null,candleTime:last.time,candleTimeMs:Number(last.timeMs),recommended_expiry:"30s",rsi:null,demarker:dem,donchian:{upper:donHi,lower:donLo,middle:donMid},envelopes:{upper:envUpper,middle:envMid,lower:envLower},alligator:{jaw,teeth,lips},support:donLo,resistance:donHi,detected_patterns:patterns,chart_patterns:[],confluences,evidence_count:align,layers,breakdown:{donchian:layers[0].value,demarker:layers[1].value,osma:layers[2].value,envelopes:layers[3].value,alligator:layers[4].value,feed:fresh?"FRESH":"STALE"}};
+  result.structured={signal:raw==="CALL"?"BUY":raw==="PUT"?"SELL":"WAIT",confidence_score:score,detected_patterns:confluences,recommended_expiry:"30s",reasoning:reason};return result;
+ }
+ analyze=function(candles,asset){return scoreLive(candles,asset);};
+ // Let the analyzer see the currently forming bar so the T-1s scan is predictive.
+ closedOneMinuteCandles=function(candles){return (candles||[]).filter(c=>Number(c.timeMs)>0&&Number(c.timeMs)<=Date.now()+1000);};
+ // Replace the scheduler with a single pre-close scan per 30-second candle.
+ const originalHeartbeat=apexIntelligentHeartbeat;
+ apexIntelligentHeartbeat=function(){const now=apexServerNow(),bucket=Math.floor(now/APEX_BAR_MS),within=now-bucket*APEX_BAR_MS,key=String(bucket),remaining=APEX_BAR_MS-within;apexRenderIntelligentPanel();apex30State.phase=remaining<=2000?"T−1S PRE-CLOSE SCAN":"MONITORING LIVE CANDLE";apex30State.detail=remaining<=2000?"Final pre-close snapshot: scanning movement before the next candle forms.":"Monitoring the active 30-second candle; final scan is scheduled one second before close.";if(remaining<=1200&&remaining>0&&apexPreCloseKey!==key&&running&&!busy){apexPreCloseKey=key;apex30State.phase="T−1S PRE-CLOSE SCAN";apex30State.detail="Evaluating the forming candle at the final second before close.";scan();}};
+ apexStartScheduler=function(){clearInterval(cycle);running=true;apexPreCloseKey="";$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="30S PRE-CLOSE SCAN";status("PRE-CLOSE SCANS · T−1S",true);apex30State.phase="MONITORING LIVE CANDLE";apex30State.detail="One scan is scheduled for T−1 second of every 30-second candle.";cycle=setInterval(apexIntelligentHeartbeat,100);};
+ // Remove RSI from all visible indicator labels and update system descriptions.
+ const chips=$("indicatorChips");if(chips)chips.innerHTML="<span>Donchian 20</span><span>DeMarker 14</span><span>OsMA 12/26/9</span><span>Envelopes SMA20 ±0.10%</span><span>Alligator 13/8/5</span><span>Pre-close scan · T−1s</span>";
+ const note=document.querySelector(".notice");if(note)note.innerHTML="<b>30-second pre-close intelligence:</b> Signals use Donchian Channel (20), DeMarker (14), OsMA (12/26/9), Envelopes (SMA20 ±0.10%), and Alligator (13/8/5). The active candle is scanned once at T−1 second to estimate next-candle direction. Stale data or mixed indicator evidence returns WAIT. Paper trading only; no broker orders.";
+ const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC scan · early pre-close callouts at T−1 second · five-indicator confluence";
+ const meta=$("chartMeta");if(meta)meta.textContent="30-second candle structure · Donchian · DeMarker · OsMA · Envelopes · Alligator";
+ const engineHead=$("apexIntelligentEngine")?.querySelector(".apex-engine-head b");if(engineHead)engineHead.textContent="APEX INTELLIGENCE · T−1S PRE-CLOSE · FIVE INDICATORS";
+ // Update candle intel without RSI references when the renderer refreshes.
+ const oldRenderCandleIntel=renderCandleIntel;
+ renderCandleIntel=function(r){const host=$("candleIntel");if(!host)return;const a=r?.analysis||{},layers=a.layers||[],badge=a.direction==="CALL"?"BUY":a.direction==="PUT"?"SELL":"WAIT",cls=a.direction==="CALL"?"ci-buy":a.direction==="PUT"?"ci-sell":"ci-wait";host.innerHTML='<div class="ci-head"><div class="ci-title">PRE-CLOSE INDICATOR INTELLIGENCE · 30S</div><span class="ci-pill '+cls+'">'+badge+'</span></div><div class="ci-reading">'+(a.earlyReason||a.reason||"Waiting for next pre-close scan")+'</div><div class="ci-detail">'+layers.map(x=>x.name+" · "+x.value).join("<br>")+'</div><div class="ci-grid"><div><small>INDICATOR ALIGNMENT</small><b>'+Number(a.evidence_count||0)+'/5</b></div><div><small>SCAN TIMING</small><b>T−1 second</b></div><div><small>DeMarker</small><b>'+ (Number.isFinite(Number(a.demarker))?Number(a.demarker).toFixed(3):"—") +'</b></div><div><small>SETUP SCORE</small><b>'+Number(a.score||0)+'/100</b></div></div>';};
+ const updateUpcomingLabel=()=>{const host=$("apexUpcomingSignals");if(host)host.querySelectorAll("small").forEach(s=>{if(s.textContent.includes("Indicators:"))s.textContent="Indicators: Donchian · DeMarker · OsMA · Envelopes · Alligator";});};
+ setTimeout(updateUpcomingLabel,0);
+})();
+</script>
 </body></html>
