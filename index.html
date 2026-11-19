@@ -1029,6 +1029,18 @@ async function regularData(symbol){
  const r=await fetch(u);let j=await r.json();if(!r.ok||j.status==="error"||!j.values)throw Error(j.message||"Twelve Data request failed");
  return j.values.slice().reverse().map(v=>{let t=new Date(v.datetime.replace(" ","T")+"Z");const volume=v.volume===undefined||v.volume===null?null:Number(v.volume);return {time:v.datetime,timeMs:t.getTime(),open:+v.open,high:+v.high,low:+v.low,close:+v.close,volume:Number.isFinite(volume)&&volume>=0?volume:null}});
 }
+function normalizeAndDedupeOTCCandles(candles){
+ const byTime=new Map();
+ for(const c of (candles||[])){
+  const ms=Number(c.timeMs),o=Number(c.open),h=Number(c.high),l=Number(c.low),cl=Number(c.close);
+  if(!Number.isFinite(ms)||ms<=0||![o,h,l,cl].every(Number.isFinite)||h<l||h<Math.max(o,cl)||l>Math.min(o,cl))continue;
+  const key=Math.floor(ms/30000)*30000;
+  const old=byTime.get(key);
+  if(!old)byTime.set(key,{...c,timeMs:key,time:new Date(key).toISOString(),open:o,high:h,low:l,close:cl});
+  else{old.high=Math.max(old.high,h);old.low=Math.min(old.low,l);old.close=cl;old.live=old.live||c.live;}
+ }
+ return [...byTime.values()].sort((a,b)=>a.timeMs-b.timeMs).slice(-240);
+}
 async function otcData(symbol){
  const r=await fetch(`/.netlify/functions/otc-candles?symbol=${encodeURIComponent(symbol)}&tf=30`,{cache:"no-store"});
  const rawBody=await r.text();let j={};try{j=JSON.parse(rawBody)}catch(e){}
@@ -1042,8 +1054,7 @@ async function otcData(symbol){
   else if(typeof raw==="string"&&/^\d+(?:\.\d+)?$/.test(raw.trim()))ms=Number(raw);
   else ms=Date.parse(raw);
   if(Number.isFinite(ms)&&ms>0&&ms<1e12)ms*=1000;
-  if(Number.isFinite(ms)&&ms>0)ms-=7200000; // Pocket Option OTC timestamps are UTC+2
-  if(!Number.isFinite(ms)||ms<=0)throw Error(`OTC candle ${index+1} has an invalid timestamp: ${String(raw)}`);
+    if(!Number.isFinite(ms)||ms<=0)throw Error(`OTC candle ${index+1} has an invalid timestamp: ${String(raw)}`);
   const open=Number(v.open??v.o),high=Number(v.high??v.h),low=Number(v.low??v.l),close=Number(v.close??v.c);
   if(![open,high,low,close].every(Number.isFinite))throw Error(`OTC candle ${index+1} has invalid OHLC values`);
   const rawVolume=v.volume??v.vol??v.tick_volume??v.tickVolume??v.v;
@@ -1051,7 +1062,7 @@ async function otcData(symbol){
   return {time:new Date(ms).toISOString(),timeMs:ms,open,high,low,close,volume:Number.isFinite(parsedVolume)&&parsedVolume>=0?parsedVolume:null};
  }).filter(c=>c.timeMs>0).sort((a,b)=>a.timeMs-b.timeMs);
  if(parsed.length<35)throw Error(`OTCharts returned ${parsed.length} usable candles; at least 35 are required.`);
- return parsed;
+ return normalizeAndDedupeOTCCandles(parsed);
 }
 async function fetchAsset(asset){
  if(!asset)throw new Error("No market selected.");
@@ -1066,7 +1077,7 @@ async function fetchAsset(asset){
   const cacheUsable=Array.isArray(cached)&&cached.length>=35&&
    Number.isFinite(tickAge)&&tickAge>=0&&tickAge<=10000&&
    Number.isFinite(candleAge)&&candleAge>=-30000&&candleAge<=65000;
-  if(cacheUsable)return cached.slice();
+  if(cacheUsable)return normalizeAndDedupeOTCCandles(cached);
   // Recovery path: refresh history only when the live cache is absent, incomplete or stale.
   return otcData(asset.symbol);
  }
@@ -1322,20 +1333,23 @@ function handleLiveTick(raw){
  if(!id||!Number.isFinite(price)||price<=0)return;
  // Refine UTC clock from provider timestamp when the feed supplies one.
  const providerStamp=tick.timestamp??tick.time??tick.ts;
- let providerMs=typeof providerStamp==="string"&&!/^\\d{10,13}$/.test(providerStamp)?Date.parse(providerStamp):Number(providerStamp);
- if(Number.isFinite(providerMs)&&providerMs>0){if(providerMs<1e12)providerMs*=1000;providerMs-=7200000;const delta=providerMs-Date.now();if(Math.abs(delta)<120000)apexServerClockOffsetMs=apexServerClockOffsetMs*.8+delta*.2;}
+ let providerMs=typeof providerStamp==="string"&&!/^\d{10,13}$/.test(providerStamp)?Date.parse(providerStamp):Number(providerStamp);
+ if(Number.isFinite(providerMs)&&providerMs>0){if(providerMs<1e12)providerMs*=1000;const delta=providerMs-Date.now();if(Math.abs(delta)<120000)apexServerClockOffsetMs=apexServerClockOffsetMs*.8+delta*.2;}
  const previous=liveTicks[id]?.price ?? results[id]?.price ?? price;
  const receivedAt=Date.now(),candleStart=Math.floor((receivedAt+apexServerClockOffsetMs)/30000)*30000-apexServerClockOffsetMs;
  liveTicks[id]={price,change:price-previous,time:tick.time||tick.timestamp||receivedAt,receivedAt};
  if(results[id]){
   const result=results[id];result.livePrice=price;result.liveChange=price-previous;result.liveUpdated=receivedAt;
-  const candles=result.candles||(result.candles=[]),last=candles[candles.length-1];
-  if(last&&Math.floor(Number(last.timeMs||0)/30000)===Math.floor(candleStart/30000)){
-   last.high=Math.max(last.high,price);last.low=Math.min(last.low,price);last.close=price;
+  const candles=result.candles||(result.candles=[]);
+  const bucketStart=Math.floor(candleStart/30000)*30000;
+  const bucketIndex=candles.findIndex(c=>Math.floor(Number(c.timeMs||0)/30000)===Math.floor(bucketStart/30000));
+  if(bucketIndex>=0){
+   const candle=candles[bucketIndex];candle.high=Math.max(Number(candle.high),price);candle.low=Math.min(Number(candle.low),price);candle.close=price;candle.live=true;
   }else{
-   candles.push({time:new Date(candleStart).toISOString(),timeMs:candleStart,open:last?last.close:price,high:price,low:price,close:price,live:true});
-   if(candles.length>240)candles.splice(0,candles.length-240);
+   const previous=normalizeAndDedupeOTCCandles(candles).filter(c=>c.timeMs<bucketStart).at(-1);
+   candles.push({time:new Date(bucketStart).toISOString(),timeMs:bucketStart,open:previous?previous.close:price,high:price,low:price,close:price,live:true});
   }
+  result.candles=normalizeAndDedupeOTCCandles(candles);
   const asset=ASSETS.find(x=>x.id===id);
   if(asset&&candles.length>=36){
    const closed=closedOneMinuteCandles(candles);
