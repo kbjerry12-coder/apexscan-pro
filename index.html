@@ -1212,6 +1212,31 @@ function drawChart(){
 
 // One browser EventSource owns the selected-pair OTCharts stream; the scanner can select from the full OTC pair list.
 let liveStream=null,liveStreamState="CONNECTING",liveTicks={},liveStreamRetryTimer=null,liveStreamRetryUntil=0;
+ // Account-level OTCharts plan permits one stream: coordinate browser tabs with a lightweight lease.
+ const APEX_STREAM_LOCK_KEY="apexscan_otc_stream_owner_v1";
+ const APEX_STREAM_TAB_ID="tab_"+Math.random().toString(36).slice(2)+Date.now().toString(36);
+ const APEX_STREAM_LOCK_TTL=25000;
+ let apexStreamLeaseTimer=null,apexStreamRetryDelay=12000;
+ function readApexStreamLease(){try{return JSON.parse(localStorage.getItem(APEX_STREAM_LOCK_KEY)||"null")}catch(e){return null}}
+ function claimApexStreamLease(){
+  const now=Date.now(),lease=readApexStreamLease();
+  if(lease&&lease.owner!==APEX_STREAM_TAB_ID&&Number(lease.expiresAt)>now)return false;
+  try{localStorage.setItem(APEX_STREAM_LOCK_KEY,JSON.stringify({owner:APEX_STREAM_TAB_ID,expiresAt:now+APEX_STREAM_LOCK_TTL}));}catch(e){}
+  const verify=readApexStreamLease();return !verify||verify.owner===APEX_STREAM_TAB_ID;
+ }
+ function renewApexStreamLease(){
+  const lease=readApexStreamLease();
+  if(lease?.owner===APEX_STREAM_TAB_ID){try{localStorage.setItem(APEX_STREAM_LOCK_KEY,JSON.stringify({owner:APEX_STREAM_TAB_ID,expiresAt:Date.now()+APEX_STREAM_LOCK_TTL}));}catch(e){}}
+ }
+ function releaseApexStreamLease(){
+  const lease=readApexStreamLease();
+  if(lease?.owner===APEX_STREAM_TAB_ID){try{localStorage.removeItem(APEX_STREAM_LOCK_KEY)}catch(e){}}
+ }
+ function startApexStreamLeaseRenewal(){
+  if(apexStreamLeaseTimer)return;
+  apexStreamLeaseTimer=setInterval(renewApexStreamLease,7000);
+ }
+ window.addEventListener("beforeunload",()=>{closeLiveStreamOnly();releaseApexStreamLease();if(apexStreamLeaseTimer)clearInterval(apexStreamLeaseTimer);});
 const OTC_SYMBOLS={EURUSD_otc:"OTC:EUR/USD",GBPUSD_otc:"OTC:GBP/USD",USDJPY_otc:"OTC:USD/JPY",AUDCAD_otc:"OTC:AUD/CAD",AUDCHF_otc:"OTC:AUD/CHF",CHFJPY_otc:"OTC:CHF/JPY",EURCHF_otc:"OTC:EUR/CHF",EURNZD_otc:"OTC:EUR/NZD",GBPAUD_otc:"OTC:GBP/AUD",UAHUSD_otc:"OTC:UAH/USD",USDARS_otc:"OTC:USD/ARS",USDBDT_otc:"OTC:USD/BDT",USDCLP_otc:"OTC:USD/CLP",USDPKR_otc:"OTC:USD/PKR",USDTHB_otc:"OTC:USD/THB",KESUSD_otc:"OTC:KES/USD",USDMYR_otc:"OTC:USD/MYR",SARCNY_otc:"OTC:SAR/CNY"};
 function setLiveStreamState(message,ok=false){
  liveStreamState=message;
@@ -1220,7 +1245,7 @@ function setLiveStreamState(message,ok=false){
 }
 let poQuoteCapturedAt=0,poQuoteValue=null,poQuotePair=null;
 function selectedOTCPair(){
- const id=$("mobileAsset")?.value||$("chartAsset")?.value||selectedChart;
+ const id=$("chartAsset")?.value||selectedChart||$("mobileAsset")?.value;
  return ASSETS.find(a=>a.id===id&&a.kind==="otc")||null;
 }
 function renderPOComparison(){
@@ -1331,47 +1356,55 @@ function closeLiveStreamOnly(){
 }
 function connectLiveStream(){
  if(liveStream||typeof EventSource==="undefined")return;
- if(![...watch].some(id=>ASSETS.find(a=>a.id===id)?.kind==="otc")){
-  setLiveStreamState("OFF · no OTC markets selected");return;
- }
+ const selectedAsset=selectedOTCPair();
+ if(!selectedAsset){setLiveStreamState("OFF · select an OTC pair");return;}
  const remaining=Math.max(0,liveStreamRetryUntil-Date.now());
  if(remaining>0){
   setLiveStreamState("RATE LIMIT COOLDOWN · retry in "+Math.ceil(remaining/1000)+"s");
   if(!liveStreamRetryTimer)liveStreamRetryTimer=setTimeout(()=>{liveStreamRetryTimer=null;connectLiveStream()},remaining);
   return;
  }
- setLiveStreamState("connecting to one shared connection…");
- const selectedId=$("mobileAsset")?.value||selectedChart;
- const selectedAsset=ASSETS.find(a=>a.id===selectedId&&a.kind==="otc")||ASSETS.find(a=>a.id===selectedChart&&a.kind==="otc");
- const streamSymbol=selectedAsset?.symbol||"EURUSD_otc";
+ if(!claimApexStreamLease()){
+  setLiveStreamState("WAITING · another APEXSCAN tab owns the stream");
+  if(!liveStreamRetryTimer)liveStreamRetryTimer=setTimeout(()=>{liveStreamRetryTimer=null;connectLiveStream()},12000);
+  return;
+ }
+ startApexStreamLeaseRenewal();
+ setLiveStreamState("connecting one selected-pair stream…");
+ const streamSymbol=selectedAsset.symbol||"EURUSD_otc";
  liveStream=new EventSource("/.netlify/functions/otc-stream?symbol="+encodeURIComponent(streamSymbol));
  liveStream.addEventListener("connected",e=>{
-  setLiveStreamState("CONNECTED · waiting for ticks",true);
+  apexStreamRetryDelay=12000;
+  setLiveStreamState("CONNECTED · "+selectedAsset.name+" · waiting for ticks",true);
  });
  liveStream.addEventListener("tick",handleLiveTick);
- liveStream.addEventListener("dropped",()=>setLiveStreamState("provider dropped a symbol"));
+ liveStream.addEventListener("dropped",()=>setLiveStreamState("provider dropped selected symbol"));
  liveStream.addEventListener("closed",()=>setLiveStreamState("provider closed stream"));
  liveStream.addEventListener("stream_error",e=>{
   let error={};try{error=JSON.parse(e.data)}catch(err){}
   const message=error.error||"OTCharts stream error";
   const details=error.details?(typeof error.details==="string"?error.details:JSON.stringify(error.details)):"";
   const status=error.status?(" HTTP "+error.status):"";
-  const retrySeconds=Number(error.retryAfter||error.details?.retryAfter||0)||((error.status===429)?20:5);
-  if(error.status===429){liveStreamRetryUntil=Date.now()+retrySeconds*1000;}
-  setLiveStreamState("ERROR"+status+" · "+message+(details?" · "+details:""));
+  const providerRetry=Number(error.retryAfter||error.details?.retryAfter||0);
+  const retrySeconds=providerRetry||((error.status===429)?60:12);
+  if(error.status===429){
+   liveStreamRetryUntil=Date.now()+Math.max(30,retrySeconds+10)*1000;
+   apexStreamRetryDelay=Math.min(120000,Math.max(30000,apexStreamRetryDelay*2));
+  }else{liveStreamRetryUntil=Date.now()+Math.max(5,retrySeconds)*1000;}
+  setLiveStreamState("ERROR"+status+" · "+message+(details?" · "+details:"")+" · retry paused");
   console.error("OTCharts stream error:",error);
   closeLiveStreamOnly();
-  if(!liveStreamRetryTimer){
-   liveStreamRetryTimer=setTimeout(()=>{liveStreamRetryTimer=null;connectLiveStream()},Math.max(1000,retrySeconds*1000));
-  }
+  if(!liveStreamRetryTimer)liveStreamRetryTimer=setTimeout(()=>{liveStreamRetryTimer=null;connectLiveStream()},Math.max(1000,liveStreamRetryUntil-Date.now()));
  });
  liveStream.onmessage=handleLiveTick;
  liveStream.onopen=()=>setLiveStreamState("OPEN · awaiting first tick",true);
  liveStream.onerror=()=>{
   if(!liveStream)return;
-  setLiveStreamState("STREAM INTERRUPTED · closing to prevent reconnect loop");
+  setLiveStreamState("STREAM INTERRUPTED · closed; guarded retry");
   closeLiveStreamOnly();
-  if(!liveStreamRetryTimer)liveStreamRetryTimer=setTimeout(()=>{liveStreamRetryTimer=null;connectLiveStream()},5000);
+  liveStreamRetryUntil=Date.now()+apexStreamRetryDelay;
+  apexStreamRetryDelay=Math.min(60000,apexStreamRetryDelay*2);
+  if(!liveStreamRetryTimer)liveStreamRetryTimer=setTimeout(()=>{liveStreamRetryTimer=null;connectLiveStream()},Math.max(1000,liveStreamRetryUntil-Date.now()));
  };
 }
 let pairSwitchTimer=null, pairSwitchGeneration=0;
