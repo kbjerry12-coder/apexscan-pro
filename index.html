@@ -1912,7 +1912,7 @@ function analyze(candles,asset){
     ?`WAIT · ${evidence}/5 directional checks align; need at least 3 matching confluences and a fresh quote.`
     :`${rawDirection==="CALL"?"Bullish":"Bearish"} close confirmed by ${confluences.slice(0,3).join(", ")}.`;
   const breakdown={trend:trend==="UP"?"MACD bullish":trend==="DOWN"?"MACD bearish":"MACD mixed",momentum:`MACD histogram ${macd?macd.histogram.toPrecision(5):"warming up"} · ${histShiftUp?"rising":histShiftDown?"falling":"flat"}`,volatility:`${(last.close?atr/last.close*100:0).toFixed(3)}% ATR`,price:shape.bull?"Bullish candle":shape.bear?"Bearish candle":"Doji / neutral",structure:`Support ${support??"—"} · Resistance ${resistance??"—"}`,feed:fresh?"Fresh provider data":"Stale / delayed"};
-  const result={direction:rawDirection,rawDirection,signalLevel:rawDirection==="WAIT"?(weightedScore>=55?"EARLY":"WAIT"):(score>=99?"STRONG":"QUALIFIED"),score,confidence_score:score,reason,fresh,age,trend,entry:+last.close,quality:shape.bodyPct,candleTime:last.time,candleTimeMs:Number(last.timeMs||0),atr,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,support,resistance,supportTouches:levels.support?.touches??0,resistanceTouches:levels.resistance?.touches??0,nearSupport:supportReject,nearResistance:resistanceReject,detected_patterns:names,macro_patterns:patterns.macro,confluences,evidence_count:evidence,recommended_expiry:expiry,breakdown};
+  const result={direction:rawDirection,rawDirection,signalLevel:rawDirection==="WAIT"?(weightedScore>=55?"EARLY":"WAIT"):(score>=80?"STRONG":score>=70?"QUALIFIED":"EARLY QUALIFIED"),score,confidence_score:score,reason,fresh,age,trend,entry:+last.close,quality:shape.bodyPct,candleTime:last.time,candleTimeMs:Number(last.timeMs||0),atr,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,support,resistance,supportTouches:levels.support?.touches??0,resistanceTouches:levels.resistance?.touches??0,nearSupport:supportReject,nearResistance:resistanceReject,detected_patterns:names,macro_patterns:patterns.macro,confluences,evidence_count:evidence,recommended_expiry:expiry,breakdown};
   result.structured={signal:rawDirection==="CALL"?"BUY":rawDirection==="PUT"?"SELL":"WAIT",confidence_score:score,detected_patterns:[...names,...patterns.macro,...(supportReject?["Support Bounce"]:[]),...(resistanceReject?["Resistance Rejection"]:[]),...(macdBull?["MACD Bullish Momentum Shift"]:macdBear?["MACD Bearish Momentum Shift"]:[])],recommended_expiry:expiry,reasoning:reason};
   window.APEX_LAST_ANALYSIS=result.structured;
   return result;
@@ -2018,33 +2018,6 @@ function apexLayerScore(bars,asset){
  const ema=(a,p)=>{if(a.length<p)return NaN;const k=2/(p+1);let v=a.slice(0,p).reduce((sum,x)=>sum+x,0)/p;for(let i=p;i<a.length;i++)v=a[i]*k+v*(1-k);return v;};
  const rsiWilder=(values,period=14)=>{if(values.length<=period)return NaN;let gain=0,loss=0;for(let i=1;i<=period;i++){const d=values[i]-values[i-1];gain+=Math.max(0,d);loss+=Math.max(0,-d);}let ag=gain/period,al=loss/period;for(let i=period+1;i<values.length;i++){const d=values[i]-values[i-1];ag=(ag*(period-1)+Math.max(0,d))/period;al=(al*(period-1)+Math.max(0,-d))/period;}return al===0?100:100-100/(1+ag/al);};
  const rsi=rsiWilder(closes,14),previousRsi=rsiWilder(closes.slice(0,-1),14);
- // Signal authority restricted to Donchian Channel (20), DeMarker (14), and Parabolic SAR (0.02/0.20).
- const donPeriod=20,donRecent=bars.slice(-donPeriod),donHigh=Math.max(...donRecent.map(b=>Number(b.high)),),donLow=Math.min(...donRecent.map(b=>Number(b.low))),donMid=(donHigh+donLow)/2;
- const donPrev=bars.slice(-donPeriod-1,-1),donPrevHigh=donPrev.length?Math.max(...donPrev.map(b=>Number(b.high))):donHigh,donPrevLow=donPrev.length?Math.min(...donPrev.map(b=>Number(b.low))):donLow;
- const donchianUp=Number(last.close)>donPrevHigh,donchianDown=Number(last.close)<donPrevLow,donchianBull=donchianUp||Number(last.close)>donMid&&Number(last.close)>Number(prev.close),donchianBear=donchianDown||Number(last.close)<donMid&&Number(last.close)<Number(prev.close);
- const demPeriod=14,demUp=[],demDown=[];for(let i=Math.max(1,n-demPeriod);i<n;i++){demUp.push(Math.max(highs[i]-highs[i-1],0));demDown.push(Math.max(lows[i-1]-lows[i],0));}
- const demAvgUp=demUp.length?demUp.reduce((a,b)=>a+b,0)/demUp.length:0,demAvgDown=demDown.length?demDown.reduce((a,b)=>a+b,0)/demDown.length:0,demSum=demAvgUp+demAvgDown,demarker=demSum?demAvgUp/demSum:0.5;
- const demarkerBull=demarker>=.55&&demarker>.5,demarkerBear=demarker<=.45&&demarker<.5;
- // Calculate Parabolic SAR iteratively across bars, clamped to the prior two highs/lows.
- let sarBull=Number(bars[1].close)>=Number(bars[0].close),sar= sarBull?Number(bars[0].low):Number(bars[0].high),ep=sarBull?Number(bars[1].high):Number(bars[1].low),af=.02;
- for(let i=2;i<n;i++){let next=sar+af*(ep-sar);next=sarBull?Math.min(next,Number(bars[i-1].low),Number(bars[i-2].low)):Math.max(next,Number(bars[i-1].high),Number(bars[i-2].high));if(sarBull&&Number(bars[i].low)<next){sarBull=false;sar=ep;ep=Number(bars[i].low);af=.02;}else if(!sarBull&&Number(bars[i].high)>next){sarBull=true;sar=ep;ep=Number(bars[i].high);af=.02;}else{sar=next;if(sarBull&&Number(bars[i].high)>ep){ep=Number(bars[i].high);af=Math.min(.2,af+.02);}if(!sarBull&&Number(bars[i].low)<ep){ep=Number(bars[i].low);af=Math.min(.2,af+.02);}}}
- const psarBull=Number(last.close)>sar,psarBear=Number(last.close)<sar;
- // Added early-confluence indicators: Accelerator Oscillator, Bollinger Band Width, Stochastic, Schaff Trend Cycle.
- const sma=(arr,period)=>arr.length>=period?arr.slice(-period).reduce((a,b)=>a+b,0)/period:NaN;
- const medianPrices=bars.map(b=>(Number(b.high)+Number(b.low))/2);
- const aoSeries=medianPrices.map((_,i)=>i>=33?sma(medianPrices.slice(0,i+1),5)-sma(medianPrices.slice(0,i+1),34):NaN);
- const ao=sma(aoSeries.filter(Number.isFinite),1),aoPrev=aoSeries.filter(Number.isFinite).at(-2),accelerator=Number.isFinite(ao)?ao-sma(aoSeries.filter(Number.isFinite),5):NaN;
- const acceleratorBull=Number.isFinite(accelerator)&&accelerator>0&&accelerator> (Number.isFinite(aoPrev)?aoPrev:0),acceleratorBear=Number.isFinite(accelerator)&&accelerator<0&&accelerator<(Number.isFinite(aoPrev)?aoPrev:0);
- const bbPeriod=20,bbSlice=closes.slice(-bbPeriod),bbMean=sma(closes,bbPeriod),bbSd=bbSlice.length===bbPeriod?Math.sqrt(bbSlice.reduce((sum,x)=>sum+(x-bbMean)**2,0)/bbPeriod):NaN,bbWidth=Number.isFinite(bbMean)&&bbMean!==0?((4*bbSd)/Math.abs(bbMean))*100:NaN;
- const bbWidthPrev=closes.length>=bbPeriod+1?(()=>{const v=closes.slice(-bbPeriod-1,-1),m=v.reduce((a,b)=>a+b,0)/v.length,sd=Math.sqrt(v.reduce((sum,x)=>sum+(x-m)**2,0)/v.length);return (4*sd/Math.abs(m))*100;})():NaN;
- const bbSqueeze=Number.isFinite(bbWidth)&&Number.isFinite(bbWidthPrev)&&bbWidth<bbWidthPrev*.92,bbExpansion=Number.isFinite(bbWidth)&&Number.isFinite(bbWidthPrev)&&bbWidth>bbWidthPrev*1.08;
- const stochRaw=[];for(let i=13;i<n;i++){const hh=Math.max(...highs.slice(i-13,i+1)),ll=Math.min(...lows.slice(i-13,i+1));stochRaw.push(hh===ll?50:((closes[i]-ll)/(hh-ll))*100);}
- const stochK=sma(stochRaw,3),stochD=sma(stochRaw,3),stochKPrev=sma(stochRaw.slice(0,-1),3),stochBull=Number.isFinite(stochK)&&Number.isFinite(stochD)&&stochK>stochD&&stochKPrev<=stochD&&stochK<85,stochBear=Number.isFinite(stochK)&&Number.isFinite(stochD)&&stochK<stochD&&stochKPrev>=stochD&&stochK>15;
- // Schaff Trend Cycle: MACD line -> stochastic normalization -> second smoothing -> cycle.
- const stcMacdSeries=[];for(let i=0;i<n;i++){if(i<25){stcMacdSeries.push(NaN);continue;}const short=ema(closes.slice(0,i+1),23),long=ema(closes.slice(0,i+1),50);stcMacdSeries.push(short-long);}
- const stcStep1=[];for(let i=0;i<n;i++){const v=stcMacdSeries[i],slice=stcMacdSeries.slice(Math.max(0,i-9),i+1).filter(Number.isFinite);stcStep1.push(slice.length<10||!Number.isFinite(v)?NaN:(Math.max(...slice)===Math.min(...slice)?50:(v-Math.min(...slice))/(Math.max(...slice)-Math.min(...slice))*100));}
- const stcStep2=stcStep1.map((v,i)=>{const slice=stcStep1.slice(Math.max(0,i-2),i+1).filter(Number.isFinite);return slice.length===3?slice.reduce((a,b)=>a+b,0)/3:NaN;});
- const stc=sma(stcStep2.filter(Number.isFinite),3),stcPrev=sma(stcStep2.filter(Number.isFinite).slice(0,-1),3),stcBull=Number.isFinite(stc)&&Number.isFinite(stcPrev)&&stc>stcPrev&&stc<75,stcBear=Number.isFinite(stc)&&Number.isFinite(stcPrev)&&stc<stcPrev&&stc>25;
  const e9=ema(closes,9),e21=ema(closes,21),e34=ema(closes,34),macd=macdValues(closes,12,26,9);
  const trueRanges=[];for(let i=1;i<n;i++)trueRanges.push(Math.max(Number(bars[i].high)-Number(bars[i].low),Math.abs(Number(bars[i].high)-Number(bars[i-1].close)),Math.abs(Number(bars[i].low)-Number(bars[i-1].close))));
  const atr=trueRanges.slice(-14).reduce((a,b)=>a+b,0)/Math.max(1,Math.min(14,trueRanges.length));
@@ -2065,44 +2038,53 @@ function apexLayerScore(bars,asset){
  const structureDown=closes.at(-1)<closes.at(-4)&&lows.at(-1)<=Math.min(...lows.slice(-4,-1))&&highs.at(-1)<=Math.max(...highs.slice(-4,-1));
  const tick=liveTicks[asset.id],tickAge=tick?Math.max(0,(Date.now()-Number(tick.receivedAt||0))/1000):Infinity,candleAge=Math.max(0,(Date.now()-(Number(last.timeMs)+APEX_BAR_MS))/1000),fresh=tickAge<=8||candleAge<=38;
  const volatility=atr/Math.max(Math.abs(Number(last.close)),1e-12)*100;
- // CALL/PUT directional votes are ONLY these four requested indicators.
- const bullish=[donchianBull,demarkerBull,psarBull].filter(Boolean).length;
- const bearish=[donchianBear,demarkerBear,psarBear].filter(Boolean).length;
+ const bullish=[trendUp,momentumUp,rsiUp,bullCandle,structureUp,supportReject].filter(Boolean).length;
+ const bearish=[trendDown,momentumDown,rsiDown,bearCandle,structureDown,resistanceReject].filter(Boolean).length;
  const layers=[
-  {name:"DONCHIAN CHANNEL (20)",value:donchianUp?"BULL BREAKOUT":donchianDown?"BEAR BREAKOUT":donchianBull?"BULL BIAS":donchianBear?"BEAR BIAS":"NEUTRAL",bull:donchianBull,bear:donchianBear},
-  {name:"DEMARKER (14)",value:demarkerBull?"BULLISH":demarkerBear?"BEARISH":"NEUTRAL",bull:demarkerBull,bear:demarkerBear},
-  {name:"PARABOLIC SAR (0.02/0.20)",value:psarBull?"BULLISH":"BEARISH",bull:psarBull,bear:psarBear},
+  {name:"TREND REGIME",value:trendUp?"UPTREND":trendDown?"DOWNTREND":"MIXED",bull:trendUp,bear:trendDown},
+  {name:"MACD + MOMENTUM",value:momentumUp?"BULLISH CONFIRMATION":momentumDown?"BEARISH CONFIRMATION":"NO ALIGNMENT",bull:momentumUp,bear:momentumDown},
+  {name:"RSI 14",value:`${Number.isFinite(rsi)?rsi.toFixed(1):"—"} · ${rsiUp?"RISING ABOVE 50":rsiDown?"FALLING BELOW 50":"NO DIRECTIONAL CONFIRMATION"}`,bull:rsiUp,bear:rsiDown},
+  {name:"CANDLE ACTION",value:bullCandle?"BULLISH CLOSE":bearCandle?"BEARISH CLOSE":"INDECISION",bull:bullCandle,bear:bearCandle},
+  {name:"MARKET STRUCTURE",value:structureUp?"HIGHER SWING":structureDown?"LOWER SWING":"NO BREAK",bull:structureUp,bear:structureDown},
+  {name:"SUPPORT / RESISTANCE",value:supportReject?"SUPPORT REJECTION":resistanceReject?"RESISTANCE REJECTION":"NO LEVEL REJECTION",bull:supportReject,bear:resistanceReject}
  ];
  let rawDirection="WAIT",score=0,reason="No directional edge: wait for the next completed candle.";
  const aligned=Math.max(bullish,bearish),dominant=bullish>bearish?"CALL":bearish>bullish?"PUT":"WAIT";
  const chop=bodyPct<.12||(!trendUp&&!trendDown&&Math.abs(momentum)<atr*.18),extreme=volatility>.18;
- const rsiExhausted=false; // RSI is not a signal input or veto.
- // Signal engine restricted to Donchian Channel, DeMarker, and Parabolic SAR only.
- // Equal 25-point weighting prevents any one indicator from controlling the callout.
- const weights={donchian:100/3,demarker:100/3,psar:100/3};
- const bullScore=(donchianBull?100/3:0)+(demarkerBull?100/3:0)+(psarBull?100/3:0);
- const bearScore=(donchianBear?100/3:0)+(demarkerBear?100/3:0)+(psarBear?100/3:0);
+ const rsiExhausted=(dominant==="CALL"&&rsi>=76)||(dominant==="PUT"&&rsi<=24);
+ // Weighted directional evidence replaces the old hard requirement of 4 out of 6.
+ // MACD and raw price momentum stay in ONE combined bucket to avoid double-counting.
+ const weights={trend:20,momentum:20,rsi:20,candle:15,structure:15,levels:10};
+ const bullScore=(trendUp?weights.trend:0)+(momentumUp?weights.momentum:0)+(rsiUp?weights.rsi:0)+(bullCandle?weights.candle:0)+(structureUp?weights.structure:0)+(supportReject?weights.levels:0);
+ const bearScore=(trendDown?weights.trend:0)+(momentumDown?weights.momentum:0)+(rsiDown?weights.rsi:0)+(bearCandle?weights.candle:0)+(structureDown?weights.structure:0)+(resistanceReject?weights.levels:0);
  const edge=Math.abs(bullScore-bearScore),weightedDirection=bullScore>bearScore?"CALL":bearScore>bullScore?"PUT":"WAIT";
  const weightedScore=Math.max(bullScore,bearScore);
- // Early heads-up: at least 2 of these 3 indicators align; confirmed call requires all 3.
- const earlyEdge=edge>=33,earlyEligible=fresh&&weightedDirection!=="WAIT"&&weightedScore>=66&&earlyEdge&&aligned>=2;
+ // EARLY opportunities are heads-up alerts only: lower threshold, but still require
+ // fresh data, two aligned evidence layers, directional separation and no risk veto.
+ const earlyEdge=edge>=10,earlyEligible=fresh&&!chop&&!extreme&&!rsiExhausted&&weightedDirection!=="WAIT"&&weightedScore>=35&&earlyEdge&&aligned>=2;
  const earlyRawDirection=earlyEligible?weightedDirection:"WAIT";
  const weightedLayers=[
-  {name:"DONCHIAN CHANNEL (20) · 33",value:donchianUp?"BULL BREAKOUT":donchianDown?"BEAR BREAKOUT":donchianBull?"BULL BIAS":donchianBear?"BEAR BIAS":"NEUTRAL",bull:donchianBull,bear:donchianBear},
-  {name:"DEMARKER (14) · 33",value:`${(demarker*100).toFixed(1)}% · ${demarkerBull?"BULLISH":demarkerBear?"BEARISH":"NEUTRAL"}`,bull:demarkerBull,bear:demarkerBear},
-  {name:"PARABOLIC SAR (0.02/0.20) · 33",value:`SAR ${sar.toPrecision(6)} · ${psarBull?"BULLISH":"BEARISH"}`,bull:psarBull,bear:psarBear},
+  {name:"TREND · 20",value:trendUp?"BULL +20":trendDown?"BEAR +20":"NEUTRAL",bull:trendUp,bear:trendDown},
+  {name:"MACD + MOMENTUM · 20",value:momentumUp?"BULL +20":momentumDown?"BEAR +20":"NEUTRAL",bull:momentumUp,bear:momentumDown},
+  {name:"RSI 14 · 20",value:(Number.isFinite(rsi)?rsi.toFixed(1):"—")+" · "+(rsiUp?"BULL +20":rsiDown?"BEAR +20":"NEUTRAL"),bull:rsiUp,bear:rsiDown},
+  {name:"CANDLE ACTION · 15",value:bullCandle?"BULL +15":bearCandle?"BEAR +15":"NEUTRAL",bull:bullCandle,bear:bearCandle},
+  {name:"STRUCTURE · 15",value:structureUp?"BULL +15":structureDown?"BEAR +15":"NEUTRAL",bull:structureUp,bear:structureDown},
+  {name:"S/R REJECTION · 10",value:supportReject?"BULL +10":resistanceReject?"BEAR +10":"NEUTRAL",bull:supportReject,bear:resistanceReject}
  ];
  if(!fresh)reason="WAIT · feed is stale; a fresh live tick or newly closed candle is required.";
- else if(weightedDirection!=="WAIT"&&weightedScore>=99&&edge>=33){
+ else if(chop)reason="WAIT · compression / indecision detected; avoid forcing a direction.";
+ else if(extreme)reason="WAIT · volatility expansion is outside the configured risk band.";
+ else if(rsiExhausted)reason="WAIT · RSI "+rsi.toFixed(1)+" is stretched; avoid chasing an exhausted move.";
+ else if(weightedDirection!=="WAIT"&&weightedScore>=65&&edge>=15){
   rawDirection=weightedDirection;score=weightedScore;
-  const level=score>=99?"STRONG":"QUALIFIED";
-  reason=level+" "+rawDirection+" · "+score+"/100 from the three selected indicators with "+edge+"-point directional separation. Signal releases only after candle close + 5 seconds.";
+  const level=score>=80?"STRONG":score>=70?"QUALIFIED":"EARLY QUALIFIED";
+  reason=level+" "+rawDirection+" · weighted evidence "+score+"/100 with "+edge+"-point directional separation. RSI "+(Number.isFinite(rsi)?rsi.toFixed(1):"—")+"; MACD/momentum counted as one layer. Signal releases only after candle close + 5 seconds.";
  }else{
   score=weightedScore;
-  reason="EARLY SETUP · "+(weightedDirection==="WAIT"?"no clear side":weightedDirection+" bias")+" at "+weightedScore+"/100; need all 3 indicators aligned and at least 33 points of directional separation. Continue monitoring.";
+  reason="EARLY SETUP · "+(weightedDirection==="WAIT"?"no clear side":weightedDirection+" bias")+" at "+weightedScore+"/100; need 65 points and at least 15 points of directional separation. Continue monitoring.";
  }
  const entry=Number(last.close),stop=rawDirection==="CALL"?Math.min(Number(last.low),entry-atr):rawDirection==="PUT"?Math.max(Number(last.high),entry+atr):null,target=rawDirection==="CALL"?entry+(entry-stop)*1.5:rawDirection==="PUT"?entry-(stop-entry)*1.5:null;
- const result={direction:rawDirection,rawDirection,earlyRawDirection,earlyDirection:earlyRawDirection,earlyScore:earlyEligible?weightedScore:0,earlyEdge:earlyEligible?edge:0,earlyReason:earlyEligible?`Early ${earlyRawDirection} setup · ${weightedScore}/100 with ${edge}-point separation from the three selected indicators. Heads-up only; wait for confirmed entry.`:"No early opportunity currently qualifies.",score,confidence_score:score,signalLevel:rawDirection==="WAIT"?(earlyEligible?"EARLY OPPORTUNITY":weightedScore>=55?"EARLY":"WAIT"):(score>=99?"STRONG":"QUALIFIED"),reason,fresh,age:Math.min(tickAge,candleAge),trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry,stopLoss:stop,takeProfit:target,candleTime:last.time,candleTimeMs:Number(last.timeMs),recommended_expiry:"30s",atr,rsi,previousRsi,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,donchian:{upper:donHigh,lower:donLow,mid:donMid,bull:donchianBull,bear:donchianBear},demarker:demarker,parabolicSar:sar,psarDirection:psarBull?"BULL":"BEAR",acceleratorOscillator:accelerator,stochastic:{k:stochK,d:stochD},schaffTrendCycle:stc,bollingerBandWidth:bbWidth,bollingerSqueeze:bbSqueeze,bollingerExpansion:bbExpansion,support:levels.support?.price??null,resistance:levels.resistance?.price??null,detected_patterns:apexCandleRead(bars).patterns?.map(x=>x.name)||[],confluences:layers.filter(x=>rawDirection==="CALL"?x.bull:rawDirection==="PUT"?x.bear:false).map(x=>x.name),evidence_count:aligned,weighted_score:score,bull_score:bullScore,bear_score:bearScore,score_edge:edge,layers:weightedLayers,breakdown:{donchian:weightedLayers[0].value,demarker:weightedLayers[1].value,psar:weightedLayers[2].value,feed:fresh?`FRESH · tick ${tickAge.toFixed(1)}s / candle ${candleAge.toFixed(1)}s`:`STALE · candle ${candleAge.toFixed(1)}s`}};
+ const result={direction:rawDirection,rawDirection,earlyRawDirection,earlyDirection:earlyRawDirection,earlyScore:earlyEligible?weightedScore:0,earlyEdge:earlyEligible?edge:0,earlyReason:earlyEligible?`Early ${earlyRawDirection} setup · ${weightedScore}/100 with ${edge}-point separation. Heads-up only; wait for confirmed entry.`:"No early opportunity currently qualifies.",score,confidence_score:score,signalLevel:rawDirection==="WAIT"?(earlyEligible?"EARLY OPPORTUNITY":weightedScore>=55?"EARLY":"WAIT"):(score>=80?"STRONG":score>=70?"QUALIFIED":"EARLY QUALIFIED"),reason,fresh,age:Math.min(tickAge,candleAge),trend:trendUp?"UP":trendDown?"DOWN":"MIXED",entry,stopLoss:stop,takeProfit:target,candleTime:last.time,candleTimeMs:Number(last.timeMs),recommended_expiry:"30s",atr,rsi,previousRsi,macdLine:macd?.line??null,macdSignal:macd?.signal??null,macdHistogram:macd?.histogram??null,support:levels.support?.price??null,resistance:levels.resistance?.price??null,detected_patterns:apexCandleRead(bars).patterns?.map(x=>x.name)||[],confluences:layers.filter(x=>rawDirection==="CALL"?x.bull:rawDirection==="PUT"?x.bear:false).map(x=>x.name),evidence_count:aligned,weighted_score:score,bull_score:bullScore,bear_score:bearScore,score_edge:edge,layers:weightedLayers,breakdown:{trend:weightedLayers[0].value,momentum:weightedLayers[1].value,rsi:weightedLayers[2].value,price:weightedLayers[3].value,structure:weightedLayers[4].value,levels:weightedLayers[5].value,volatility:`ATR ${volatility.toFixed(4)}%`,feed:fresh?`FRESH · tick ${tickAge.toFixed(1)}s / candle ${candleAge.toFixed(1)}s`:`STALE · candle ${candleAge.toFixed(1)}s`}};
  result.structured={signal:rawDirection==="CALL"?"BUY":rawDirection==="PUT"?"SELL":"WAIT",confidence_score:score,detected_patterns:[...result.detected_patterns,...result.confluences],recommended_expiry:"30s",reasoning:reason};return result;
 }
 analyze=function(candles,asset){return apexLayerScore(candles,asset);};
