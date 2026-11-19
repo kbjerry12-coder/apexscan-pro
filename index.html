@@ -2447,4 +2447,57 @@ updateTop=function(rows){
 })();
 </script>
 
+<script id="apex-v95-startup-clock-fix">
+// V9.5 authoritative startup, status, and 30-second clock repair
+(()=>{
+ const BAR=30000;
+ const serverNow=()=>Date.now()+(Number(apexServerClockOffsetMs)||0);
+ const remaining=()=>Math.max(1,Math.min(30,Math.ceil((BAR-(serverNow()%BAR))/1000)));
+ // Clear stale "paused" status left by legacy initialization layers.
+ running=true;
+ if($('scanStateBadge'))$('scanStateBadge').textContent='AUTO SCAN ACTIVE';
+ if($('statusText'))status('AUTO SCANNER ACTIVE · SELECTED PAIR',true);
+ if($('progressText'))$('progressText').textContent='Loading selected-pair candle history · initial scan';
+ // One authoritative display clock for both countdown widgets.
+ const oldUpdate=updateCountdowns;
+ updateCountdowns=function(){
+  try{oldUpdate();}catch(e){console.warn('Legacy countdown refresh skipped',e)}
+  const left=remaining(),txt=`00:${String(left).padStart(2,'0')}`;
+  if($('candleCountdown'))$('candleCountdown').textContent=txt;
+  if($('signalCountdown'))$('signalCountdown').textContent=txt;
+  apexRenderIntelligentPanel();
+ };
+ // Replace layered scheduler with one 30-second clock loop and bucket lock.
+ clearInterval(cycle);cycle=null;
+ let lastBucket='';
+ const heartbeat=()=>{
+  const now=serverNow(),bucket=Math.floor(now/BAR),key=String(bucket),left=remaining();
+  apexRenderIntelligentPanel();
+  const txt=`00:${String(left).padStart(2,'0')}`;
+  if($('candleCountdown'))$('candleCountdown').textContent=txt;
+  if($('signalCountdown'))$('signalCountdown').textContent=txt;
+  if($('scanStateBadge'))$('scanStateBadge').textContent=busy?'SCAN IN PROGRESS':'AUTO SCAN ACTIVE';
+  if($('progressText')&&!busy)$('progressText').textContent=`Next automatic scan in ${txt} · selected pair only`;
+  if(left===1&&key!==lastBucket&&!busy&&running){
+   lastBucket=key;
+   apexV93AutoScanPermit=true;
+   if($('progressText'))$('progressText').textContent='00:01 · scanning selected pair';
+   Promise.resolve(scan()).catch(e=>console.error('Scheduled scan failed',e)).finally(()=>{
+    apexV93AutoScanPermit=false;
+    if($('scanStateBadge'))$('scanStateBadge').textContent='AUTO SCAN ACTIVE';
+   });
+  }
+ };
+ cycle=setInterval(heartbeat,100);
+ // Suppress legacy manual controls; automatic scan is active and single-triggered.
+ if($('startBtn'))$('startBtn').onclick=()=>{};
+ if($('pauseBtn'))$('pauseBtn').onclick=()=>{};
+ if($('scanNow')){$('scanNow').disabled=true;$('scanNow').onclick=()=>{};$('scanNow').textContent='AUTO SCAN\nAT 00:01';
+  $('scanNow').classList.remove('scan-active');}
+ // Run one permitted startup fetch so the UI does not sit at 0 candles until the next boundary.
+ if(!busy){apexV93AutoScanPermit=true;Promise.resolve(scan()).catch(e=>console.error('Startup scan failed',e)).finally(()=>{apexV93AutoScanPermit=false;});}
+ heartbeat();
+})();
+
+</script>
 </body></html>
