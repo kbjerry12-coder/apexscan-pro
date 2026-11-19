@@ -1226,28 +1226,38 @@ let liveStream=null,liveStreamState="CONNECTING",liveTicks={},liveStreamRetryTim
  // Account-level OTCharts plan permits one stream: coordinate browser tabs with a lightweight lease.
  const APEX_STREAM_LOCK_KEY="apexscan_otc_stream_owner_v1";
  const APEX_STREAM_TAB_ID="tab_"+Math.random().toString(36).slice(2)+Date.now().toString(36);
- const APEX_STREAM_LOCK_TTL=25000;
- let apexStreamLeaseTimer=null,apexStreamRetryDelay=12000;
+ const APEX_STREAM_LOCK_TTL=30000;
+ let apexStreamLeaseTimer=null,apexStreamLeaseGuard=null,apexStreamRetryDelay=12000,liveStreamPair=null;
  function readApexStreamLease(){try{return JSON.parse(localStorage.getItem(APEX_STREAM_LOCK_KEY)||"null")}catch(e){return null}}
+ function ownsApexStreamLease(){const lease=readApexStreamLease();return !!lease&&lease.owner===APEX_STREAM_TAB_ID&&Number(lease.expiresAt)>Date.now();}
  function claimApexStreamLease(){
   const now=Date.now(),lease=readApexStreamLease();
   if(lease&&lease.owner!==APEX_STREAM_TAB_ID&&Number(lease.expiresAt)>now)return false;
-  try{localStorage.setItem(APEX_STREAM_LOCK_KEY,JSON.stringify({owner:APEX_STREAM_TAB_ID,expiresAt:now+APEX_STREAM_LOCK_TTL}));}catch(e){}
-  const verify=readApexStreamLease();return !verify||verify.owner===APEX_STREAM_TAB_ID;
+  try{localStorage.setItem(APEX_STREAM_LOCK_KEY,JSON.stringify({owner:APEX_STREAM_TAB_ID,expiresAt:now+APEX_STREAM_LOCK_TTL,claimedAt:now}));}catch(e){return false;}
+  const verify=readApexStreamLease();return !!verify&&verify.owner===APEX_STREAM_TAB_ID;
  }
  function renewApexStreamLease(){
   const lease=readApexStreamLease();
-  if(lease?.owner===APEX_STREAM_TAB_ID){try{localStorage.setItem(APEX_STREAM_LOCK_KEY,JSON.stringify({owner:APEX_STREAM_TAB_ID,expiresAt:Date.now()+APEX_STREAM_LOCK_TTL}));}catch(e){}}
+  if(lease?.owner===APEX_STREAM_TAB_ID){try{localStorage.setItem(APEX_STREAM_LOCK_KEY,JSON.stringify({...lease,expiresAt:Date.now()+APEX_STREAM_LOCK_TTL}));}catch(e){}}
  }
  function releaseApexStreamLease(){
   const lease=readApexStreamLease();
   if(lease?.owner===APEX_STREAM_TAB_ID){try{localStorage.removeItem(APEX_STREAM_LOCK_KEY)}catch(e){}}
+  if(apexStreamLeaseTimer){clearInterval(apexStreamLeaseTimer);apexStreamLeaseTimer=null;}
+  if(apexStreamLeaseGuard){clearInterval(apexStreamLeaseGuard);apexStreamLeaseGuard=null;}
  }
  function startApexStreamLeaseRenewal(){
-  if(apexStreamLeaseTimer)return;
-  apexStreamLeaseTimer=setInterval(renewApexStreamLease,7000);
+  if(!apexStreamLeaseTimer)apexStreamLeaseTimer=setInterval(renewApexStreamLease,7000);
+  if(!apexStreamLeaseGuard)apexStreamLeaseGuard=setInterval(()=>{
+   if(liveStream&&!ownsApexStreamLease()){
+    setLiveStreamState("LOCK LOST · closing duplicate stream");closeLiveStreamOnly();
+   }
+  },3000);
  }
- window.addEventListener("beforeunload",()=>{closeLiveStreamOnly();releaseApexStreamLease();if(apexStreamLeaseTimer)clearInterval(apexStreamLeaseTimer);});
+ window.addEventListener("storage",e=>{
+  if(e.key===APEX_STREAM_LOCK_KEY&&liveStream){const lease=readApexStreamLease();if(lease&&lease.owner!==APEX_STREAM_TAB_ID){setLiveStreamState("LOCK LOST · another tab owns stream");closeLiveStreamOnly();}}
+ });
+ window.addEventListener("beforeunload",()=>{closeLiveStreamOnly();releaseApexStreamLease();});
 const OTC_SYMBOLS={EURUSD_otc:"OTC:EUR/USD",GBPUSD_otc:"OTC:GBP/USD",USDJPY_otc:"OTC:USD/JPY",AUDCAD_otc:"OTC:AUD/CAD",AUDCHF_otc:"OTC:AUD/CHF",CHFJPY_otc:"OTC:CHF/JPY",EURCHF_otc:"OTC:EUR/CHF",EURNZD_otc:"OTC:EUR/NZD",GBPAUD_otc:"OTC:GBP/AUD",UAHUSD_otc:"OTC:UAH/USD",USDARS_otc:"OTC:USD/ARS",USDBDT_otc:"OTC:USD/BDT",USDCLP_otc:"OTC:USD/CLP",USDPKR_otc:"OTC:USD/PKR",USDTHB_otc:"OTC:USD/THB",KESUSD_otc:"OTC:KES/USD",USDMYR_otc:"OTC:USD/MYR",SARCNY_otc:"OTC:SAR/CNY"};
 function setLiveStreamState(message,ok=false){
  liveStreamState=message;
@@ -1367,11 +1377,16 @@ function handleLiveTick(raw){
 }
 function closeLiveStreamOnly(){
  if(liveStream){liveStream.close();liveStream=null;}
+ liveStreamPair=null;
+ releaseApexStreamLease();
 }
 function connectLiveStream(){
- if(liveStream||typeof EventSource==="undefined")return;
+ if(typeof EventSource==="undefined")return;
  const selectedAsset=selectedOTCPair();
  if(!selectedAsset){setLiveStreamState("OFF · select an OTC pair");return;}
+ // A connection for the same pair is reused. Pair handoffs must close/release first.
+ if(liveStream){if(liveStreamPair===selectedAsset.id)return;closeLiveStreamOnly();}
+ if(liveStreamRetryTimer)return;
  const remaining=Math.max(0,liveStreamRetryUntil-Date.now());
  if(remaining>0){
   setLiveStreamState("RATE LIMIT COOLDOWN · retry in "+Math.ceil(remaining/1000)+"s");
@@ -1386,6 +1401,7 @@ function connectLiveStream(){
  startApexStreamLeaseRenewal();
  setLiveStreamState("connecting one selected-pair stream…");
  const streamSymbol=selectedAsset.symbol||"EURUSD_otc";
+ liveStreamPair=selectedAsset.id;
  liveStream=new EventSource("/.netlify/functions/otc-stream?symbol="+encodeURIComponent(streamSymbol));
  liveStream.addEventListener("connected",e=>{
   apexStreamRetryDelay=12000;
@@ -1449,6 +1465,7 @@ function handleSelectedPairChange(id){
 function stopLiveStream(){
  closeLiveStreamOnly();
  if(liveStreamRetryTimer){clearTimeout(liveStreamRetryTimer);liveStreamRetryTimer=null;}
+ releaseApexStreamLease();
  setLiveStreamState("OFF · stream handoff");
 }
 function renderScanner(){
