@@ -2366,4 +2366,82 @@ if($('progressText'))$('progressText').textContent='Ready · tap the Scan button
 $('startBtn').onclick=()=>{};$('pauseBtn').onclick=()=>{};
 </script>
 
+
+<style id="apex-v93-single-auto-scan-ui">
+#scanNow{width:188px!important;height:188px!important;min-height:188px!important;border-radius:50%!important;cursor:default!important;opacity:1!important}
+#scanNow:hover{transform:none!important}
+#scanNow.scan-active{animation:apexManualPulse 1s infinite alternate!important}
+#startBtn,#pauseBtn{display:none!important}
+</style>
+<script id="apex-v93-single-auto-scan">
+// V9.3: one clock-anchored automatic scan per native 30-second candle.
+// Early and regular signal outputs are produced by the same selected-pair scan.
+// Paper trading records outputs only; it never starts analysis or requests feed data.
+let apexV93AutoScanPermit=false;
+const apexV93ScanCore=scan;
+scan=async function(){
+ if(!apexV93AutoScanPermit)return;
+ return await apexV93ScanCore();
+};
+// Prevent any queued follow-up scan after the current scan completes.
+running=true;
+apexPendingScheduledScan=false;
+clearInterval(cycle);cycle=null;
+// Remove the manual scan action: this button now reflects the automatic scan state.
+const apexV93Button=$('scanNow');
+if(apexV93Button){apexV93Button.onclick=()=>{};apexV93Button.disabled=true;apexV93Button.classList.remove('scan-active');apexV93Button.textContent='AUTO SCAN\nAT 00:01';}
+if($('scanStateBadge'))$('scanStateBadge').textContent='AUTO SCAN ARMED';
+if($('progressText'))$('progressText').textContent='Waiting for next 30-second candle · scan at 00:01';
+if($('startBtn'))$('startBtn').onclick=()=>{};
+if($('pauseBtn'))$('pauseBtn').onclick=()=>{};
+let apexV93LastTriggeredBucket='';
+function apexV93AutoHeartbeat(){
+ const now=apexServerNow(),bucket=Math.floor(now/APEX_BAR_MS),key=String(bucket),left=apexCandleCountdown();
+ apexRenderIntelligentPanel();
+ // Timer label is 29 seconds at the start of a 30-second cycle, then counts down.
+ if($('candleCountdown'))$('candleCountdown').textContent=`00:${String(left).padStart(2,'0')}`;
+ if($('scanStateBadge'))$('scanStateBadge').textContent=busy?'SCAN IN PROGRESS':'AUTO SCAN ARMED';
+ if($('progressText')&&!busy)$('progressText').textContent=`Next automatic scan in 00:${String(left).padStart(2,'0')} · selected pair only`;
+ // Fire only at the 00:01 edge; bucket lock blocks duplicates even if this heartbeat fires repeatedly.
+ if(left===1&&key!==apexV93LastTriggeredBucket&&!busy){
+  apexV93LastTriggeredBucket=key;
+  apexPendingScheduledScan=false;
+  apexV93AutoScanPermit=true;
+  if(apexV93Button){apexV93Button.disabled=true;apexV93Button.classList.add('scan-active');apexV93Button.textContent='SCANNING…';}
+  if($('progressText'))$('progressText').textContent='00:01 · analyzing selected pair · early and regular outputs in one scan';
+  Promise.resolve(scan()).catch(err=>console.error('APEXSCAN auto scan failed',err)).finally(()=>{
+   apexV93AutoScanPermit=false;
+   if(apexV93Button){apexV93Button.disabled=true;apexV93Button.classList.remove('scan-active');apexV93Button.textContent='AUTO SCAN\nAT 00:01';}
+   if($('scanStateBadge'))$('scanStateBadge').textContent='AUTO SCAN ARMED';
+   if($('progressText'))$('progressText').textContent=`Scan complete · locked until next 00:01`;
+  });
+ }
+}
+// Use a lightweight clock heartbeat only; it never fetches data or scans except at the guarded boundary.
+cycle=setInterval(apexV93AutoHeartbeat,250);
+// Countdown display for BUY/SELL validity is derived from the same 30-second master clock.
+const apexV93UpdateCountdowns=updateCountdowns;
+updateCountdowns=function(){
+ apexV93UpdateCountdowns();
+ const left=apexCandleCountdown();
+ if($('signalCountdown'))$('signalCountdown').textContent=`00:${String(left).padStart(2,'0')}`;
+ if($('candleCountdown'))$('candleCountdown').textContent=`00:${String(left).padStart(2,'0')}`;
+};
+</script>
+
+
+<script id="apex-v93-signal-validity-sync">
+// Align BUY/SELL validity expiry to the same 30-second master-clock boundary.
+const apexV93UpdateTopCore=updateTop;
+updateTop=function(rows){
+ apexV93UpdateTopCore(rows);
+ const id=$('mobileAsset')?.value||$('chartAsset')?.value||selectedChart, r=(rows||[]).find(x=>x.id===id)||results[id];
+ const a=r?.analysis||{},direction=a.direction;
+ if(['CALL','PUT'].includes(direction)){
+  const now=apexServerNow(),next=(Math.floor(now/APEX_BAR_MS)+1)*APEX_BAR_MS;
+  signalExpiryAt=next-apexServerClockOffsetMs;
+ }else signalExpiryAt=0;
+};
+</script>
+
 </body></html>
