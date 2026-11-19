@@ -617,7 +617,7 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
       <select id="paperSide"><option value="AUTO">AUTO</option><option value="CALL">CALL</option><option value="PUT">PUT</option></select>
       <button id="paperFromTop" type="button">Start paper trade</button>
      </div>
-     <p class="tiny" id="topExpiry" style="margin:10px 0 0">Directional bias · re-evaluated each scan</p><button id="scanNow" type="button" class="primary" style="width:100%;margin-top:9px;min-height:44px">⚡ RUN SUPER INTELLIGENCE SCAN</button></div>
+     <p class="tiny" id="topExpiry" style="margin:10px 0 0">Directional bias · re-evaluated each scan</p><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:10px;border:1px solid #243957;border-radius:10px;background:#0b1424"><span style="font-size:12px;font-weight:800;letter-spacing:.06em">AUTO SCAN</span><label style="display:flex;align-items:center;gap:7px;font-size:12px;color:#a9bfd8"><input id="autoScanToggle" type="checkbox" style="accent-color:#36d9c7;width:18px;height:18px"> Enable</label></div><div id="autoScanModeStatus" class="tiny" style="margin-top:5px">AUTO OFF · manual scans only</div><button id="scanNow" type="button" class="primary" style="width:100%;margin-top:9px;min-height:44px">⚡ MANUAL SCAN</button></div>
 <div class="apex-risk" id="apexRiskCalculator"><div class="apex-risk-head"><span>RISK CALCULATOR</span><span>SIMULATION ONLY</span></div><div class="apex-risk-grid"><div><label for="riskStakeView">STAKE ($)</label><input id="riskStakeView" type="number" min="1" step="1" value="10" inputmode="decimal"></div><div><label for="riskPayoutView">PAYOUT (%)</label><input id="riskPayoutView" type="number" min="1" max="100" value="85" inputmode="decimal"></div><div class="apex-risk-profit" id="riskProfitView">+$8.50 profit</div></div></div>
 
    </div>
@@ -2341,11 +2341,11 @@ updateCountdowns=function(){
 let apexManualScanAuthorized=false;
 const apexV92OriginalScan=scan;
 scan=async function(){
- if(!apexManualScanAuthorized){return;}
+ if(!apexManualScanAuthorized&&!apexV93AutoScanPermit){return;}
  return await apexV92OriginalScan();
 };
 const apexV92OriginalAddSignal=addSignal;
-addSignal=function(r){if(!apexManualScanAuthorized)return;return apexV92OriginalAddSignal(r);};
+addSignal=function(r){if(!apexManualScanAuthorized&&!apexV93AutoScanPermit)return;return apexV92OriginalAddSignal(r);};
 // Keep the phase/countdown display alive, but never let its heartbeat trigger a scan.
 apexIntelligentHeartbeat=function(){apexRenderIntelligentPanel();};
 if(typeof apexPauseScheduler==='function')apexPauseScheduler();
@@ -2368,65 +2368,59 @@ $('startBtn').onclick=()=>{};$('pauseBtn').onclick=()=>{};
 
 
 <style id="apex-v93-single-auto-scan-ui">
-#scanNow{width:188px!important;height:188px!important;min-height:188px!important;border-radius:50%!important;cursor:default!important;opacity:1!important}
-#scanNow:hover{transform:none!important}
+#scanNow{width:188px!important;height:188px!important;min-height:188px!important;border-radius:50%!important;cursor:pointer!important;opacity:1!important}
+#scanNow:hover{transform:scale(1.03)!important}
 #scanNow.scan-active{animation:apexManualPulse 1s infinite alternate!important}
 #startBtn,#pauseBtn{display:none!important}
+#autoScanToggle{cursor:pointer}
 </style>
-<script id="apex-v93-single-auto-scan">
-// V9.3: one clock-anchored automatic scan per native 30-second candle.
-// Early and regular signal outputs are produced by the same selected-pair scan.
-// Paper trading records outputs only; it never starts analysis or requests feed data.
+<script id="apex-v93-manual-auto-choice">
+// User chooses scan mode: manual by default; auto is opt-in.
 let apexV93AutoScanPermit=false;
-const apexV93ScanCore=scan;
-scan=async function(){
- if(!apexV93AutoScanPermit)return;
- return await apexV93ScanCore();
-};
-// Prevent any queued follow-up scan after the current scan completes.
-running=true;
-apexPendingScheduledScan=false;
-clearInterval(cycle);cycle=null;
-// Remove the manual scan action: this button now reflects the automatic scan state.
-const apexV93Button=$('scanNow');
-if(apexV93Button){apexV93Button.onclick=()=>{};apexV93Button.disabled=true;apexV93Button.classList.remove('scan-active');apexV93Button.textContent='AUTO SCAN\nAT 00:01';}
-if($('scanStateBadge'))$('scanStateBadge').textContent='AUTO SCAN ARMED';
-if($('progressText'))$('progressText').textContent='Waiting for next 30-second candle · scan at 00:01';
-if($('startBtn'))$('startBtn').onclick=()=>{};
-if($('pauseBtn'))$('pauseBtn').onclick=()=>{};
+let apexV93AutoEnabled=false;
 let apexV93LastTriggeredBucket='';
+clearInterval(cycle);cycle=null;running=false;apexPendingScheduledScan=false;
+if(typeof apexPauseScheduler==='function')apexPauseScheduler();
+const apexV93Button=$('scanNow'), apexV93Toggle=$('autoScanToggle');
+function apexV93SetMode(enabled){
+ apexV93AutoEnabled=!!enabled;
+ if(apexV93Toggle)apexV93Toggle.checked=apexV93AutoEnabled;
+ if($('autoScanModeStatus'))$('autoScanModeStatus').textContent=apexV93AutoEnabled?'AUTO ON · scans selected pair once per 30-second cycle':'AUTO OFF · manual scans only'; if($('scanStateBadge'))$('scanStateBadge').textContent=apexV93AutoEnabled?'AUTO SCAN ENABLED':'MANUAL SCAN'; if($('progressText'))$('progressText').textContent=apexV93AutoEnabled?'Auto scan enabled · next scan at 00:01 of the 30-second cycle':'Ready · tap Manual Scan to analyze selected pair';
+}
+if(apexV93Button){
+ apexV93Button.disabled=false;apexV93Button.textContent='⚡ MANUAL SCAN';apexV93Button.classList.remove('scan-active');
+ apexV93Button.onclick=async()=>{
+  if(busy)return;
+  apexManualScanAuthorized=true;apexV93Button.disabled=true;apexV93Button.classList.add('scan-active');apexV93Button.textContent='SCANNING…';
+  if($('scanStateBadge'))$('scanStateBadge').textContent='MANUAL SCAN IN PROGRESS';
+  try{await scan();}catch(err){console.error('APEXSCAN manual scan failed',err);if($('progressText'))$('progressText').textContent='Scan failed: '+(err?.message||'unknown error');}
+  finally{apexManualScanAuthorized=false;apexV93Button.disabled=false;apexV93Button.classList.remove('scan-active');apexV93Button.textContent='⚡ MANUAL SCAN';if(!apexV93AutoEnabled)apexV93SetMode(false);}
+ };
+}
+if(apexV93Toggle)apexV93Toggle.onchange=()=>apexV93SetMode(apexV93Toggle.checked);
+apexV93SetMode(false);
 function apexV93AutoHeartbeat(){
  const now=apexServerNow(),bucket=Math.floor(now/APEX_BAR_MS),key=String(bucket),left=apexCandleCountdown();
  apexRenderIntelligentPanel();
- // Timer label is 29 seconds at the start of a 30-second cycle, then counts down.
  if($('candleCountdown'))$('candleCountdown').textContent=`00:${String(left).padStart(2,'0')}`;
- if($('scanStateBadge'))$('scanStateBadge').textContent=busy?'SCAN IN PROGRESS':'AUTO SCAN ARMED';
- if($('progressText')&&!busy)$('progressText').textContent=`Next automatic scan in 00:${String(left).padStart(2,'0')} · selected pair only`;
- // Fire only at the 00:01 edge; bucket lock blocks duplicates even if this heartbeat fires repeatedly.
+ if(!apexV93AutoEnabled){if($('scanStateBadge'))$('scanStateBadge').textContent='MANUAL SCAN';return;}
+ if($('scanStateBadge'))$('scanStateBadge').textContent=busy?'SCAN IN PROGRESS':'AUTO SCAN ENABLED';
+ if($('progressText')&&!busy)$('progressText').textContent=`Auto scan next in 00:${String(left).padStart(2,'0')} · selected pair only`;
  if(left===1&&key!==apexV93LastTriggeredBucket&&!busy){
-  apexV93LastTriggeredBucket=key;
-  apexPendingScheduledScan=false;
-  apexV93AutoScanPermit=true;
-  if(apexV93Button){apexV93Button.disabled=true;apexV93Button.classList.add('scan-active');apexV93Button.textContent='SCANNING…';}
-  if($('progressText'))$('progressText').textContent='00:01 · analyzing selected pair · early and regular outputs in one scan';
+  apexV93LastTriggeredBucket=key;apexPendingScheduledScan=false;apexV93AutoScanPermit=true;
+  if(apexV93Button){apexV93Button.disabled=true;apexV93Button.classList.add('scan-active');apexV93Button.textContent='AUTO SCANNING…';}
+  if($('progressText'))$('progressText').textContent='00:01 · auto-scanning selected pair';
   Promise.resolve(scan()).catch(err=>console.error('APEXSCAN auto scan failed',err)).finally(()=>{
    apexV93AutoScanPermit=false;
-   if(apexV93Button){apexV93Button.disabled=true;apexV93Button.classList.remove('scan-active');apexV93Button.textContent='AUTO SCAN\nAT 00:01';}
-   if($('scanStateBadge'))$('scanStateBadge').textContent='AUTO SCAN ARMED';
-   if($('progressText'))$('progressText').textContent=`Scan complete · locked until next 00:01`;
+   if(apexV93Button){apexV93Button.disabled=false;apexV93Button.classList.remove('scan-active');apexV93Button.textContent='⚡ MANUAL SCAN';}
+   if($('scanStateBadge'))$('scanStateBadge').textContent='AUTO SCAN ENABLED';
+   if($('progressText'))$('progressText').textContent='Scan complete · auto remains enabled';
   });
  }
 }
-// Use a lightweight clock heartbeat only; it never fetches data or scans except at the guarded boundary.
 cycle=setInterval(apexV93AutoHeartbeat,250);
-// Countdown display for BUY/SELL validity is derived from the same 30-second master clock.
 const apexV93UpdateCountdowns=updateCountdowns;
-updateCountdowns=function(){
- apexV93UpdateCountdowns();
- const left=apexCandleCountdown();
- if($('signalCountdown'))$('signalCountdown').textContent=`00:${String(left).padStart(2,'0')}`;
- if($('candleCountdown'))$('candleCountdown').textContent=`00:${String(left).padStart(2,'0')}`;
-};
+updateCountdowns=function(){apexV93UpdateCountdowns();const left=apexCandleCountdown();if($('signalCountdown'))$('signalCountdown').textContent=`00:${String(left).padStart(2,'0')}`;if($('candleCountdown'))$('candleCountdown').textContent=`00:${String(left).padStart(2,'0')}`;};
 </script>
 
 
