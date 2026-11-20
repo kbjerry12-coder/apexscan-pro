@@ -2294,4 +2294,74 @@ renderCandleIntel=function(r){
  apexStartScheduler=function(){clearInterval(cycle);running=true;apexPreCloseKey='';lockedBucket=null;autoBucket=null;document.getElementById('startBtn').disabled=true;document.getElementById('pauseBtn').disabled=false;document.getElementById('scanStateBadge').textContent='30S REGULAR + DEEP AUTO';status('30-SECOND AUTO SCAN · REGULAR + DEEP · SIGNAL LOCK',true);apex30State.phase='MONITORING LIVE CANDLE';apex30State.detail='Regular scan and Deep Scan are linked. Both run once at the regular scan trigger; Deep Scan signal is locked until 00:00.';cycle=setInterval(apexIntelligentHeartbeat,100);};
 })();
 </script>
+<script>
+(()=>{
+ // APEXSCAN supplemental market context: Wyckoff-inspired structure + UT Bot-style ATR trailing stop.
+ // These are context/timing inputs only; they do not replace the existing direction engine.
+ const APX_ADDON_VERSION='WYCKOFF-UTBOT-CONTEXT-1.0';
+ const oldAnalyze=analyze;
+ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+ function calcATR(bars,period=10){
+  const tr=[]; for(let i=1;i<bars.length;i++){
+   const h=Number(bars[i].high),l=Number(bars[i].low),pc=Number(bars[i-1].close);
+   tr.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc)));
+  }
+  if(tr.length<period)return null;
+  let v=tr.slice(0,period).reduce((s,x)=>s+x,0)/period;
+  const vals=[v]; for(let i=period;i<tr.length;i++){v=(v*(period-1)+tr[i])/period;vals.push(v);}
+  return {current:vals.at(-1),previous:vals.at(-2)||vals.at(-1)};
+ }
+ function utContext(bars){
+  if(!Array.isArray(bars)||bars.length<15)return {state:'WARMING UP',side:'WAIT',strength:0,atr:null,stop:null};
+  const n=bars.length,trs=Array(n).fill(null),atrLine=Array(n).fill(null);
+  for(let i=1;i<n;i++){const h=+bars[i].high,l=+bars[i].low,pc=+bars[i-1].close;trs[i]=Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc));}
+  const period=10;if(n<=period)return {state:'WARMING UP',side:'WAIT',strength:0,atr:null,stop:null};
+  let atr=trs.slice(1,period+1).reduce((a,b)=>a+b,0)/period;atrLine[period]=atr;
+  for(let i=period+1;i<n;i++){atr=(atr*(period-1)+trs[i])/period;atrLine[i]=atr;}
+  const multiplier=1,stops=Array(n).fill(null);stops[period]=+bars[period].close-atrLine[period]*multiplier;
+  for(let i=period+1;i<n;i++){const src=+bars[i].close,prev=+bars[i-1].close,prevStop=stops[i-1],dist=(atrLine[i]||atr)*multiplier;let stop;if(src>prevStop&&prev>prevStop)stop=Math.max(prevStop,src-dist);else if(src<prevStop&&prev<prevStop)stop=Math.min(prevStop,src+dist);else stop=src>prevStop?src-dist:src+dist;stops[i]=stop;}
+  const p=+bars.at(-1).close,pp=+bars.at(-2).close,s=stops.at(-1),ps=stops.at(-2),crossUp=pp<=ps&&p>s,crossDown=pp>=ps&&p<s,side=crossUp?'CALL':crossDown?'PUT':p>s?'CALL':'PUT';
+  return {state:crossUp?'BUY CROSS':crossDown?'SELL CROSS':p>s?'ABOVE TRAIL':'BELOW TRAIL',side:(crossUp||crossDown)?side:'WAIT',strength:crossUp||crossDown?78:50,atr:atrLine.at(-1),stop:s,crossUp,crossDown};
+ }
+ function wyckoffContext(bars){
+  const n=bars?.length||0;if(n<25)return {phase:'INSUFFICIENT HISTORY',events:[],bias:'NEUTRAL',score:0,support:null,resistance:null};
+  const b=bars.slice(-40),recent=b.slice(-20,-1),last=b.at(-1),prev=b.at(-2),support=Math.min(...recent.map(x=>+x.low)),resistance=Math.max(...recent.map(x=>+x.high)),range=Math.max(1e-12,resistance-support),atrObj=calcATR(b,10),atr=atrObj?.current||range*.03;
+  const body=Math.abs(+last.close-+last.open),lowerW=Math.min(+last.open,+last.close)-+last.low,upperW=+last.high-Math.max(+last.open,+last.close);
+  const spring=+last.low<support&&+last.close>support&&lowerW>body*.65,utad=+last.high>resistance&&+last.close<resistance&&upperW>body*.65;
+  const sos=+last.close>resistance+atr*.12&&+last.close>+prev.close,sow=+last.close<support-atr*.12&&+last.close<+prev.close;
+  const nearSupport=+last.close-support<=range*.15,nearResistance=resistance-+last.close<=range*.15;
+  const higherLows= b.slice(-6).every((c,i,arr)=>i===0||+c.low>=+arr[i-1].low-atr*.15),lowerHighs=b.slice(-6).every((c,i,arr)=>i===0||+c.high<=+arr[i-1].high+atr*.15);
+  const events=[];if(spring)events.push('SPRING / SUPPORT SWEEP');if(utad)events.push('UTAD / RESISTANCE SWEEP');if(sos)events.push('SOS · STRENGTH BREAK');if(sow)events.push('SOW · WEAKNESS BREAK');if(nearSupport)events.push('NEAR RANGE SUPPORT');if(nearResistance)events.push('NEAR RANGE RESISTANCE');
+  let bias='NEUTRAL',phase='RANGE / RE-ACCUMULATION WATCH',score=45;if(spring||sos){bias='BULLISH CONTEXT';score= spring?75:68;}if(utad||sow){bias='BEARISH CONTEXT';score=utad?75:68;}if(spring&&sos){bias='BULLISH CONTEXT';score=85;}if(utad&&sow){bias='BEARISH CONTEXT';score=85;}
+  if(sos)phase='POTENTIAL MARKUP / SOS';else if(sow)phase='POTENTIAL DISTRIBUTION / SOW';else if(spring)phase='ACCUMULATION · SPRING TEST';else if(utad)phase='DISTRIBUTION · UTAD';else if(nearSupport&&higherLows)phase='ACCUMULATION WATCH';else if(nearResistance&&lowerHighs)phase='DISTRIBUTION WATCH';
+  return {phase,events,bias,score,support,resistance,spring,utad,sos,sow,atr,range};
+ }
+ function wrapAnalysis(candles,asset){
+  const base=oldAnalyze(candles,asset);if(!base||!candles||candles.length<25)return base;
+  const w=wyckoffContext(candles),u=utContext(candles),side=base.earlyDirection||base.direction||'WAIT';
+  let modifier=0,confluence=[];
+  if(side==='CALL'&&w.bias==='BULLISH CONTEXT'){modifier+=8;confluence.push('Wyckoff bullish context supports early BUY');}
+  if(side==='PUT'&&w.bias==='BEARISH CONTEXT'){modifier+=8;confluence.push('Wyckoff bearish context supports early SELL');}
+  if(side==='CALL'&&w.bias==='BEARISH CONTEXT'){modifier-=10;confluence.push('Wyckoff bearish context conflicts with early BUY');}
+  if(side==='PUT'&&w.bias==='BULLISH CONTEXT'){modifier-=10;confluence.push('Wyckoff bullish context conflicts with early SELL');}
+  if(side==='CALL'&&u.side==='CALL'){modifier+=6;confluence.push('UT Bot trail direction agrees');}else if(side==='PUT'&&u.side==='PUT'){modifier+=6;confluence.push('UT Bot trail direction agrees');}
+  if((side==='CALL'&&u.side==='PUT')||(side==='PUT'&&u.side==='CALL')){modifier-=6;confluence.push('UT Bot trailing direction conflicts');}
+  if(u.crossUp&&side==='CALL')confluence.push('UT Bot-style bullish trail cross');if(u.crossDown&&side==='PUT')confluence.push('UT Bot-style bearish trail cross');
+  const earlyScore=clamp((Number(base.earlyScore)||Number(base.score)||0)+modifier,0,100),score=clamp((Number(base.score)||0)+modifier,0,100);
+  base.earlyScore=earlyScore;base.score=score;base.wyckoff=w;base.utBot=u;base.contextModifier=modifier;base.contextConfluences=confluence;
+  base.marketContext=`${w.phase} · ${w.bias} · UT ${u.state}`;
+  base.contextLayers=[{name:'Wyckoff Structure',value:`${w.phase} · ${w.bias}${w.events.length?' · '+w.events.join(', '):''}`,bull:w.bias==='BULLISH CONTEXT',bear:w.bias==='BEARISH CONTEXT'},
+    {name:'UT Bot ATR Trail',value:`${u.state} · ATR ${u.atr==null?'—':Number(u.atr).toPrecision(5)} · stop ${u.stop==null?'—':Number(u.stop).toPrecision(5)}`,bull:u.side==='CALL',bear:u.side==='PUT'}];
+  base.layers=[...(base.layers||[]),...base.contextLayers];base.confluences=[...(base.confluences||[]),...confluence];
+  if(base.structured){base.structured.confidence_score=earlyScore;base.structured.detected_patterns=[...(base.structured.detected_patterns||[]),...w.events,...confluence];base.structured.reasoning=(base.structured.reasoning||base.reason||'')+' · '+base.marketContext;}
+  return base;
+ }
+ analyze=function(candles,asset){return wrapAnalysis(candles,asset);};
+ // Add readable status to the intelligence panel after its normal renderer executes.
+ const priorRender=renderCandleIntel;renderCandleIntel=function(r){priorRender(r);const a=r?.analysis;if(!a?.contextLayers)return;const host=$('candleIntel');if(!host)return;const extra=document.createElement('div');extra.className='ci-detail';extra.style.marginTop='7px';extra.innerHTML='<b>WYCKOFF + UT BOT CONTEXT</b><br>'+a.contextLayers.map(x=>x.name+' · '+x.value).join('<br>')+'<br><small>Context only: early direction remains controlled by the existing indicator engine.</small>';host.appendChild(extra);};
+ const chips=$('indicatorChips');if(chips){const tag=document.createElement('span');tag.textContent='Wyckoff Structure';chips.appendChild(tag);const tag2=document.createElement('span');tag2.textContent='UT Bot ATR Trail';chips.appendChild(tag2);}
+ const notice=document.querySelector('.notice');if(notice&&!notice.textContent.includes('Wyckoff + UT Bot'))notice.innerHTML+='<br><b>Wyckoff + UT Bot context:</b> Structure and ATR trailing-stop timing adjust setup confidence only; they do not override the existing five-indicator direction.';
+})();
+
+</script>
 </body></html>
