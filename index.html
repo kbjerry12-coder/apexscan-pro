@@ -2364,4 +2364,71 @@ renderCandleIntel=function(r){
 })();
 
 </script>
+<script id="apex-v12-keltner-projection-upgrade">
+(()=>{
+ const v12='APEXSCAN V12 · KELTNER EARLY PROJECTION';
+ const previousAnalyze=analyze;
+ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+ function ema(values,period){if(!values.length)return [];const k=2/(period+1);let e=values[0],out=[e];for(let i=1;i<values.length;i++){e=values[i]*k+e*(1-k);out.push(e);}return out;}
+ function keltner(bars){
+  const c=bars.map(x=>+x.close),e=ema(c,20),tr=[];
+  for(let i=0;i<bars.length;i++){const pc=i?+bars[i-1].close:+bars[i].close;tr.push(Math.max(+bars[i].high-+bars[i].low,Math.abs(+bars[i].high-pc),Math.abs(+bars[i].low-pc)));}
+  let a=tr.slice(-14).reduce((s,x)=>s+x,0)/Math.max(1,tr.slice(-14).length);
+  return {mid:e.at(-1),upper:e.at(-1)+2*a,lower:e.at(-1)-2*a,atr:a};
+ }
+ function projection(bars,base){
+  const b=bars.slice(-30),last=b.at(-1),prev=b.at(-2),kc=keltner(b),
+  body=Math.abs(+last.close-+last.open),range=Math.max(1e-12,+last.high-+last.low),upperW=+last.high-Math.max(+last.open,+last.close),lowerW=Math.min(+last.open,+last.close)-+last.low,
+  nearUpper=+last.close>=kc.upper-kc.atr*.22,nearLower=+last.close<=kc.lower+kc.atr*.22,
+  support=Math.min(...b.slice(-12,-1).map(x=>+x.low)),resistance=Math.max(...b.slice(-12,-1).map(x=>+x.high)),
+  upperReject=nearUpper&&upperW>body*.65&&+last.close<+last.open,lowerReject=nearLower&&lowerW>body*.65&&+last.close>+last.open,
+  upperFakeout=+last.high>resistance&&+last.close<resistance&&upperW>body*.55,lowerFakeout=+last.low<support&&+last.close>support&&lowerW>body*.55,
+  direction=base?.earlyDirection||base?.direction||'WAIT';
+  let behavior='CONTINUATION WATCH',detail='Price is moving within its volatility channel; wait for follow-through.',
+  pullback='No clear pullback structure';
+  if(upperFakeout||upperReject){behavior='POSSIBLE UPPER REJECTION / FAKEOUT';detail='Price pushed toward or beyond resistance/channel upper area but closed back weak. Upside may stall or pull back; confirmation is still required.';pullback='Upper-wick rejection risk';}
+  else if(lowerFakeout||lowerReject){behavior='POSSIBLE LOWER REJECTION / FAKEOUT';detail='Price pushed toward or below support/channel lower area but recovered. Downside may stall or pull back; confirmation is still required.';pullback='Lower-wick rejection risk';}
+  else if(direction==='CALL'&&(+last.close<kc.mid||(+last.close<+prev.close&&+last.close>kc.lower))){behavior='BULLISH PULLBACK WATCH';detail='Bullish indicator bias remains, while price retraces toward the Keltner midline/lower region. Watch for a rebound candle before continuation.';pullback='Potential dip before continuation';}
+  else if(direction==='PUT'&&(+last.close>kc.mid||(+last.close>+prev.close&&+last.close<kc.upper))){behavior='BEARISH PULLBACK WATCH';detail='Bearish indicator bias remains, while price retraces toward the Keltner midline/upper region. Watch for rejection before continuation.';pullback='Potential bounce before continuation';}
+  const projected=direction==='CALL'? 'UP':direction==='PUT'?'DOWN':'NEUTRAL';
+  return {kc,behavior,detail,pullback,projected,upperReject,lowerReject,upperFakeout,lowerFakeout,support,resistance};
+ }
+ analyze=function(candles,asset){
+  const base=previousAnalyze(candles,asset);if(!base||!Array.isArray(candles)||candles.length<35)return base;
+  const bars=candles.slice(-120),p=projection(bars,base),layers=(base.layers||[]).filter(x=>!String(x.name).toLowerCase().includes('alligator'));
+  const kc=p.kc,last=bars.at(-1),prev=bars.at(-2),bullMid=+last.close>kc.mid&&+last.close>+prev.close,bearMid=+last.close<kc.mid&&+last.close<+prev.close,
+  bullEdge=+last.low<=kc.lower&&+last.close>kc.lower,bearEdge=+last.high>=kc.upper&&+last.close<kc.upper,
+  bull=bullMid||bullEdge,bear=bearMid||bearEdge;
+  layers.push({name:'Keltner Channel · EMA20 ± 2 ATR',value:`${kc.lower.toPrecision(6)} / ${kc.mid.toPrecision(6)} / ${kc.upper.toPrecision(6)} · ${bullEdge?'LOWER RECLAIM':bearEdge?'UPPER REJECTION':bullMid?'ABOVE MID / BULLISH':bearMid?'BELOW MID / BEARISH':'INSIDE / NEUTRAL'}`,bull,bear});
+  const bulls=layers.filter(x=>x.bull).length,bears=layers.filter(x=>x.bear).length,align=Math.max(bulls,bears),dominant=bulls>bears?'CALL':bears>bulls?'PUT':'WAIT',score=Math.round(align/5*100),fresh=base.fresh;
+  const direction=fresh&&align>=3&&dominant!=='WAIT'?dominant:'WAIT',earlyDirection=fresh&&align>=3&&dominant!=='WAIT'?dominant:'WAIT';
+  const reason=direction==='WAIT'?(fresh?`WAIT · ${align}/5 indicator layers align; require 3 or more.`:'WAIT · live feed is stale.'):`EARLY ${direction} · ${align}/5 indicators align, including Keltner Channel. ${p.behavior}.`;
+  base.direction=direction;base.rawDirection=direction;base.earlyDirection=earlyDirection;base.earlyRawDirection=earlyDirection;base.earlyScore=direction==='WAIT'?0:score;base.earlyEdge=align;base.score=direction==='WAIT'?Math.min(59,score):score;base.confidence_score=score;base.signalLevel=direction==='WAIT'?'WAIT':'EARLY PRE-CLOSE';base.reason=reason;base.earlyReason=reason;base.trend=bull?'UP':bear?'DOWN':'MIXED';base.layers=layers;base.confluences=layers.filter(x=>direction==='CALL'?x.bull:direction==='PUT'?x.bear:false).map(x=>x.name);base.evidence_count=align;base.keltner={upper:kc.upper,middle:kc.mid,lower:kc.lower,atr:kc.atr};base.projection=p;base.alligator=null;base.wyckoff=null;base.utBot=null;base.contextLayers=[];base.contextConfluences=[];base.marketContext=p.behavior;
+  base.breakdown={...(base.breakdown||{}),keltner:layers.at(-1).value,feed:fresh?'FRESH':'STALE'};
+  base.structured={signal:direction==='CALL'?'BUY':direction==='PUT'?'SELL':'WAIT',confidence_score:score,detected_patterns:[...(base.detected_patterns||[]),...base.confluences],recommended_expiry:'30s',reasoning:reason};return base;
+ };
+ // Chart overlay: Keltner rails plus a dashed forward path and pullback/rejection label.
+ const oldDraw=drawChart;
+ drawChart=function(){oldDraw();try{
+  const canvas=$('chart'),ctx=canvas?.getContext('2d');if(!ctx)return;const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height,dpr=Math.min(window.devicePixelRatio||1,2);if(!w||!h)return;
+  const id=$('chartAsset')?.value||$('mobileAsset')?.value||selectedChart,res=results[id],bars=aggregateCandles(res?.candles||[],chartTimeframe).slice(-80);if(bars.length<20)return;
+  const left=48,right=12,top=18,bottom=24,plotW=w-left-right,plotH=h-top-bottom,lo=Math.min(...bars.map(x=>+x.low)),hi=Math.max(...bars.map(x=>+x.high)),pad=(hi-lo)*.08||Math.abs(hi)*.0002||1,min=lo-pad,max=hi+pad,y=v=>top+(max-v)/(max-min)*plotH;
+  const close=bars.map(x=>+x.close),mid=ema(close,20),trs=bars.map((c,i)=>i?Math.max(+c.high-+c.low,Math.abs(+c.high-+bars[i-1].close),Math.abs(+c.low-+bars[i-1].close)):+c.high-+c.low),atr=trs.slice(-14).reduce((a,b)=>a+b,0)/14,upper=mid.at(-1)+2*atr,lower=mid.at(-1)-2*atr,center=mid.at(-1);
+  const xLast=left+(bars.length-1)*plotW/bars.length+plotW/bars.length/2,xFuture=Math.min(w-right,xLast+plotW*.13),direction=res?.analysis?.earlyDirection||res?.analysis?.direction||'WAIT',proj=res?.analysis?.projection;
+  ctx.save();ctx.globalAlpha=.85;ctx.lineWidth=1.6;ctx.setLineDash([5,4]);[['#b59bff',upper],['#66b7ff',center],['#b59bff',lower]].forEach(([color,val])=>{ctx.strokeStyle=color;ctx.beginPath();ctx.moveTo(left,y(val));ctx.lineTo(w-right,y(val));ctx.stroke();});ctx.setLineDash([]);
+  ctx.font='bold 9px system-ui';ctx.textAlign='left';ctx.fillStyle='#b59bff';ctx.fillText('KELTNER UPPER',left+5,Math.max(top+10,y(upper)-4));ctx.fillText('KELTNER MID',left+5,Math.max(top+10,y(center)-4));ctx.fillText('KELTNER LOWER',left+5,Math.min(h-bottom-4,y(lower)+12));
+  const py=y(+bars.at(-1).close),target=direction==='CALL'?Math.max(lower,Math.min(max,+bars.at(-1).close+atr*.65)):direction==='PUT'?Math.max(min,Math.min(upper,+bars.at(-1).close-atr*.65)):+bars.at(-1).close;
+  ctx.strokeStyle=direction==='CALL'?'#38efb1':direction==='PUT'?'#ff6688':'#ffd078';ctx.lineWidth=2.5;ctx.setLineDash([6,5]);ctx.beginPath();ctx.moveTo(xLast,py);ctx.quadraticCurveTo((xLast+xFuture)/2,py+(direction==='CALL'?-plotH*.06:direction==='PUT'?plotH*.06:0),xFuture,y(target));ctx.stroke();ctx.setLineDash([]);
+  const label=proj?.behavior||'DIRECTIONAL PROJECTION',labelColor=direction==='CALL'?'#38efb1':direction==='PUT'?'#ff6688':'#ffd078';ctx.fillStyle='#081321';ctx.strokeStyle=labelColor;ctx.lineWidth=1;const bx=Math.max(left,Math.min(w-right-175,xFuture-80)),by=Math.max(top,Math.min(h-bottom-35,y(target)-30));ctx.fillRect(bx,by,175,30);ctx.strokeRect(bx,by,175,30);ctx.fillStyle=labelColor;ctx.textAlign='center';ctx.fillText(label.slice(0,30),bx+87.5,by+12);ctx.fillText(direction==='CALL'?'PROJECTED UP':direction==='PUT'?'PROJECTED DOWN':'NO EDGE',bx+87.5,by+24);ctx.restore();
+  const meta=$('chartMeta');if(meta)meta.textContent='30s candle structure · Donchian · DeMarker · OsMA · Envelopes · Keltner';
+ }catch(e){console.warn('V12 chart projection overlay skipped',e)}};
+ // Remove old supplemental modules and stale Alligator text from UI.
+ const chips=$('indicatorChips');if(chips)chips.innerHTML='<span>Donchian 20</span><span>DeMarker 14</span><span>OsMA 12/26/9</span><span>Envelopes SMA20 ±0.10%</span><span>Keltner EMA20 ± 2 ATR</span><span>Pre-close scan · T−1s</span>';
+ const notice=document.querySelector('.notice');if(notice)notice.innerHTML='<b>V12 Early Projection:</b> Alligator, Wyckoff, and UT Bot removed. Directional confluence uses Donchian, DeMarker, OsMA, Envelopes, and Keltner. Chart projects the current early bias and labels possible pullback, rejection, or fakeout behavior. Projection and confluence are not win probabilities.';
+ const head=$('apexIntelligentEngine')?.querySelector('.apex-engine-head b');if(head)head.textContent='APEX INTELLIGENCE · KELTNER + EARLY PROJECTION';
+ const meta=$('chartMeta');if(meta)meta.textContent='30-second chart · Donchian · DeMarker · OsMA · Envelopes · Keltner';
+ const scanFoot=$('scanFoot');if(scanFoot)scanFoot.textContent='30-second OTC scan · five indicator confluence · early projection overlay';
+})();
+</script>
+
 </body></html>
