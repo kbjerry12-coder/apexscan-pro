@@ -2512,4 +2512,40 @@ renderCandleIntel=function(r){
 })();
 </script>
 
+<script id="apex-v13-line-reaction-intelligence">
+(()=>{
+ const STORE='apexscan_line_reaction_memory_v1';
+ const prevAnalyze=analyze;
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ function classify(bars,a){
+  const b=bars.slice(-80),last=b.at(-1),prev=b.at(-2);if(!last||!prev)return{state:'INSUFFICIENT DATA',focus:'—',detail:'Waiting for candle context.',score:0,observed:false};
+  const atr=Number(a?.keltner?.atr)||Math.max(1e-12,(+last.high-+last.low)*1.4),tol=Math.max(atr*.18,Math.abs(+last.close)*.00001);
+  const levels=[];const kc=a?.keltner||{};
+  [['Keltner upper',Number(kc.upper)],['Keltner mid',Number(kc.middle)],['Keltner lower',Number(kc.lower)],['Swing resistance',Number(a?.projection?.resistance||a?.resistance)],['Swing support',Number(a?.projection?.support||a?.support)]].forEach(([n,v])=>{if(Number.isFinite(v)&&v>0)levels.push({name:n,value:v});});
+  let best=null;
+  for(const l of levels){const touched=+last.low<=l.value+tol&&+last.high>=l.value-tol,near=Math.min(Math.abs(+last.close-l.value),Math.abs(+last.high-l.value),Math.abs(+last.low-l.value))<=tol*1.5;if(!touched&&!near)continue;
+   const body=Math.abs(+last.close-+last.open),uw=+last.high-Math.max(+last.open,+last.close),lw=Math.min(+last.open,+last.close)-+last.low;
+   const priorAbove=+prev.close>l.value,priorBelow=+prev.close<l.value,closeAbove=+last.close>l.value,closeBelow=+last.close<l.value;
+   let state='LINE TOUCH · NO CONFIRMATION',detail='Price is interacting with the level. Wait for a candle close or follow-through.',weight=1;
+   if(priorBelow&&+last.high>l.value&&closeBelow&&uw>body*.5){state='REJECTION FROM ABOVE';detail='Price reached the level from below/through its area and closed back beneath it; rejection is possible.';weight=3;}
+   else if(priorAbove&&+last.low<l.value&&closeAbove&&lw>body*.5){state='REJECTION FROM BELOW';detail='Price reached the level from above/through its area and closed back above it; rejection is possible.';weight=3;}
+   else if(priorBelow&&closeAbove&&+last.close-l.value>tol){state='BREAKOUT ABOVE';detail='Candle closed above the level after approaching from below; breakout follow-through is not yet confirmed.';weight=2;}
+   else if(priorAbove&&closeBelow&&l.value-+last.close>tol){state='BREAKDOWN BELOW';detail='Candle closed below the level after approaching from above; continuation is not yet confirmed.';weight=2;}
+   else if(priorAbove&&Math.abs(+last.low-l.value)<=tol&&closeAbove){state='BULLISH RETEST HOLD';detail='Price tested the level from above and held on the close; a continuation attempt may follow.';weight=2;}
+   else if(priorBelow&&Math.abs(+last.high-l.value)<=tol&&closeBelow){state='BEARISH RETEST HOLD';detail='Price tested the level from below and held beneath it on the close; a continuation attempt may follow.';weight=2;}
+   const distance=Math.abs(+last.close-l.value)/Math.max(atr,1e-12),rank=weight-distance*.15;if(!best||rank>best.rank)best={state,detail,focus:l.name,level:l.value,score:weight,rank,touched};
+  }
+  return best?{...best,observed:true,atr,tolerance:tol}:{state:'NO RECENT LINE INTERACTION',focus:'—',detail:'No monitored line was touched or approached in the latest candle.',score:0,observed:false,atr,tolerance:tol};
+ }
+ function record(pair,time,rx){if(!rx.observed||!time)return;try{let data=JSON.parse(localStorage.getItem(STORE)||'[]');if(!Array.isArray(data))data=[];const key=`${pair}|${time}|${rx.focus}|${rx.state}`;if(!data.some(x=>x.key===key)){data.push({key,pair,time,focus:rx.focus,state:rx.state,level:rx.level||null});data=data.slice(-250);localStorage.setItem(STORE,JSON.stringify(data));}}catch(e){}
+ }
+ function mount(){let host=document.getElementById('chartPanel');if(!host)return;let card=document.getElementById('apexLineReactionCard');if(!card){card=document.createElement('div');card.id='apexLineReactionCard';card.style.cssText='margin:10px 0;padding:12px;border:1px solid #3975a8;border-radius:12px;background:linear-gradient(145deg,#0d2036,#091421);color:#d5e9ff;font-size:11px;line-height:1.5';host.appendChild(card);}return card;}
+ function render(r){const card=mount();if(!card||!r)return;const rx=r.analysis?.lineReaction||r.lineReaction;if(!rx)return;const accent=rx.state.includes('REJECTION')?'#ffb86b':rx.state.includes('BREAK')?'#55c9ff':rx.state.includes('RETEST')?'#b79cff':'#9dbbd8';card.innerHTML=`<div style="font-weight:900;letter-spacing:.08em;color:#8fd7ff;margin-bottom:4px">LINE REACTION INTELLIGENCE · CONTEXT ONLY</div><div style="font-size:14px;font-weight:900;color:${accent}">${rx.state}</div><div><b>Reference:</b> ${rx.focus}${Number.isFinite(rx.level)?' · '+Number(rx.level).toPrecision(7):''}</div><div>${rx.detail}</div><small style="color:#92abc7">This module observes line reactions; it does not independently trigger or change CALL/PUT signals.</small>`;}
+ analyze=function(candles,asset){const r=prevAnalyze(candles,asset);try{if(!r||!Array.isArray(candles)||candles.length<20)return r;const rx=classify(candles,r);r.lineReaction=rx;r.analysis||(r.analysis={});r.analysis.lineReaction=rx;record(r.name||asset||'UNKNOWN',r.analysis.candleTime||candles.at(-1)?.time,rx);render(r);if(r.analysis.projection){r.analysis.projection.lineReaction=rx.state;r.analysis.projection.reactionFocus=rx.focus;}}catch(e){console.warn('Line Reaction Intelligence skipped',e);}return r;};
+ const oldDraw=drawChart;drawChart=function(){oldDraw();try{const id=$('chartAsset')?.value||$('mobileAsset')?.value||selectedChart;const r=results[id];if(r)render(r);}catch(e){}};
+ const note=document.querySelector('.notice');if(note)note.innerHTML+='<br><b>V13 Line Reaction Intelligence:</b> Classifies line interactions as rejection, breakout/breakdown, retest, or touch. Observational context only; does not change directional signal voting.';
+ mount();if(results&&selectedChart&&results[selectedChart])render(results[selectedChart]);
+})();
+</script>
+
 </body></html>
