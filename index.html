@@ -612,7 +612,7 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">A</div><div>APEX<span style="color:#69aaff">SCAN</span><small>PRO · V14 DEEP SCAN RADAR</small></div></div>
+ <div class="brand"><div class="logo">A</div><div>APEX<span style="color:#69aaff">SCAN</span><small>PRO · V15 SCAN TIMING + RADAR FIX</small></div></div>
  <div class="headright"><span><i class="led" id="statusLed"></i><span id="statusText">DATA NOT CONNECTED</span></span><span class="headlabel" id="clock"></span></div>
 </header>
 <main class="wrap">
@@ -727,7 +727,7 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
       <div><small>30-SECOND CANDLE CLOSES IN</small><b id="candleCountdown">--:--</b></div>
      </div>
      <div class="trade-duration" style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;padding:10px;border:1px solid #31527a;border-radius:10px;background:#07182a">
-      <div style="display:flex;flex-direction:column;gap:5px"><small style="font-size:9px;color:#9ed5ff;font-weight:900;letter-spacing:.08em">30-SECOND SIGNAL VALIDITY</small><b id="durationAdvice" style="font-size:16px;color:#fff">30-second signal window</b><small style="font-size:10px;color:#9db1cc">Signals are tied to the next 30-second candle; no longer-horizon prediction is implied.</small></div>
+      <div style="display:flex;flex-direction:column;gap:5px"><small style="font-size:9px;color:#9ed5ff;font-weight:900;letter-spacing:.08em">30-SECOND SIGNAL VALIDITY</small><b id="durationAdvice" style="font-size:16px;color:#fff">Signal held until the 30-second candle closes</b><small style="font-size:10px;color:#9db1cc">Signal remains active through the current 30-second candle and expires at 00:00.</small></div>
      </div>
      <div class="po-compare" id="poCompare" hidden>
       <div class="po-compare-head"><b>POCKET OPTION PRICE CHECK</b><span id="poComparePair">SELECTED PAIR</span></div>
@@ -948,8 +948,8 @@ function calculateFullIndicatorSet(candles){
   ["Aroon",aroonUp>aroonDown?"Aroon Up leading":"Aroon Down leading"],
   ["Bears Power",bearPower.toPrecision(4)],
   ["Bulls Power",bullPower.toPrecision(4)],
-  ["REMOVED · DeMarker",demarker.toFixed(1)],
-  ["REMOVED · Envelopes","EMA20 ± "+(envPct*1.5).toFixed(3)+"%"],
+  ["INACTIVE LEGACY INDICATOR",demarker.toFixed(1)],
+  ["INACTIVE LEGACY INDICATOR","EMA20 ± "+(envPct*1.5).toFixed(3)+"%"],
   ["Fractal Chaos Bands","20-bar high/low "+donHi.toPrecision(5)+" / "+donLo.toPrecision(5)],
   ["OsMA",(emaLast(close,12)-emaLast(close,26)).toPrecision(4)],
   ["Parabolic SAR",last.close>low.slice(-5).reduce((a,b)=>Math.min(a,b),Infinity)?"Price above recent SAR proxy":"Price below recent SAR proxy"],
@@ -1607,8 +1607,8 @@ function updateTop(rows){
  $("topEntry").textContent=Number.isFinite(entry)&&entry>0?fmt(entry):"—";
  $("topRsi").textContent=Number.isFinite(Number(s?.macdHistogram))?Number(s.macdHistogram).toPrecision(5):"—";
  $("indicatorChips").innerHTML=s&&r?.candles?.length>=35
-  ?`<span>Donchian · ${s.donchian?(s.donchian.upper?"Upper "+fmt(s.donchian.upper):"—")+" / "+(s.donchian.lower?"Lower "+fmt(s.donchian.lower):"—"):"—"}</span><span>REMOVED · DeMarker · ${Number.isFinite(s.demarker)?s.demarker.toFixed(3):"—"}</span><span>RSI · ${Number.isFinite(s.rsi)?s.rsi.toFixed(1):"—"}</span><span>Patterns · ${(s.detected_patterns||[]).slice(0,2).join(" · ")||"None"}</span><span>Quote · ${fresh?"Live":"Delayed"}`
-  :'<span>Donchian · REMOVED · DeMarker · RSI waiting</span><span>Pattern backup · waiting</span><span>Candle confirmation · waiting</span><span>Feed freshness · waiting</span>';
+  ?`<span>Donchian · ${s.donchian?(s.donchian.upper?"Upper "+fmt(s.donchian.upper):"—")+" / "+(s.donchian.lower?"Lower "+fmt(s.donchian.lower):"—"):"—"}</span><span>INACTIVE LEGACY INDICATOR · ${Number.isFinite(s.demarker)?s.demarker.toFixed(3):"—"}</span><span>RSI · ${Number.isFinite(s.rsi)?s.rsi.toFixed(1):"—"}</span><span>Patterns · ${(s.detected_patterns||[]).slice(0,2).join(" · ")||"None"}</span><span>Quote · ${fresh?"Live":"Delayed"}`
+  :'<span>Donchian · INACTIVE LEGACY INDICATOR · RSI waiting</span><span>Pattern backup · waiting</span><span>Candle confirmation · waiting</span><span>Feed freshness · waiting</span>';
  if(s?.breakdown){
   $("analysisBreakdown").innerHTML=Object.entries(s.breakdown).map(([k,v])=>`<div><span>${({trend:"Trend structure",momentum:"Momentum",volatility:"Volatility",price:"Price action",structure:"Market structure",feed:"Feed integrity"})[k]||k}</span><b>${v||"—"}</b></div>`).join("");
  }else $("analysisBreakdown").innerHTML="<div><span>Analysis</span><b>Waiting for market data</b></div>";
@@ -1616,7 +1616,7 @@ function updateTop(rows){
  if($("heroLiveLabel"))$("heroLiveLabel").textContent=fresh?(liveTicks[r.id]?"Live tick updates · active":"Candle data · recent"):r?.candles?.length?"Latest candle analysis":"Waiting for scan";
  $("topExpiry").textContent=candidate?"Live direction · callouts update when candle momentum changes":
   "Waiting for a live directional candle.";
- if($("durationAdvice"))$("durationAdvice").textContent=candidate?`${candleDurationSuggestion(r)} · ${formatHold(candleDurationSeconds(r))}`:"30-second signal window";
+ if($("durationAdvice"))$("durationAdvice").textContent=candidate?`${candleDurationSuggestion(r)} · ${formatHold(candleDurationSeconds(r))}`:"Signal held until the 30-second candle closes";
 }
 
 function renderHistory(){$("signalHistory").innerHTML=history.length?history.map(x=>`<tr><td>${x.time}</td><td>${x.asset}</td><td><span class="tag ${x.side.toLowerCase()}">${x.side}</span></td><td>${fmt(x.entry)}</td><td>${x.score}</td><td>${x.age}s</td></tr>`).join(""):'<tr><td colspan="6" class="empty">No directional setups recorded yet.</td></tr>'}
@@ -2165,7 +2165,7 @@ function apexLayerScore(bars,asset){
  // Donchian Channel 20 uses the prior 20 candles so the current bar cannot self-define the breakout.
  const dcWindow=bars.slice(-21,-1),donHi=Math.max(...dcWindow.map(c=>Number(c.high)), -Infinity),donLo=Math.min(...dcWindow.map(c=>Number(c.low)),Infinity),donMid=(donHi+donLo)/2;
  const donUp=Number(last.close)>donHi,donDown=Number(last.close)<donLo,donNearUpper=Number(last.close)>=donMid&&Number(last.close)>Number(prev.close),donNearLower=Number(last.close)<=donMid&&Number(last.close)<Number(prev.close);
- // REMOVED · DeMarker(14): compare current high extension and low extension against prior candle.
+ // INACTIVE LEGACY INDICATOR(14): compare current high extension and low extension against prior candle.
  const demUp=[],demDown=[];for(let i=Math.max(1,n-14);i<n;i++){demUp.push(Math.max(0,Number(bars[i].high)-Number(bars[i-1].high)));demDown.push(Math.max(0,Number(bars[i-1].low)-Number(bars[i].low)));}
  const demSum=demUp.reduce((a,b)=>a+b,0)+demDown.reduce((a,b)=>a+b,0),demarker=demSum?demUp.reduce((a,b)=>a+b,0)/demSum:0.5;
  const demPrevUp=[],demPrevDown=[];for(let i=Math.max(1,n-15);i<n-1;i++){demPrevUp.push(Math.max(0,Number(bars[i].high)-Number(bars[i-1].high)));demPrevDown.push(Math.max(0,Number(bars[i-1].low)-Number(bars[i].low)));}const demPrevSum=demPrevUp.reduce((a,b)=>a+b,0)+demPrevDown.reduce((a,b)=>a+b,0),demPrev=demPrevSum?demPrevUp.reduce((a,b)=>a+b,0)/demPrevSum:demarker;
@@ -2198,9 +2198,9 @@ function apexLayerScore(bars,asset){
  const chop=(doji||inside)&&aligned<3,earlyEligible=fresh&&!chop&&dominant!=="WAIT"&&aligned>=3&&baseScore>=60,earlyRawDirection=earlyEligible?dominant:"WAIT";
  let rawDirection="WAIT",score=0,reason="No clear alignment from the three selected indicators. Wait.";
  if(!fresh)reason="WAIT · feed is stale; fresh candle/tick data required.";
- else if(dominant==="WAIT")reason="WAIT · Donchian, REMOVED · DeMarker, RSI and OsMA do not establish a directional majority.";
+ else if(dominant==="WAIT")reason="WAIT · Keltner, OsMA and Donchian do not establish a directional majority.";
  else if(chop)reason="WAIT · candle compression/indecision detected; indicator agreement is not strong enough.";
- else if(aligned>=3&&baseScore>=65&&qualityScore>=65){rawDirection=dominant;score=qualityScore;const level=score>=85?"STRONG":"QUALIFIED";reason=level+" "+rawDirection+" · indicator alignment "+aligned+"/4. "+(patternBonus?"Supporting candle pattern detected: "+patterns.join(", ")+". ":patternPenalty?"Opposing candle pattern reduces confidence. ":"Price-action patterns are backup context only. ")+"Only Donchian Channel, REMOVED · DeMarker, RSI and OsMA generate directional signals.";}
+ else if(aligned>=3&&baseScore>=65&&qualityScore>=65){rawDirection=dominant;score=qualityScore;const level=score>=85?"STRONG":"QUALIFIED";reason=level+" "+rawDirection+" · indicator alignment "+aligned+"/4. "+(patternBonus?"Supporting candle pattern detected: "+patterns.join(", ")+". ":patternPenalty?"Opposing candle pattern reduces confidence. ":"Price-action patterns are backup context only. ")+"Only Donchian Channel, INACTIVE LEGACY INDICATOR, RSI and OsMA generate directional signals.";}
  else reason="EARLY SETUP · "+dominant+" bias from "+aligned+"/4 indicators, but not enough strength for a confirmed callout.";
  const earlyReason=earlyEligible?`Early ${earlyRawDirection} setup · ${baseScore}/100 indicator score, ${aligned}/3 aligned. Pattern backup: ${patterns.length?patterns.join(", "):"none detected"}. Heads-up only.`:"No early setup meets the indicator alignment threshold.";
  const entry=Number(last.close),support=Math.min(...lows.slice(-10)),resistance=Math.max(...highs.slice(-10));
@@ -2242,7 +2242,7 @@ function apexStartScheduler(){clearInterval(cycle);running=true;apexClosedDecisi
 function apexPauseScheduler(){running=false;clearInterval(cycle);cycle=null;$("startBtn").disabled=false;$("pauseBtn").disabled=true;$("scanStateBadge").textContent="PAUSED";status("SCANNER PAUSED");}
 $("startBtn").onclick=apexStartScheduler;$("pauseBtn").onclick=apexPauseScheduler;
 $("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";$("interval").onchange=()=>{$("interval").value="30000";if($("mobileInterval"))$("mobileInterval").value="30000";$("cycleText").textContent="30-second candle phases · UTC-10 display";saveState();};
-const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · EARLY BUY/SELL heads-up when at least 2 of 3 indicators align · confirmed callouts use Donchian Channel (20), REMOVED · DeMarker (14), RSI (14), and OsMA (12/26/9) only · candlestick and chart patterns are backup confirmation and cannot independently trigger calls · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
+const notice=document.querySelector(".notice");if(notice)notice.innerHTML="<b>30-second Super Intelligence:</b> Native OTCharts Pocket Option OTC 30-second candles · one selected pair per scan to protect API quota · EARLY BUY/SELL heads-up when at least 2 of 3 indicators align · confirmed callouts use Donchian Channel (20), INACTIVE LEGACY INDICATOR (14), RSI (14), and OsMA (12/26/9) only · candlestick and chart patterns are backup confirmation and cannot independently trigger calls · scan five seconds after each confirmed candle close. Stale, incomplete or conflicting data returns WAIT. Paper trading only; no broker orders are placed.";
 const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC analysis · EARLY opportunity alerts · confirmed entry 65/100 · +5s post-close scan · UTC-10 chart display.";
 const hero=$("heroLiveLabel");if(hero)hero.textContent="30-second market intelligence · next-candle callouts";
 const tfNote=$("tfNote");if(tfNote)tfNote.textContent="30-second native OTC candles · scanner locked";
@@ -2283,16 +2283,16 @@ renderCandleIntel=function(r){
  const originalDraw=drawChart;drawChart=function(){originalDraw();updateCandleTracker();};
  const originalScan=scan;scan=async function(){await originalScan();updateUpcoming();updateCandleTracker();};
  // Force the automatic schedule to one scan every completed 30-second candle, no pre-close/1-second trigger.
- const heartbeat=apexIntelligentHeartbeat;apexIntelligentHeartbeat=function(){const now=apexServerNow(),bucket=Math.floor(now/APEX_BAR_MS),within=now-bucket*APEX_BAR_MS,key=String(bucket);apexRenderIntelligentPanel();if(within<5000){apex30State.phase='POST-CLOSE SETTLE';apex30State.detail='Completed 30-second candle is settling; no pre-close scan is scheduled.';}else if(apexClosedDecisionKey!==key&&running&&!busy){apexClosedDecisionKey=key;apex30State.phase='30-SECOND SCAN';apex30State.detail='Scanning once in this 30-second cycle after candle close; no 1-second pre-scan.';scan();}};
+ const heartbeat=apexIntelligentHeartbeat;apexIntelligentHeartbeat=function(){const now=apexServerNow(),bucket=Math.floor(now/APEX_BAR_MS),within=now-bucket*APEX_BAR_MS,key=String(bucket);apexRenderIntelligentPanel();if(within<5000){apex30State.phase='POST-CLOSE SETTLE';apex30State.detail='Completed 30-second candle is settling; no opening-frame scan is scheduled.';}else if(apexClosedDecisionKey!==key&&running&&!busy){apexClosedDecisionKey=key;apex30State.phase='30-SECOND SCAN';apex30State.detail='Scanning once in this 30-second cycle after candle close; no 1-second pre-scan.';scan();}};
  const oldStart=apexStartScheduler;apexStartScheduler=function(){clearInterval(cycle);running=true;apexClosedDecisionKey=String(Math.floor(apexServerNow()/APEX_BAR_MS));$id('startBtn').disabled=true;$id('pauseBtn').disabled=false;$id('scanStateBadge').textContent='30S AUTO SCAN';status('30-SECOND SCANS · NO PRE-SCAN',true);apex30State.phase='WAITING FOR NEXT 30S CLOSE';apex30State.detail='One scan per completed 30-second candle; no 1-second pre-scan.';cycle=setInterval(apexIntelligentHeartbeat,200);};
- const note=document.querySelector('.notice');if(note)note.innerHTML='<b>30-second scan intelligence:</b> RSI (14), OsMA (12/26/9), Donchian Channel (20), and REMOVED · DeMarker (14) are the only directional indicators. Candle/chart patterns and per-candle volume are backup context. One scan per completed 30-second candle; no 1-second pre-scan. Volume may be unavailable from provider data. Stale/conflicting evidence returns WAIT. Paper only; no broker orders.';
+ const note=document.querySelector('.notice');if(note)note.innerHTML='<b>30-second scan intelligence:</b> RSI (14), OsMA (12/26/9), Donchian Channel (20), and INACTIVE LEGACY INDICATOR (14) are the only directional indicators. Candle/chart patterns and per-candle volume are backup context. One scan per completed 30-second candle; no 1-second pre-scan. Volume may be unavailable from provider data. Stale/conflicting evidence returns WAIT. Paper only; no broker orders.';
  const foot=$id('scanFoot');if(foot)foot.textContent='30-second candle scan · no pre-scan · upcoming signal outlooks · volume/direction tracker';
  updateUpcoming();updateCandleTracker();
 })();
 </script>
 <script id="apex-v11-preclose-indicator-update">
 (()=>{
- // V12 clean core: REMOVED · Envelopes; evaluate the forming 30s candle at T-1s.
+ // V12 clean core: INACTIVE LEGACY INDICATOR; evaluate the forming 30s candle at T+3s.
  const version="V12-PRECLOSE-KELTNER";
  const ema=(vals,period)=>{if(!vals.length)return [];const k=2/(period+1);let v=vals[0],out=[v];for(let i=1;i<vals.length;i++){v=vals[i]*k+v*(1-k);out.push(v);}return out;};
  const sma=(vals,period)=>vals.slice(-period).reduce((a,b)=>a+b,0)/Math.max(1,vals.slice(-period).length);
@@ -2312,7 +2312,7 @@ renderCandleIntel=function(r){
   let up=0,down=0,pu=0,pd=0;for(let i=n-14;i<n;i++){up+=Math.max(0,highs[i]-highs[i-1]);down+=Math.max(0,lows[i-1]-lows[i]);}for(let i=n-15;i<n-1;i++){pu+=Math.max(0,highs[i]-highs[i-1]);pd+=Math.max(0,lows[i-1]-lows[i]);}const dem=up+down?up/(up+down):.5,demPrev=pu+pd?pu/(pu+pd):dem,demBull=dem>=.52&&dem>demPrev,demBear=dem<=.48&&dem<demPrev;
   // OsMA 12/26/9
   const e12=ema(closes,12),e26=ema(closes,26),ml=closes.map((v,i)=>e12[i]-e26[i]),sl=ema(ml,9),osma=ml.at(-1)-sl.at(-1),osmaPrev=ml.at(-2)-sl.at(-2),osmaBull=osma>0&&osma>osmaPrev,osmaBear=osma<0&&osma<osmaPrev;
-  // REMOVED · Envelopes: 20-period SMA with 0.10% band.
+  // INACTIVE LEGACY INDICATOR: 20-period SMA with 0.10% band.
   const envMid=sma(closes,20),envPct=.001,envUpper=envMid*(1+envPct),envLower=envMid*(1-envPct),envBull=last.close>envMid&&last.close>prev.close,envBear=last.close<envMid&&last.close<prev.close,envExtremeLow=last.low<=envLower,envExtremeHigh=last.high>=envUpper;
   const bullish=[donBull||donBreakUp,demBull,osmaBull,envBull||envExtremeLow].filter(Boolean).length,bearish=[donBear||donBreakDown,demBear,osmaBear,envBear||envExtremeHigh].filter(Boolean).length,dominant=bullish>bearish?"CALL":bearish>bullish?"PUT":"WAIT",align=Math.max(bullish,bearish),score=Math.round(align/4*100),
   direction=fresh&&align>=3&&dominant!=="WAIT"?dominant:"WAIT",earlyDirection=fresh&&align>=3&&dominant!=="WAIT"?dominant:"WAIT";
@@ -2323,22 +2323,22 @@ renderCandleIntel=function(r){
   result.structured={signal:raw==="CALL"?"BUY":raw==="PUT"?"SELL":"WAIT",confidence_score:score,detected_patterns:confluences,recommended_expiry:"30s",reasoning:reason};return result;
  }
  analyze=function(candles,asset){return scoreLive(candles,asset);};
- // Let the analyzer see the currently forming bar so the T-1s scan is predictive.
+ // Let the analyzer see the currently forming bar so the T+3s scan is predictive.
  closedOneMinuteCandles=function(candles){return (candles||[]).filter(c=>Number(c.timeMs)>0&&Number(c.timeMs)<=Date.now()+1000);};
- // Replace the scheduler with a single pre-close scan per 30-second candle.
+ // Replace the scheduler with a single opening-frame scan per 30-second candle.
  const originalHeartbeat=apexIntelligentHeartbeat;
- apexIntelligentHeartbeat=function(){const now=apexServerNow(),bucket=Math.floor(now/APEX_BAR_MS),within=now-bucket*APEX_BAR_MS,key=String(bucket),remaining=APEX_BAR_MS-within;apexRenderIntelligentPanel();apex30State.phase=remaining<=2000?"T−1S PRE-CLOSE SCAN":"MONITORING LIVE CANDLE";apex30State.detail=remaining<=2000?"Final pre-close snapshot: scanning movement before the next candle forms.":"Monitoring the active 30-second candle; final scan is scheduled one second before close.";if(remaining<=1200&&remaining>0&&apexPreCloseKey!==key&&running&&!busy){apexPreCloseKey=key;apex30State.phase="T−1S PRE-CLOSE SCAN";apex30State.detail="Evaluating the forming candle at the final second before close.";scan();}};
- apexStartScheduler=function(){clearInterval(cycle);running=true;apexPreCloseKey="";$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="30S PRE-CLOSE SCAN";status("PRE-CLOSE SCANS · T−1S",true);apex30State.phase="MONITORING LIVE CANDLE";apex30State.detail="One scan is scheduled for T−1 second of every 30-second candle.";cycle=setInterval(apexIntelligentHeartbeat,100);};
+ apexIntelligentHeartbeat=function(){const now=apexServerNow(),bucket=Math.floor(now/APEX_BAR_MS),within=now-bucket*APEX_BAR_MS,key=String(bucket),remaining=APEX_BAR_MS-within;apexRenderIntelligentPanel();apex30State.phase=remaining<=2000?"T+3S OPENING SCAN":"MONITORING LIVE CANDLE";apex30State.detail=remaining<=2000?"Final pre-close snapshot: scanning movement before the next candle forms.":"Monitoring the active 30-second candle; final scan is scheduled one second before close.";if(remaining<=1200&&remaining>0&&apexPreCloseKey!==key&&running&&!busy){apexPreCloseKey=key;apex30State.phase="T+3S OPENING SCAN";apex30State.detail="Evaluating the forming candle at the final second before close.";scan();}};
+ apexStartScheduler=function(){clearInterval(cycle);running=true;apexPreCloseKey="";$("startBtn").disabled=true;$("pauseBtn").disabled=false;$("scanStateBadge").textContent="30S PRE-CLOSE SCAN";status("PRE-CLOSE SCANS · T−1S",true);apex30State.phase="MONITORING LIVE CANDLE";apex30State.detail="One scan is scheduled for T+3 seconds after open of every 30-second candle.";cycle=setInterval(apexIntelligentHeartbeat,100);};
  // Remove RSI from all visible indicator labels and update system descriptions.
- const chips=$("indicatorChips");if(chips)chips.innerHTML="<span>Keltner Channel EMA20 ± 2 ATR</span><span>OsMA 12/26/9</span><span>Donchian Channel 20</span><span>OsMA 12/26/9</span><span>Donchian Channel · 20</span><span>Pre-close scan · T−1s</span>";
- const note=document.querySelector(".notice");if(note)note.innerHTML="<b>30-second pre-close intelligence:</b> Signals use Donchian Channel (20), REMOVED · DeMarker (14), OsMA (12/26/9), REMOVED · Envelopes (SMA20 ±0.10%), . The active candle is scanned once at T−1 second to estimate next-candle direction. Stale data or mixed indicator evidence returns WAIT. Paper trading only; no broker orders.";
- const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC scan · early pre-close callouts at T−1 second · five-indicator confluence";
- const meta=$("chartMeta");if(meta)meta.textContent="30-second candle structure · Donchian · REMOVED · DeMarker · OsMA · REMOVED · Envelopes";
+ const chips=$("indicatorChips");if(chips)chips.innerHTML="<span>Keltner Channel EMA20 ± 2 ATR</span><span>OsMA 12/26/9</span><span>Donchian Channel 20</span><span>OsMA 12/26/9</span><span>Donchian Channel · 20</span><span>Pre-close scan · T+3s</span>";
+ const note=document.querySelector(".notice");if(note)note.innerHTML="<b>30-second opening-frame intelligence:</b> Signals use Donchian Channel (20), INACTIVE LEGACY INDICATOR (14), OsMA (12/26/9), INACTIVE LEGACY INDICATOR (SMA20 ±0.10%), . The active candle is scanned once at T+3 seconds after open to estimate next-candle direction. Stale data or mixed indicator evidence returns WAIT. Paper trading only; no broker orders.";
+ const foot=$("scanFoot");if(foot)foot.textContent="30-second OTC scan · early pre-close callouts at T+3 seconds after open · five-indicator confluence";
+ const meta=$("chartMeta");if(meta)meta.textContent="30-second candle structure · Donchian · INACTIVE LEGACY INDICATOR · OsMA · INACTIVE LEGACY INDICATOR";
  const engineHead=$("apexIntelligentEngine")?.querySelector(".apex-engine-head b");if(engineHead)engineHead.textContent="APEX INTELLIGENCE · T−1S PRE-CLOSE · FIVE INDICATORS";
  // Update candle intel without RSI references when the renderer refreshes.
  const oldRenderCandleIntel=renderCandleIntel;
- renderCandleIntel=function(r){const host=$("candleIntel");if(!host)return;const a=r?.analysis||{},layers=a.layers||[],badge=a.direction==="CALL"?"BUY":a.direction==="PUT"?"SELL":"WAIT",cls=a.direction==="CALL"?"ci-buy":a.direction==="PUT"?"ci-sell":"ci-wait";host.innerHTML='<div class="ci-head"><div class="ci-title">PRE-CLOSE INDICATOR INTELLIGENCE · 30S</div><span class="ci-pill '+cls+'">'+badge+'</span></div><div class="ci-reading">'+(a.earlyReason||a.reason||"Waiting for next pre-close scan")+'</div><div class="ci-detail">'+layers.map(x=>x.name+" · "+x.value).join("<br>")+'</div><div class="ci-grid"><div><small>INDICATOR ALIGNMENT</small><b>'+Number(a.evidence_count||0)+'/5</b></div><div><small>SCAN TIMING</small><b>T−1 second</b></div><div><small>REMOVED · DeMarker</small><b>'+ (Number.isFinite(Number(a.demarker))?Number(a.demarker).toFixed(3):"—") +'</b></div><div><small>SETUP SCORE</small><b>'+Number(a.score||0)+'/100</b></div></div>';};
- const updateUpcomingLabel=()=>{const host=$("apexUpcomingSignals");if(host)host.querySelectorAll("small").forEach(s=>{if(s.textContent.includes("Indicators:"))s.textContent="Indicators: Donchian · REMOVED · DeMarker · OsMA · REMOVED · Envelopes";});};
+ renderCandleIntel=function(r){const host=$("candleIntel");if(!host)return;const a=r?.analysis||{},layers=a.layers||[],badge=a.direction==="CALL"?"BUY":a.direction==="PUT"?"SELL":"WAIT",cls=a.direction==="CALL"?"ci-buy":a.direction==="PUT"?"ci-sell":"ci-wait";host.innerHTML='<div class="ci-head"><div class="ci-title">PRE-CLOSE INDICATOR INTELLIGENCE · 30S</div><span class="ci-pill '+cls+'">'+badge+'</span></div><div class="ci-reading">'+(a.earlyReason||a.reason||"Waiting for next opening-frame scan")+'</div><div class="ci-detail">'+layers.map(x=>x.name+" · "+x.value).join("<br>")+'</div><div class="ci-grid"><div><small>INDICATOR ALIGNMENT</small><b>'+Number(a.evidence_count||0)+'/5</b></div><div><small>SCAN TIMING</small><b>T+3 seconds after open</b></div><div><small>INACTIVE LEGACY INDICATOR</small><b>'+ (Number.isFinite(Number(a.demarker))?Number(a.demarker).toFixed(3):"—") +'</b></div><div><small>SETUP SCORE</small><b>'+Number(a.score||0)+'/100</b></div></div>';};
+ const updateUpcomingLabel=()=>{const host=$("apexUpcomingSignals");if(host)host.querySelectorAll("small").forEach(s=>{if(s.textContent.includes("Indicators:"))s.textContent="Indicators: Donchian · INACTIVE LEGACY INDICATOR · OsMA · INACTIVE LEGACY INDICATOR";});};
  setTimeout(updateUpcomingLabel,0);
 })();
 </script>
@@ -2403,7 +2403,7 @@ renderCandleIntel=function(r){
  const bucketNow=()=>String(Math.floor(apexServerNow()/barMs));
  btn.addEventListener('click',e=>{if(lockedBucket===bucketNow()){e.stopImmediatePropagation();statusEl.textContent='Signal locked for this 30-second candle; unlocks at 00:00.';}},true);
  const observer=new MutationObserver(()=>{if(resultEl.style.display==='block'&&resultEl.innerHTML&&!resultEl.innerHTML.includes('Analysis in progress')){lockedBucket=bucketNow();btn.title='Locked until next 30-second candle';}});observer.observe(resultEl,{childList:true,subtree:true,characterData:true});
- apexIntelligentHeartbeat=function(){const now=apexServerNow(),bucket=Math.floor(now/barMs),within=now-bucket*barMs,key=String(bucket),remaining=barMs-within;apexRenderIntelligentPanel();apex30State.phase=remaining<=1200?'T-1S AUTO SCAN':'MONITORING LIVE CANDLE';apex30State.detail=remaining<=1200?'Regular scan and Deep Scan synchronize; the Deep Scan direction is locked for this candle.':'Deep Scan auto-runs with the regular scan near candle close.';if(remaining<=1200&&remaining>0&&apexPreCloseKey!==key&&running&&!busy){apexPreCloseKey=key;apex30State.phase='T-1S REGULAR + DEEP SCAN';apex30State.detail='Regular scan and Deep Scan run together once; Deep Scan direction remains locked until 00:00.';scan();if(autoBucket!==key){autoBucket=key;lockedBucket=null;setTimeout(()=>{if(autoBucket===key&&btn&&!btn.disabled)btn.click();},0);}}};
+ apexIntelligentHeartbeat=function(){const now=apexServerNow(),bucket=Math.floor(now/barMs),within=now-bucket*barMs,key=String(bucket),remaining=barMs-within;apexRenderIntelligentPanel();apex30State.phase=remaining<=1200?'T+3S AUTO SCAN':'MONITORING LIVE CANDLE';apex30State.detail=remaining<=1200?'Regular scan and Deep Scan synchronize; the Deep Scan direction is locked for this candle.':'Deep Scan auto-runs with the regular scan near candle close.';if(remaining<=1200&&remaining>0&&apexPreCloseKey!==key&&running&&!busy){apexPreCloseKey=key;apex30State.phase='T-1S REGULAR + DEEP SCAN';apex30State.detail='Regular scan and Deep Scan run together once; Deep Scan direction remains locked until 00:00.';scan();if(autoBucket!==key){autoBucket=key;lockedBucket=null;setTimeout(()=>{if(autoBucket===key&&btn&&!btn.disabled)btn.click();},0);}}};
  apexStartScheduler=function(){clearInterval(cycle);running=true;apexPreCloseKey='';lockedBucket=null;autoBucket=null;document.getElementById('startBtn').disabled=true;document.getElementById('pauseBtn').disabled=false;document.getElementById('scanStateBadge').textContent='30S REGULAR + DEEP AUTO';status('30-SECOND AUTO SCAN · REGULAR + DEEP · SIGNAL LOCK',true);apex30State.phase='MONITORING LIVE CANDLE';apex30State.detail='Regular scan and Deep Scan are linked. Both run once at the regular scan trigger; Deep Scan signal is locked until 00:00.';cycle=setInterval(apexIntelligentHeartbeat,100);};
 })();
 </script>
@@ -2464,13 +2464,13 @@ renderCandleIntel=function(r){
   const py=y(+bars.at(-1).close),target=direction==='CALL'?Math.max(lower,Math.min(max,+bars.at(-1).close+atr*.65)):direction==='PUT'?Math.max(min,Math.min(upper,+bars.at(-1).close-atr*.65)):+bars.at(-1).close;
   ctx.strokeStyle=direction==='CALL'?'#38efb1':direction==='PUT'?'#ff6688':'#ffd078';ctx.lineWidth=2.5;ctx.setLineDash([6,5]);ctx.beginPath();ctx.moveTo(xLast,py);ctx.quadraticCurveTo((xLast+xFuture)/2,py+(direction==='CALL'?-plotH*.06:direction==='PUT'?plotH*.06:0),xFuture,y(target));ctx.stroke();ctx.setLineDash([]);
   const label=proj?.behavior||'DIRECTIONAL PROJECTION',labelColor=direction==='CALL'?'#38efb1':direction==='PUT'?'#ff6688':'#ffd078';ctx.fillStyle='#081321';ctx.strokeStyle=labelColor;ctx.lineWidth=1;const bx=Math.max(left,Math.min(w-right-175,xFuture-80)),by=Math.max(top,Math.min(h-bottom-35,y(target)-30));ctx.fillRect(bx,by,175,30);ctx.strokeRect(bx,by,175,30);ctx.fillStyle=labelColor;ctx.textAlign='center';ctx.fillText(label.slice(0,30),bx+87.5,by+12);ctx.fillText(direction==='CALL'?'PROJECTED UP':direction==='PUT'?'PROJECTED DOWN':'NO EDGE',bx+87.5,by+24);ctx.restore();
-  const meta=$('chartMeta');if(meta)meta.textContent='30s candle structure · Donchian · REMOVED · DeMarker · OsMA · REMOVED · Envelopes · Keltner';
+  const meta=$('chartMeta');if(meta)meta.textContent='30s candle structure · Keltner · OsMA · Donchian';
  }catch(e){console.warn('V12 chart projection overlay skipped',e)}};
  // V12 clean indicator set: legacy supplemental modules and obsolete indicator code removed.
- const chips=$('indicatorChips');if(chips)chips.innerHTML='<span>Keltner Channel EMA20 ± 2 ATR</span><span>OsMA 12/26/9</span><span>Donchian Channel 20</span><span>OsMA 12/26/9</span><span>Donchian Channel · 20</span><span>Keltner EMA20 ± 2 ATR</span><span>Pre-close scan · T−1s</span>';
- const notice=document.querySelector('.notice');if(notice)notice.innerHTML='<b>V12 Early Projection:</b> Directional confluence uses Donchian, REMOVED · DeMarker, OsMA, REMOVED · Envelopes, and Keltner. Chart projects the current early bias and labels possible pullback, rejection, or fakeout behavior. Projection and confluence are not win probabilities.';
+ const chips=$('indicatorChips');if(chips)chips.innerHTML='<span>Keltner Channel EMA20 ± 2 ATR</span><span>OsMA 12/26/9</span><span>Donchian Channel 20</span><span>OsMA 12/26/9</span><span>Donchian Channel · 20</span><span>Keltner EMA20 ± 2 ATR</span><span>Pre-close scan · T+3s</span>';
+ const notice=document.querySelector('.notice');if(notice)notice.innerHTML='<b>V12 Early Projection:</b> Directional confluence uses Donchian, INACTIVE LEGACY INDICATOR, OsMA, INACTIVE LEGACY INDICATOR, and Keltner. Chart projects the current early bias and labels possible pullback, rejection, or fakeout behavior. Projection and confluence are not win probabilities.';
  const head=$('apexIntelligentEngine')?.querySelector('.apex-engine-head b');if(head)head.textContent='APEX INTELLIGENCE · KELTNER + EARLY PROJECTION';
- const meta=$('chartMeta');if(meta)meta.textContent='30-second chart · Donchian · REMOVED · DeMarker · OsMA · REMOVED · Envelopes · Keltner';
+ const meta=$('chartMeta');if(meta)meta.textContent='30-second chart · Keltner · OsMA · Donchian';
  const scanFoot=$('scanFoot');if(scanFoot)scanFoot.textContent='30-second OTC scan · five indicator confluence · early projection overlay';
 })();
 </script>
@@ -2616,22 +2616,21 @@ renderCandleIntel=function(r){
   const weather=$('radarWeather'),gauge=$('radarGaugeFill'),summary=$('radarSummary'),slots=$('radarSlots');
   if(!weather||!slots)return;
   const f=lastForecast,pack=lastPowerPack;
-  const bias=(f?.direction==='CALL'||pack?.bias==='BULLISH')?'BULLISH':(f?.direction==='PUT'||pack?.bias==='BEARISH')?'BEARISH':'NEUTRAL';
-  weather.textContent=bias;
-  weather.className='radar-weather '+(bias==='BULLISH'?'bull':bias==='BEARISH'?'bear':'neutral');
+  let direction=f?.direction==='CALL'||f?.direction==='PUT'?f.direction:(pack?.bias==='BULLISH'?'CALL':pack?.bias==='BEARISH'?'PUT':'WAIT');
+  const bias=direction==='CALL'?'BULLISH':direction==='PUT'?'BEARISH':'NEUTRAL';
   const power=Number(f?.power??pack?.power??0);
+  weather.textContent=bias;weather.className='radar-weather '+(bias==='BULLISH'?'bull':bias==='BEARISH'?'bear':'neutral');
   if(gauge){gauge.style.width=clamp(bias==='BULLISH'?50+power/2:bias==='BEARISH'?50-power/2:50,4,96)+'%';gauge.style.background=bias==='BULLISH'?'linear-gradient(90deg,#1a8b65,#70f4bd)':bias==='BEARISH'?'linear-gradient(90deg,#ff7f99,#77364d)':'linear-gradient(90deg,#8a7441,#d5bd73)';}
-  if(summary)summary.textContent=f?`${bias} market weather · latest Deep Scan ${f.direction==='CALL'?'BUY':f.direction==='PUT'?'SELL':'WAIT'} · power ${power}/100. Future boxes remain provisional.`:'Waiting for a fresh OTC tick and first AI-backed Deep Scan.';
+  if(summary)summary.textContent=f?`${bias} bias · latest scan ${direction==='CALL'?'BUY':direction==='PUT'?'SELL':'WAIT'} · ${power}/100 power. Future slots are scenario projections and are rescored at +3s.`:'Waiting for fresh ticks. The five slots will show the current scan direction or WAIT, not empty queued boxes.';
   const labels=['NOW','+30s','+60s','+90s','+120s'];
   const html=labels.map((label,i)=>{
-   if(i===0&&f){
-    const d=f.direction,txt=d==='CALL'?'BUY SIGNAL':d==='PUT'?'SELL SIGNAL':'WAIT / NO TRADE';
+    const decay=[1,.88,.76,.64,.52][i],slotPower=Math.round(power*decay);
+    let d=direction;
+    if(!f||direction==='WAIT'||slotPower<35)d='WAIT';
+    const text=d==='CALL'?(i===0?'BUY SIGNAL':'BUY OUTLOOK'):d==='PUT'?(i===0?'SELL SIGNAL':'SELL OUTLOOK'):'WAIT / NO EDGE';
     const cls=d==='CALL'?'bull':d==='PUT'?'bear':'neutral';
-    return `<div class="radar-slot ${cls}"><span>${label}</span><b>${txt}</b><small>Power ${power}/100 · current frame</small></div>`;
-   }
-   const watchText=bias==='BULLISH'?'BULLISH WATCH':bias==='BEARISH'?'BEARISH WATCH':'WAIT / MIXED';
-   const cls=bias==='BULLISH'?'bull':bias==='BEARISH'?'bear':'neutral';
-   return `<div class="radar-slot ${cls}"><span>${label}</span><b>${watchText}</b><small>Provisional · rescan at +3s</small></div>`;
+    const detail=i===0?(f?'Current candle scan':'Awaiting first scan'):`Scenario only · rescored ${label==='NOW'?'now':'at candle +3s'}`;
+    return `<div class="radar-slot ${cls}"><span>${label}</span><b>${text}</b><small>${d==='WAIT'?'No directional edge':`Power ${slotPower}/100 · ${detail}`}</small></div>`;
   }).join('');
   slots.innerHTML=html;
  }
@@ -2661,7 +2660,7 @@ renderCandleIntel=function(r){
   }
   lastForecast={direction:dir,power,bias:pack.bias,status:ai?'AI+TECH':'TECH'};
   lastDeepResult=result;renderRadar();
-  setText('apexDeepScanStatus',`Deep Scan complete · ${side} · power ${power}/100 · ${new Date().toLocaleTimeString()}`);
+  setText('apexDeepScanStatus',`Deep Scan complete · ${side} · power ${power}/100 · held until candle close · ${new Date().toLocaleTimeString()}`);
  }
  function setLiveSignal(result,pack){
   const dir=result.direction,word=dir==='CALL'?'BUY':dir==='PUT'?'SELL':'WAIT',cls=dir==='CALL'?'call':dir==='PUT'?'put':'wait';
@@ -2681,7 +2680,7 @@ renderCandleIntel=function(r){
    const secs=Math.max(0,Math.ceil((currentExpiry-Date.now())/1000));
    setText('signalCountdown',`00:${String(clamp(secs,0,30)).padStart(2,'0')}`);
   }
-  const chips=$('indicatorChips');if(chips)chips.innerHTML='<span>Keltner EMA20 ± 2 ATR</span><span>OsMA 12/26/9</span><span>Donchian Channel 20</span><span>Deep Scan +3s</span>';
+  const chips=$('indicatorChips');if(chips)chips.innerHTML='<span>Keltner Channel</span><span>OsMA</span><span>Donchian Channel</span><span>Scan +3s after candle open</span>';
   const signalPanel=$('signalPanel');if(signalPanel){const h=signalPanel.querySelector('.panel-head h2');if(h)h.textContent='LIVE DEEP SCAN SIGNAL';}
  }
  const previousRenderScanner=renderScanner;
@@ -2700,7 +2699,7 @@ renderCandleIntel=function(r){
    setText('topExpiry','A new directional signal is decided once per candle, 3 seconds after it opens.');
    setText('topAsset',ASSETS.find(a=>a.id===selectedChart)?.name||selectedChart||'—');
    setText('topEntry',fmt(liveTicks?.[selectedChart]?.price??results[selectedChart]?.livePrice??results[selectedChart]?.price));
-   const chips=$('indicatorChips');if(chips)chips.innerHTML='<span>Keltner EMA20 ± 2 ATR</span><span>OsMA 12/26/9</span><span>Donchian Channel 20</span><span>Deep Scan +3s</span>';
+   const chips=$('indicatorChips');if(chips)chips.innerHTML='<span>Keltner Channel</span><span>OsMA</span><span>Donchian Channel</span><span>Scan +3s after candle open</span>';
   }
   const body=$('scannerBody');
   if(body)body.querySelectorAll('tr[data-asset]').forEach(row=>{if(row.getAttribute('data-asset')!==selectedChart)row.remove();});
@@ -2710,16 +2709,10 @@ renderCandleIntel=function(r){
  candleDurationSeconds=function(r){const v=Number(r?.analysis?.suggestedHoldSeconds);return [5,10,15,30].includes(v)?v:30;};
  function renderCandleIntelDeep(result,pack){
   const host=$('candleIntel');if(!host)return;
-  host.innerHTML=`<div class="ci-head"><div class="ci-title">30-SECOND CANDLE FRAME INTELLIGENCE</div><span class="ci-pill ${result.direction==='CALL'?'ci-buy':result.direction==='PUT'?'ci-sell':'ci-wait'}">${result.direction==='CALL'?'BUY':result.direction==='PUT'?'SELL':'WAIT'}</span></div>
-   <div class="ci-reading">${esc(pack.frame.read)}</div>
-   <div class="ci-grid">
-    <div><small>KELTNER</small><b>${esc(pack.keltner.read)}</b></div>
-    <div><small>OsMA</small><b>${esc(pack.osma.read)}</b></div>
-    <div><small>DONCHIAN</small><b>${esc(pack.donchian.read)}</b></div>
-    <div><small>POWER</small><b>${result.power}/100 · evidence only</b></div>
-   </div>
-   <div class="ci-detail">${esc(result.reason)}</div>
-   <div class="ci-foot">This reading starts 3 seconds into the active OTC candle. It is re-evaluated on the next candle; no win is guaranteed.</div>`;
+  host.innerHTML=`<div class="ci-head"><div class="ci-title">30-SECOND DEEP SCAN · OPENING FRAME</div><span class="ci-pill ${result.direction==='CALL'?'ci-buy':result.direction==='PUT'?'ci-sell':'ci-wait'}">${result.direction==='CALL'?'BUY':result.direction==='PUT'?'SELL':'WAIT'}</span></div>
+   <div class="ci-reading">Scan timing: 30-second candle countdown → 00:00 → wait 3 seconds → scan the forming candle.</div>
+   <div class="ci-grid"><div><small>KELTNER CHANNEL</small><b>${esc(pack.keltner.read)} · ${esc(pack.keltner.direction)}</b></div><div><small>OsMA</small><b>${esc(pack.osma.read)} · ${esc(pack.osma.direction)}</b></div><div><small>DONCHIAN CHANNEL</small><b>${esc(pack.donchian.read)} · ${esc(pack.donchian.direction)}</b></div><div><small>POWER</small><b>${result.power}/100 · setup strength only</b></div></div>
+   <div class="ci-detail">${esc(result.reason)}</div><div class="ci-foot">Signal locks for the current candle and expires at 00:00. No signal is issued during the 3-second opening wait. Forecasts are not guarantees.</div>`;
  }
  function updateLayerGrid(pack){
   const grid=$('apexLayerGrid');if(!grid)return;
@@ -2992,14 +2985,14 @@ renderCandleIntel=function(r){
  if(assetSelect)assetSelect.onchange=()=>{
   selectedChart=assetSelect.value;$('mobileAsset').value=selectedChart;watch.add(selectedChart);
   renderWatch();stopLiveStream();connectLiveStream();lastBucket=bucketNow();lastForecast=null;lastPowerPack=null;lastDeepResult=null;displayedBucket=null;currentExpiry=0;observedBucket=bucketNow();renderRadar();drawChart();saveState();
-  setText('apexDeepScanStatus','Market changed · waiting for a fresh 30-second opening frame.');
+  setText('apexDeepScanStatus','Market changed · countdown to 00:00, then scan 3s after candle open.');
  };
  const mobileSelect=$('mobileAsset');
  if(mobileSelect)mobileSelect.addEventListener('change',e=>{
   e.stopImmediatePropagation();
   selectedChart=mobileSelect.value;if(assetSelect)assetSelect.value=selectedChart;
   watch.add(selectedChart);renderWatch();stopLiveStream();connectLiveStream();lastBucket=bucketNow();lastForecast=null;lastPowerPack=null;lastDeepResult=null;displayedBucket=null;currentExpiry=0;observedBucket=bucketNow();renderRadar();drawChart();saveState();
-  setText('apexDeepScanStatus','Market changed · waiting for a fresh 30-second opening frame.');
+  setText('apexDeepScanStatus','Market changed · countdown to 00:00, then scan 3s after candle open.');
  },true);
  // Disable old secondary scan triggers; the Deep Scan is now the single scanner.
  if($('threshold'))$('threshold').onchange=()=>{$('thresholdText').textContent='AI-backed power';};
@@ -3013,26 +3006,26 @@ renderCandleIntel=function(r){
  cycle=null;running=false;busy=false;
  setChartTimeframe();
  setText('scanStateBadge','DEEP SCAN READY');
- setText('apexDeepScanStatus','Ready · selected OTC pair will be scanned 3 seconds after each new 30-second candle opens.');
- const chips=$('indicatorChips');if(chips)chips.innerHTML='<span>Keltner EMA20 ± 2 ATR</span><span>OsMA 12/26/9</span><span>Donchian Channel 20</span><span>Deep Scan +3s</span>';
- const notice=document.querySelector('.notice');if(notice)notice.innerHTML='<b>APEXSCAN V14 · DEEP SCAN RADAR:</b> One selected OTC pair is analyzed 3 seconds after each new 30-second candle opens. The only indicators are Keltner Channel, OsMA, and Donchian Channel. ChatGPT independently confirms the technical read through the secured Netlify function. Power is setup-strength evidence, not win probability. Stale feed or conflicting evidence returns WAIT. Paper trading only; no broker orders are placed.';
+ setText('apexDeepScanStatus','Cycle: candle countdown 30s → 00:00 → wait 3s for formation → Deep Scan.');
+ const chips=$('indicatorChips');if(chips)chips.innerHTML='<span>Keltner Channel</span><span>OsMA</span><span>Donchian Channel</span><span>Scan +3s after candle open</span>';
+ const notice=document.querySelector('.notice');if(notice)notice.innerHTML='<b>APEXSCAN V15 · SCAN TIMING + RADAR FIX:</b> One selected OTC pair is analyzed 3 seconds after each new 30-second candle opens. The only indicators are Keltner Channel, OsMA, and Donchian Channel. ChatGPT independently confirms the technical read through the secured Netlify function. Power is setup-strength evidence, not win probability. Stale feed or conflicting evidence returns WAIT. Paper trading only; no broker orders are placed.';
  const engineHead=$('apexIntelligentEngine')?.querySelector('.apex-engine-head b');if(engineHead)engineHead.textContent='APEXSCAN DEEP SCAN · 30S OPENING FRAME';
  const topRsiLabel=$('topRsi')?.parentElement?.querySelector('small');if(topRsiLabel)topRsiLabel.textContent='ACTIVE INDICATORS';
  const legacyThreshold=$('threshold')?.closest('.mini');if(legacyThreshold)legacyThreshold.style.display='none';
- const aiTag=$('apexDeepScan')?.querySelector('.pill');if(aiTag)aiTag.textContent='30S OPENING FRAME · +3S';
+ const aiTag=$('apexDeepScan')?.querySelector('.pill');if(aiTag)aiTag.textContent='30S CYCLE · SCAN AT +3S';
  const oldLayerText=$('apexLayerGrid');if(oldLayerText)oldLayerText.innerHTML='<div class="apex-layer-item"><small>KELTNER CHANNEL</small><b>Waiting for first scan</b></div><div class="apex-layer-item"><small>OsMA 12/26/9</small><b>Waiting for first scan</b></div><div class="apex-layer-item"><small>DONCHIAN CHANNEL 20</small><b>Waiting for first scan</b></div>';
- const boardHead=$('scannerPanel')?.querySelector('.panel-head h2');if(boardHead)boardHead.textContent='DEEP SCAN · LIVE OTC BOARD';
+ const legacyBoard=$('scannerPanel');if(legacyBoard)legacyBoard.style.display='none'; const boardHead=$('scannerPanel')?.querySelector('.panel-head h2');if(boardHead)boardHead.textContent='DEEP SCAN · LIVE OTC BOARD';
  const head=$('apexDeepScan')?.querySelector('.deep-head h3');if(head)head.textContent='APEXSCAN PRO · CHATGPT LIVE DEEP SCAN';
  const sub=$('apexDeepScan')?.querySelector('.deep-sub');if(sub)sub.textContent='One selected OTC pair · chart-integrated 30-second box trail · Deep Scan begins 3 seconds after candle open. ChatGPT independently reviews candle structure and the three enabled indicators before a directional signal is released.';
  const signalPill=$('signalPanel')?.querySelector('.signal-tools .pill');if(signalPill)signalPill.textContent='CHATGPT + KELTNER · OsMA · DONCHIAN';
- const closeLabel=$('candleCountdown')?.parentElement?.querySelector('small');if(closeLabel)closeLabel.textContent='30-SECOND CANDLE CLOSES IN';
+ const closeLabel=$('candleCountdown')?.parentElement?.querySelector('small');if(closeLabel)closeLabel.textContent='CANDLE CLOSES IN · SCAN 3S AFTER 00:00';
  const title=document.querySelector('.top h1');if(title)title.textContent='APEXSCAN PRO · LIVE DEEP SCAN';
  const chartTitle=$('chartPanel')?.querySelector('.panel-head h2');if(chartTitle)chartTitle.textContent='LIVE OTC CHART · 30S BOX TRAIL';
  const intro=document.querySelector('.top p');if(intro)intro.textContent='ChatGPT-backed OTC analysis · one signal decision 3 seconds into each new 30-second candle';
  const signalCallout=$('signalCallout');if(signalCallout)signalCallout.textContent='Waiting for the selected OTC pair and a fresh 30-second opening frame.';
  const table=$('scannerPanel')?.querySelector('table');if(table){const hs=table.querySelectorAll('thead th');if(hs[5])hs[5].textContent='Power';if(hs[7])hs[7].textContent='AI';}
  const historyTable=$('signalHistoryPanel')?.querySelector('thead th:nth-child(5)');if(historyTable)historyTable.textContent='Power';
- const scanCycleLabel=$('cycleText')?.parentElement?.querySelector('label');if(scanCycleLabel)scanCycleLabel.textContent='Deep Scan cadence';setText('cycleText','30 sec · +3s');
+ const scanCycleLabel=$('cycleText')?.parentElement?.querySelector('label');if(scanCycleLabel)scanCycleLabel.textContent='Deep Scan cadence';setText('cycleText','30s countdown + 3s opening wait');
  const thresholdBox=$('thresholdText')?.closest('.mini');if(thresholdBox)thresholdBox.style.display='none';
  const earlyBox=$('staleCount')?.parentElement;if(earlyBox){const l=earlyBox.querySelector('label');if(l)l.textContent='WAIT / NO TRADE';}
  const marketBox=$('freshCount')?.parentElement;if(marketBox){const l=marketBox.querySelector('label');if(l)l.textContent='Candles checked';}
@@ -3040,7 +3033,7 @@ renderCandleIntel=function(r){
  const oldEnginePanel=$('enginePanel');if(oldEnginePanel)oldEnginePanel.style.display='none';
  const oldModeField=$('scanMode')?.closest('.field');if(oldModeField)oldModeField.style.display='none';
  const oldThresholdField=$('threshold')?.closest('.field');if(oldThresholdField)oldThresholdField.style.display='none';
- const oldIntervalField=$('interval')?.closest('.field');if(oldIntervalField){oldIntervalField.querySelector('label').textContent='Deep Scan cadence';$('interval').innerHTML='<option value="30000" selected>One scan every 30 seconds</option>';}
+ const oldIntervalField=$('interval')?.closest('.field');if(oldIntervalField){oldIntervalField.querySelector('label').textContent='Deep Scan cadence';$('interval').innerHTML='<option value="30000" selected>30-second candle · scan at +3s after open</option>';}
  const rsiLabel=$('topRsi')?.parentElement?.querySelector('small');if(rsiLabel)rsiLabel.textContent='ACTIVE INDICATORS';
  renderRadar();
  // Rebind the stream after replacing the tick listener so one shared connection uses the new handler.
@@ -3068,9 +3061,9 @@ renderCandleIntel=function(r){
  const chips=document.getElementById('indicatorChips');if(chips)chips.innerHTML='<span>Keltner Channel · EMA20 ± 2 ATR</span><span>OsMA · 12/26/9</span><span>Donchian Channel · 20</span><span>Deep Scan · 30s +3s</span>';
  const meta=document.getElementById('chartMeta');if(meta)meta.textContent='Keltner Channel · OsMA · Donchian Channel · 30s Box Trail';
  const h=document.querySelector('#signalPanel .panel-head h2');if(h)h.textContent='LIVE DEEP SCAN SIGNAL';
- const notice=document.querySelector('.notice');if(notice)notice.innerHTML='<b>APEXSCAN V14 · DEEP SCAN RADAR:</b> Selected OTC pair is analyzed 3 seconds after each 30-second candle opens. Active indicators: Keltner Channel, OsMA, and Donchian Channel only. Box Trail reads live candle pressure, range position, wick rejection, breakout and fakeout behavior. ChatGPT confirmation is through the secured Netlify analysis function. Power is evidence strength, not win probability. Paper-only; no broker orders.';
- const title=document.querySelector('.top h1');if(title)title.textContent='APEXSCAN PRO · V14 DEEP SCAN RADAR';
- const brand=document.querySelector('.brand small');if(brand)brand.textContent='PRO · V14 DEEP SCAN RADAR';
+ const notice=document.querySelector('.notice');if(notice)notice.innerHTML='<b>APEXSCAN V15 · SCAN TIMING + RADAR FIX:</b> Selected OTC pair is analyzed 3 seconds after each 30-second candle opens. Active indicators: Keltner Channel, OsMA, and Donchian Channel only. Box Trail reads live candle pressure, range position, wick rejection, breakout and fakeout behavior. ChatGPT confirmation is through the secured Netlify analysis function. Power is evidence strength, not win probability. Paper-only; no broker orders.';
+ const title=document.querySelector('.top h1');if(title)title.textContent='APEXSCAN PRO · V15 SCAN TIMING + RADAR FIX';
+ const brand=document.querySelector('.brand small');if(brand)brand.textContent='PRO · V15 SCAN TIMING + RADAR FIX';
  const legacy=document.querySelector('#enginePanel .panel-head h2');if(legacy)legacy.textContent='LEGACY INDICATOR PANEL · INACTIVE';
 })();</script>
 </body></html>
