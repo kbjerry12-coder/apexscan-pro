@@ -1,3 +1,6 @@
+// APEXSCAN PRO — single-symbol OTC live stream relay
+// Netlify Function: /.netlify/functions/otc-stream?symbol=EURUSD_otc
+
 export default async (request) => {
   const key = process.env.OTCHARTS_API_KEY;
 
@@ -6,21 +9,18 @@ export default async (request) => {
     "Cache-Control": "no-cache, no-store, no-transform",
     "Connection": "keep-alive",
     "X-Accel-Buffering": "no",
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": "*"
   };
 
   const sendError = (payload) =>
     new Response(
       `event: stream_error\ndata: ${JSON.stringify(payload)}\n\n`,
-      {
-        status: 200,
-        headers,
-      }
+      { status: 200, headers }
     );
 
   if (!key) {
     return sendError({
-      error: "OTCHARTS_API_KEY is missing from Netlify environment variables.",
+      error: "OTCHARTS_API_KEY is missing from Netlify environment variables."
     });
   }
 
@@ -30,7 +30,7 @@ export default async (request) => {
   if (!/^[A-Z0-9#]+_otc$/.test(symbol)) {
     return sendError({
       error: "Invalid OTC symbol",
-      symbol,
+      symbol
     });
   }
 
@@ -41,15 +41,15 @@ export default async (request) => {
   let upstreamResponse;
 
   try {
-    upstreamResponse = await fetch(upstream.toString(), {
+    upstreamResponse = await fetch(upstream, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${key}`,
         Accept: "text/event-stream",
         "Cache-Control": "no-cache",
-        "User-Agent": "APEXSCAN-PRO",
+        "User-Agent": "APEXSCAN-PRO"
       },
-      signal: request.signal,
+      signal: request.signal
     });
 
     if (!upstreamResponse.ok) {
@@ -68,38 +68,51 @@ export default async (request) => {
         statusText: upstreamResponse.statusText,
         symbol,
         details,
-        retryAfter: upstreamResponse.headers.get("retry-after"),
+        retryAfter: upstreamResponse.headers.get("retry-after")
       });
     }
 
     if (!upstreamResponse.body) {
       return sendError({
         error: "OTCharts returned HTTP 200 but no stream body.",
-        symbol,
+        symbol
       });
     }
 
     const reader = upstreamResponse.body.getReader();
-    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
 
-    let heartbeat;
+    let heartbeat = null;
     let cancelled = false;
 
     const stream = new ReadableStream({
       async start(controller) {
-        heartbeat = setInterval(() => {
-          if (!cancelled) {
+        try {
+          // Initial connection event
+          controller.enqueue(
+            encoder.encode(
+              `event: connected\ndata: ${JSON.stringify({
+                status: "connected",
+                symbol,
+                time: Date.now()
+              })}\n\n`
+            )
+          );
+
+          // Keep the client connection alive
+          heartbeat = setInterval(() => {
+            if (cancelled) return;
+
             try {
               controller.enqueue(
-                new TextEncoder().encode(": keep-alive\n\n")
+                encoder.encode(`: keep-alive ${Date.now()}\n\n`)
               );
             } catch {
-              // Client connection is likely closed.
+              // Client disconnected
             }
-          }
-        }, 15000);
+          }, 15000);
 
-        try {
+          // Relay OTCharts events unchanged
           while (!cancelled) {
             const { done, value } = await reader.read();
 
@@ -113,21 +126,20 @@ export default async (request) => {
           }
         } catch (error) {
           if (!cancelled) {
-            const payload = {
-              error: "OTCharts upstream stream ended",
-              details: error?.message || "Stream interrupted",
-              symbol,
-            };
-
             try {
               controller.enqueue(
-                new TextEncoder().encode(
-                  `event: stream_error\ndata: ${JSON.stringify(payload)}\n\n`
+                encoder.encode(
+                  `event: stream_error\ndata: ${JSON.stringify({
+                    error: "OTCharts upstream stream ended",
+                    details: error?.message || "Stream interrupted",
+                    symbol
+                  })}\n\n`
                 )
               );
+
               controller.close();
             } catch {
-              // Client already disconnected.
+              // Client already disconnected
             }
           }
         } finally {
@@ -140,7 +152,7 @@ export default async (request) => {
           try {
             reader.releaseLock();
           } catch {
-            // Ignore cleanup errors.
+            // Ignore cleanup errors
           }
         }
       },
@@ -155,20 +167,20 @@ export default async (request) => {
         try {
           await reader.cancel();
         } catch {
-          // Upstream may already be closed.
+          // Upstream already closed
         }
-      },
+      }
     });
 
     return new Response(stream, {
       status: 200,
-      headers,
+      headers
     });
   } catch (error) {
     return sendError({
       error: "OTCharts connection failed",
       details: error?.message || "Unknown network error",
-      symbol,
+      symbol
     });
   }
 };
