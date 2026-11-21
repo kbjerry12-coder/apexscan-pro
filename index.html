@@ -2446,4 +2446,71 @@ renderCandleIntel=function(r){
 })();
 </script>
 
+
+<!-- APEXSCAN V12.1 SHADOW CONTEXT + SIGNAL CHALLENGE ENGINE: isolated; does not change signal decisions -->
+<script id="apex-shadow-context-engine-v1">
+(()=>{
+ const STORE='apexscan_deep_scan_adaptive_learning_v1';
+ const result=document.getElementById('apexDeepScanResult');
+ if(!result||document.getElementById('apexShadowContext'))return;
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const pct=n=>`${Math.round(n*100)}%`;
+ const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+ const getBars=snap=>(snap?.candles||[]).filter(c=>[c.open,c.high,c.low,c.close].every(v=>Number.isFinite(Number(v)))).slice(-40).map(c=>({o:+c.open,h:+c.high,l:+c.low,c:+c.close,t:c.timeMs||c.time}));
+ function diagnose(snap){
+  const bars=getBars(snap);if(bars.length<12)return null;
+  const closes=bars.map(b=>b.c),last=bars.at(-1),prev=bars.at(-2),recent=bars.slice(-8),prior=bars.slice(-20,-8);
+  const hi=Math.max(...bars.slice(-20).map(b=>b.h)),lo=Math.min(...bars.slice(-20).map(b=>b.l)),range=Math.max(1e-12,last.h-last.l),body=Math.abs(last.c-last.o),upper=last.h-Math.max(last.o,last.c),lower=Math.min(last.o,last.c)-last.l;
+  const ema=(a,n)=>{let v=a[0],k=2/(n+1);for(let i=1;i<a.length;i++)v=a[i]*k+v*(1-k);return v;};
+  const short=ema(closes.slice(-8),5),long=ema(closes.slice(-20),13),delta=closes.at(-1)-closes.at(-6);
+  const upSwing=Math.max(...recent.map(b=>b.h))-Math.min(...recent.map(b=>b.l));
+  const prevSwing=prior.length?Math.max(...prior.map(b=>b.h))-Math.min(...prior.map(b=>b.l)):upSwing;
+  const trend=short>long&&delta>0?'UPTREND':short<long&&delta<0?'DOWNTRE':'MIXED / RANGE';
+  const volatility=prevSwing>0?upSwing/prevSwing:1;
+  const regime=trend==='MIXED / RANGE'?'RANGE / UNCLEAR':volatility>1.45?'HIGH VOLATILITY '+trend:trend;
+  const support=Math.min(...bars.slice(-12).map(b=>b.l)),resistance=Math.max(...bars.slice(-12).map(b=>b.h));
+  const supportDist=(last.c-support)/Math.max(1e-12,hi-lo),resDist=(resistance-last.c)/Math.max(1e-12,hi-lo);
+  const nearSupport=supportDist<.12,nearResistance=resDist<.12;
+  const candle=body/range<.22?'SMALL BODY / INDECISION':upper/range>.42?'UPPER-WICK REJECTION':lower/range>.42?'LOWER-WICK REJECTION':last.c>last.o?'BULLISH BODY':last.c<last.o?'BEARISH BODY':'DOJI';
+  const breakoutUp=last.c>Math.max(...bars.slice(-7,-1).map(b=>b.h)),breakoutDown=last.c<Math.min(...bars.slice(-7,-1).map(b=>b.l));
+  const fakeout=breakoutUp&&upper/range>.35?'POSSIBLE UPSIDE FAKEOUT':breakoutDown&&lower/range>.35?'POSSIBLE DOWNSIDE FAKEOUT':'NO CLEAR FAILED BREAK';
+  const pullback=trend==='UPTRE'&&last.c<prev.c&&last.c>lo?'POSSIBLE UPTREND PULLBACK':trend==='DOWNTRE'&&last.c>prev.c&&last.c<hi?'POSSIBLE DOWNTRE PULLBACK':'NO CLEAR PULLBACK';
+  const dir=snap.direction,opposition=[];if(dir==='CALL'&&nearResistance)opposition.push('Price is close to recent resistance');if(dir==='PUT'&&nearSupport)opposition.push('Price is close to recent support');if(dir==='CALL'&&trend==='DOWNTRE')opposition.push('Short-term structure is bearish');if(dir==='PUT'&&trend==='UPTRE')opposition.push('Short-term structure is bullish');if(dir==='CALL'&&upper/range>.42)opposition.push('Upper-wick rejection conflicts with upward entry');if(dir==='PUT'&&lower/range>.42)opposition.push('Lower-wick rejection conflicts with downward entry');if(body/range<.22)opposition.push('Latest candle has a small body / indecision');
+  let challenge='PASS WITH CAUTION';if(dir==='WAIT'||opposition.length>=3)challenge='STRONG CONTRADICTION · SHADOW WAIT';else if(opposition.length>=2)challenge='CONFLICTING EVIDENCE · DOWNGRADE';else if(opposition.length===1)challenge='ONE RISK FACTOR';
+  let quality=Math.max(0,Math.min(100,Number(snap.score||0)-opposition.length*12-(regime.includes('HIGH VOLATILITY')?8:0)));
+  return{trend,regime,candle,fakeout,pullback,nearSupport,nearResistance,support,resistance,challenge,quality,opposition,breakoutUp,breakoutDown,volatility};
+ }
+ function historicalPattern(f){try{const db=JSON.parse(localStorage.getItem(STORE)||'{}'),records=Array.isArray(db.records)?db.records:[];const similar=records.filter(r=>{const q=r.fingerprint||{};return q.pair===f.pair&&q.direction===f.direction&&q.candle===f.candle;});const wins=similar.filter(r=>r.outcome==='WIN').length,losses=similar.filter(r=>r.outcome==='LOSS').length,n=wins+losses;return{n,wins,losses,rate:n?Math.round(wins/n*100):null,warning:n>=5&&losses>=4&&losses>=wins*2};}catch(_){return{n:0,wins:0,losses:0,rate:null,warning:false};}}
+ function render(){const snap=window.apexDeepLearningSnapshot;if(!snap)return;const d=diagnose(snap);if(!d)return;let card=document.getElementById('apexShadowContext');if(!card){card=document.createElement('div');card.id='apexShadowContext';card.style.cssText='margin-top:10px;padding:10px;border:1px solid #49638b;border-radius:10px;background:linear-gradient(145deg,#101d32,#071422);color:#d7e9fa;font-size:10px;line-height:1.45';result.appendChild(card);}const hist=historicalPattern({pair:snap.name||snap.id,direction:snap.direction,candle:d.candle});const risks=[...d.opposition];if(hist.warning)risks.push('Similar recorded pattern has repeated losses');card.innerHTML=`<div style="font-weight:1000;color:#9dcfff;letter-spacing:.08em">SHADOW CONTEXT + SIGNAL CHALLENGE</div><div style="margin:7px 0"><b>Market regime:</b> ${esc(d.regime)}<br><b>Trend read:</b> ${esc(d.trend)}<br><b>Latest candle:</b> ${esc(d.candle)}<br><b>Breakout check:</b> ${esc(d.fakeout)}<br><b>Pullback check:</b> ${esc(d.pullback)}<br><b>Nearby support:</b> ${d.nearSupport?'YES':'NO'} · <b>Nearby resistance:</b> ${d.nearResistance?'YES':'NO'}<br><b>Context quality:</b> ${d.quality}/100 (shadow score)</div><div style="border-top:1px solid #294361;padding-top:7px"><b>Challenge verdict:</b> ${esc(d.challenge)}<br><b>Counter-evidence:</b> ${risks.length?risks.map(esc).join(' · '):'No major contradiction found in this limited check'}</div><div style="margin-top:7px;padding:7px;border:1px solid #314a70;border-radius:8px;background:#0a1828"><b>Historical pattern memory (pair + direction + candle):</b> ${hist.n?`${hist.wins}W / ${hist.losses}L across ${hist.n} similar outcomes · ${hist.rate}% wins`:'No matching outcomes yet'}${hist.warning?' · REPEATED-LOSS WARNING':''}</div><small style="display:block;margin-top:7px;color:#7e9bb8">Shadow-only diagnostic. It does not alter, veto, or retrain the current Deep Scan call. Candlestick context is a heuristic, not a guarantee.</small>`;
+ }
+ render();setInterval(render,1200);
+})();
+</script>
+<!-- END V12.1 SHADOW CONTEXT ENGINE -->
+
+// APEXSCAN V12.2 PATTERN MEMORY 2.0 · shadow-only setup-combination learning
+<script id="apex-pattern-memory-v2">
+(()=>{
+ const STORE='apexscan_deep_scan_adaptive_learning_v1',result=document.getElementById('apexDeepScanResult');
+ if(!result||document.getElementById('apexPatternMemoryV2'))return;
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const records=()=>{try{const d=JSON.parse(localStorage.getItem(STORE)||'{}');return Array.isArray(d.records)?d.records:[]}catch(_){return[];}};
+ function layerNames(f){return (Array.isArray(f.layerContext)?f.layerContext:[]).filter(x=>x&&x.name).map(x=>String(x.name).trim());}
+ function scoreMatch(q,f){let score=0,parts=[];if(q.pair===f.pair){score+=2;parts.push('pair');}if(q.direction===f.direction){score+=2;parts.push('direction');}if(q.trend&&q.trend===f.trend){score++;parts.push('trend');}if(q.behavior&&q.behavior===f.behavior){score++;parts.push('behavior');}if(q.candle&&q.candle===f.candle){score++;parts.push('candle');}const ql=layerNames(q),fl=layerNames(f);const overlap=ql.filter(n=>fl.includes(n)).length;if(overlap){score+=Math.min(2,overlap);parts.push(`${overlap} layer overlap`);}return{score,parts};}
+ function analyze(q){const all=records().filter(r=>r.outcome==='WIN'||r.outcome==='LOSS');const matches=all.map(r=>({r,m:scoreMatch(q,r.fingerprint||{})})).filter(x=>x.m.score>=5).sort((a,b)=>b.m.score-a.m.score);const wins=matches.filter(x=>x.r.outcome==='WIN'),losses=matches.filter(x=>x.r.outcome==='LOSS'),n=matches.length,rate=n?Math.round(wins.length/n*100):null;
+ // Aggregate successful and losing layer evidence, requiring minimum 3 attributed outcomes.
+ const layers={};for(const x of matches){for(const l of layerNames(x.r.fingerprint||{})){layers[l]||(layers[l]={w:0,l:0});if(x.r.outcome==='WIN')layers[l].w++;else layers[l].l++;}}
+ const best=Object.entries(layers).map(([name,s])=>({name,...s,n:s.w+s.l,rate:Math.round(s.w/(s.w+s.l)*100)})).filter(x=>x.n>=3).sort((a,b)=>b.rate-a.rate||b.n-a.n).slice(0,4);
+ const worst=Object.entries(layers).map(([name,s])=>({name,...s,n:s.w+s.l,rate:Math.round(s.w/(s.w+s.l)*100)})).filter(x=>x.n>=3).sort((a,b)=>a.rate-b.rate||b.n-a.n).slice(0,3);
+ const grade=n<5?'EARLY SAMPLE · NOT RELIABLE YET':rate>=65?'FAVORABLE HISTORICAL MATCH':rate<=40?'WEAK HISTORICAL MATCH':'MIXED HISTORICAL RESULTS';
+ return{n,w: wins.length,l:losses.length,rate,best,worst,grade,matches};}
+ function render(){const snap=window.apexDeepLearningSnapshot;if(!snap)return;const shadow=document.getElementById('apexShadowContext');if(!shadow)return;let card=document.getElementById('apexPatternMemoryV2');if(!card){card=document.createElement('div');card.id='apexPatternMemoryV2';card.style.cssText='margin-top:9px;padding:10px;border:1px solid #725ca8;border-radius:10px;background:linear-gradient(145deg,#1c1731,#0b1424);color:#e2dcff;font-size:10px;line-height:1.45';shadow.insertAdjacentElement('afterend',card);}
+ const f=snap.fingerprint||snap.learning?.fingerprint||{},q={pair:snap.name||snap.id,direction:snap.direction,trend:snap.analysis?.trend||f.trend,behavior:snap.analysis?.projection?.behavior||f.behavior,candle:f.candle,layerContext:snap.layers||f.layerContext};const a=analyze(q);
+ const fmt=x=>`${x.name} ${x.w}W/${x.l}L (${x.rate}%)`;const best=a.best.length?a.best.map(fmt).join(' · '):'Not enough samples to rank confluences';const worst=a.worst.length?a.worst.map(fmt).join(' · '):'No losing-layer evidence threshold met';
+ card.innerHTML=`<b style="color:#c7aaff;letter-spacing:.06em">PATTERN MEMORY 2.0 · SETUP COMBINATION LEARNING</b><div style="margin:6px 0"><b>Closest historical setup matches:</b> ${a.n} · <b>${a.w}W/${a.l}L</b> · ${a.rate===null?'—':a.rate+'% historical win rate'}<br><b>Assessment:</b> ${esc(a.grade)}<br><b>Winning confluences:</b> ${esc(best)}<br><b>Loss-associated confluences:</b> ${esc(worst)}</div><small style="color:#a9a0c9">Match requires weighted similarity across pair, direction, trend, behavior, candle type and indicator-layer overlap. Per-layer rankings require at least 3 attributed outcomes. Pattern Memory is observational only: no live signal scoring, direction, or veto is changed.</small>`;
+ }
+ render();setInterval(render,1300);
+})();
+</script>
+
 </body></html>
