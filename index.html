@@ -1502,7 +1502,7 @@ function updateTop(rows){
   }else if(r&&["CALL","PUT"].includes(s?.earlyDirection)&&s?.fresh){
    const earlySide=s.earlyDirection==="CALL"?"BUY":"SELL";
    banner.className="signal-callout neutral";
-   banner.innerHTML=`<strong style="display:block;font-size:1.12em;color:#ffd078">EARLY ${earlySide} OPPORTUNITY · ${r.name}</strong><small style="display:block;margin-top:4px">${s.earlyScore}/100 · ${s.earlyEdge}-POINT EDGE</small><small style="display:block;margin-top:5px">Heads-up only — confirmed entry rules have not triggered.</small>`;
+   banner.innerHTML=`<strong style="display:block;font-size:1.12em;color:#ffd078">EARLY ${earlySide} OPPORTUNITY · ${r.name}</strong><small style="display:block;margin-top:4px">ALIGNMENT: ${s.alignmentCount??s.earlyEdge??0}/3 · ${s.alignmentLabel||"INDICATOR CONFLUENCE"}</small><small style="display:block;margin-top:3px">Confluence score ${s.earlyScore}/100 · not a win probability</small><small style="display:block;margin-top:5px">Heads-up only — confirmed entry rules have not triggered.</small>`;
   }else{
    banner.className="signal-callout neutral";
    banner.textContent=!r?"SELECT AN OTC PAIR TO START":
@@ -2395,6 +2395,49 @@ renderCandleIntel=function(r){
 })();
 </script>
 
+<script id="apex-v13-three-indicator-clean-engine">
+(()=>{
+ // V13: only OsMA 12/26/8, Keltner EMA20 +/- 2 ATR(14), Donchian 20 feed Run Deep Scan.
+ const previousAnalyze=analyze;
+ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+ const ema=(values,period)=>{if(!values.length)return [];const k=2/(period+1);let v=values[0],out=[v];for(let i=1;i<values.length;i++){v=values[i]*k+v*(1-k);out.push(v);}return out;};
+ analyze=function(candles,asset){
+  const base=previousAnalyze(candles,asset);
+  if(!base||!Array.isArray(candles)||candles.length<35)return base;
+  const bars=candles.slice(-120),last=bars.at(-1),prev=bars.at(-2),closes=bars.map(x=>Number(x.close));
+  const wait=(reason)=>{base.direction='WAIT';base.rawDirection='WAIT';base.earlyDirection='WAIT';base.earlyRawDirection='WAIT';base.score=0;base.earlyScore=0;base.confidence_score=0;base.signalLevel='WAIT';base.reason=reason;base.earlyReason=reason;base.confluences=[];base.evidence_count=0;base.layers=[];base.structured={...(base.structured||{}),signal:'WAIT',confidence_score:0,recommended_expiry:'30s',reasoning:reason};return base;};
+  if(!last||!prev||bars.some(x=>![x.open,x.high,x.low,x.close].every(v=>Number.isFinite(Number(v)))))return wait('Invalid candle data · signal blocked');
+  // Freshness inherited from the feed layer; indicator calculations below are independent of legacy signals.
+  const fresh=base.fresh!==false;
+  // OsMA = MACD(12,26) - Signal EMA(8)
+  const e12=ema(closes,12),e26=ema(closes,26),macd=closes.map((v,i)=>e12[i]-e26[i]),sig=ema(macd,8),hist=macd.map((v,i)=>v-sig[i]),osma=hist.at(-1),osmaPrev=hist.at(-2),osmaBull=osma>0&&osma>osmaPrev,osmaBear=osma<0&&osma<osmaPrev;
+  // ATR(14) Wilder-style smoothing; Keltner center EMA20 and rails +/- 2 ATR.
+  const tr=bars.map((c,i)=>{const pc=i?Number(bars[i-1].close):Number(c.close);return Math.max(Number(c.high)-Number(c.low),Math.abs(Number(c.high)-pc),Math.abs(Number(c.low)-pc));});
+  let atr=tr.slice(0,14).reduce((a,b)=>a+b,0)/14;const atrSeries=[];for(let i=0;i<tr.length;i++){if(i<14)atr=tr.slice(0,i+1).reduce((a,b)=>a+b,0)/(i+1);else atr=(atr*13+tr[i])/14;atrSeries.push(atr);}const kMid=ema(closes,20),kcMid=kMid.at(-1),kcMidPrev=kMid.at(-2),kcAtr=atrSeries.at(-1),kcUpper=kcMid+2*kcAtr,kcLower=kcMid-2*kcAtr;
+  const kBull=(Number(last.close)>kcMid&&kcMid>kcMidPrev)||(Number(last.low)<=kcLower&&Number(last.close)>kcLower&&Number(last.close)>Number(last.open));
+  const kBear=(Number(last.close)<kcMid&&kcMid<kcMidPrev)||(Number(last.high)>=kcUpper&&Number(last.close)<kcUpper&&Number(last.close)<Number(last.open));
+  // Donchian 20 uses the 20 prior completed bars, excluding the latest bar.
+  const prior=bars.slice(-21,-1),donHi=Math.max(...prior.map(x=>Number(x.high))),donLo=Math.min(...prior.map(x=>Number(x.low))),donMid=(donHi+donLo)/2;
+  const donUp=Number(last.close)>donHi,donDown=Number(last.close)<donLo,donBull=donUp||(Number(last.close)>donMid&&Number(last.close)>Number(prev.close)),donBear=donDown||(Number(last.close)<donMid&&Number(last.close)<Number(prev.close));
+  const layers=[
+   {name:'OsMA · 12/26/8',value:Number(osma).toFixed(6)+' · '+(osmaBull?'POSITIVE / RISING':osmaBear?'NEGATIVE / FALLING':'NEUTRAL'),bull:osmaBull,bear:osmaBear},
+   {name:'Keltner Channel · EMA20 ± 2 ATR(14)',value:`${kcLower.toPrecision(6)} / ${kcMid.toPrecision(6)} / ${kcUpper.toPrecision(6)} · ${kBull?'BULLISH':kBear?'BEARISH':'NEUTRAL'}`,bull:kBull,bear:kBear},
+   {name:'Donchian Channel · 20',value:donUp?'UPPER BREAKOUT':donDown?'LOWER BREAKOUT':donBull?'BULLISH STRUCTURE':donBear?'BEARISH STRUCTURE':'NEUTRAL',bull:donBull,bear:donBear}
+  ];
+  const bulls=layers.filter(x=>x.bull).length,bears=layers.filter(x=>x.bear).length,align=Math.max(bulls,bears),dominant=bulls>bears?'CALL':bears>bulls?'PUT':'WAIT',score=Math.round(align/3*100);
+  const direction=fresh&&align>=2&&dominant!=='WAIT'?dominant:'WAIT',reason=direction==='WAIT'?(fresh?`WAIT · ${align}/3 indicators aligned; need at least 2 agreeing.`:'WAIT · live feed is stale.'):`${direction} · ${align}/3 indicators agree. ${align===3?'All three indicators align.':'Two-indicator confluence; confirmation still required.'}`;
+  base.direction=direction;base.rawDirection=direction;base.earlyDirection=direction;base.earlyRawDirection=direction;base.score=direction==='WAIT'?0:score;base.earlyScore=direction==='WAIT'?0:score;base.confidence_score=score;base.signalLevel=direction==='WAIT'?'WAIT':align===3?'3/3 CONFLUENCE':'2/3 CONFLUENCE';base.reason=reason;base.earlyReason=reason;base.trend=dominant==='CALL'?'UP':dominant==='PUT'?'DOWN':'MIXED';base.layers=layers;base.confluences=layers.filter(x=>direction==='CALL'?x.bull:direction==='PUT'?x.bear:false).map(x=>x.name);base.evidence_count=align;base.bull_score=Math.round(bulls/3*100);base.bear_score=Math.round(bears/3*100);base.donchian={upper:donHi,lower:donLo,middle:donMid};base.keltner={upper:kcUpper,middle:kcMid,lower:kcLower,atr:kcAtr,atrPeriod:14};base.osma={value:osma,previous:osmaPrev};base.alignmentCount=align;base.alignmentSide=dominant;base.alignmentLabel=`${align}/3 ALIGNMENT`;
+  // Preserve the existing candle/chart-pattern engine as market-structure context only. It does not vote in the 3-indicator direction.
+  const structure=typeof detectApexPatterns==='function'?detectApexPatterns(candles):{patterns:[],macro:[],directions:{},swings:[]};
+  base.detected_patterns=structure.patterns||[];base.chart_patterns=structure.macro||[];base.patternContext={patterns:structure.patterns||[],macro:structure.macro||[],swings:structure.swings||[]};
+  base.breakdown={osma:layers[0].value,keltner:layers[1].value,donchian:layers[2].value,alignment:`${align}/3`,marketStructure:[...(structure.patterns||[]),...(structure.macro||[])].join(' · ')||'No pattern detected',feed:fresh?'FRESH':'STALE'};base.structured={...(base.structured||{}),signal:direction==='CALL'?'BUY':direction==='PUT'?'SELL':'WAIT',confidence_score:score,detected_patterns:[...(structure.patterns||[]),...(structure.macro||[])],recommended_expiry:'30s',reasoning:reason};base.contextLayers=[];base.contextConfluences=[];base.marketContext='Three indicators determine direction; candlestick and chart patterns remain market-structure context only';return base;
+ };
+ const chips=document.getElementById('indicatorChips');if(chips)chips.innerHTML='<span>OsMA 12/26/8</span><span>Keltner EMA20 ± 2 ATR(14)</span><span>Donchian 20</span><span>3-indicator confluence</span>';
+ const notice=document.querySelector('.notice');if(notice)notice.innerHTML='<b>V13 Three-Indicator Engine:</b> Run Deep Scan direction is determined only by OsMA (12/26/8), Keltner Channel (EMA20 ± 2 ATR14), and Donchian Channel (20). 2 of 3 must agree for a directional signal; 3 of 3 is full confluence. Legacy indicators do not feed signal direction. Existing candlestick and chart-pattern detection is retained for market-structure context and display only; it does not vote direction. Stale data returns WAIT. Paper trading only; no broker orders.';
+ const meta=document.getElementById('chartMeta');if(meta)meta.textContent='30-second chart · OsMA 12/26/8 · Keltner EMA20 ± 2 ATR14 · Donchian 20';
+ const foot=document.getElementById('scanFoot');if(foot)foot.textContent='30-second scan · three indicators only · 2/3 minimum confluence';
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script id="apex-early-adaptive-learning-v1">
 (()=>{
