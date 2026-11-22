@@ -3269,6 +3269,60 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  mic.onclick=()=>{if(!SpeechRecognition){alert('Voice recognition is not supported in this browser.');return;}if(!recognition){recognition=new SpeechRecognition();recognition.lang='en-US';recognition.continuous=false;recognition.interimResults=false;recognition.onresult=e=>{const cmd=e.results[0][0].transcript.toLowerCase();if(/scan|analy[sz]e|run deep/.test(cmd)){document.getElementById('apexDeepScanBtn')?.click();}else if(/current signal|latest signal/.test(cmd)){const t=document.getElementById('apexDeepScanResult')?.innerText||'No signal available yet';window.apexSpeakSignal(t.slice(0,450));}else if(/upcoming|what.*next|outlook/.test(cmd)){const t=document.getElementById('apexOutlookCards')?.innerText||'No outlook is available yet';window.apexSpeakSignal(t);}else if(/why|reason/.test(cmd)){const t=document.getElementById('apexDeepScanResult')?.innerText||'No scan result';window.apexSpeakSignal(t.slice(0,450));}else if(/stop|quiet|silence/.test(cmd)){speechSynthesis?.cancel();}else{window.apexSpeakSignal('Command not recognized. Try scan this pair, current signal, upcoming outlook, or stop talking.');}};recognition.onerror=()=>{};}recognition.start();mic.textContent='🎙️ Listening';recognition.onend=()=>mic.textContent='🎙️';};
 })();
 </script>
+
+<!-- APEXSCAN V21: remove scan-status panel and replace simplistic outlook with rolling early callouts -->
+<style id="apex-v21-early-projection-style">
+.apex-ai-status-card{display:none!important}
+#apexOutlookCards{grid-template-columns:1fr!important;gap:8px!important}
+#apexOutlookCards .oc{display:grid;grid-template-columns:minmax(80px,.65fr) minmax(100px,1fr);align-items:center;gap:5px;border-radius:11px;padding:10px!important}
+#apexOutlookCards .oc strong{margin:0!important}
+#apexOutlookCards .oc em{grid-column:1/-1}
+.apex-v21-forecast-board{margin-top:10px;padding:11px;border:1px solid #315a82;border-radius:12px;background:linear-gradient(145deg,#0a1b2d,#081321)}
+.apex-v21-forecast-board h3{margin:0 0 8px;font-size:11px;letter-spacing:.1em;color:#9ed6ff}
+.apex-v21-forecast-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.apex-v21-forecast-card{border:1px solid #25415f;border-radius:9px;padding:8px;background:#0b1c2d;min-width:0}
+.apex-v21-forecast-card small{display:block;font-size:8px;color:#8daac9;letter-spacing:.07em;margin-bottom:4px}
+.apex-v21-forecast-card b{display:block;font-size:12px;font-weight:1000;overflow-wrap:anywhere}
+.apex-v21-forecast-card em{display:block;font-style:normal;font-size:9px;line-height:1.35;color:#9bb5d0;margin-top:5px}
+.apex-v21-forecast-card.call b{color:#42efb6}.apex-v21-forecast-card.put b{color:#ff718d}.apex-v21-forecast-card.wait b{color:#ffd078}
+@media(max-width:500px){.apex-v21-forecast-grid{grid-template-columns:1fr}.apex-v21-forecast-card{display:grid;grid-template-columns:90px 1fr;gap:4px 7px}.apex-v21-forecast-card small{margin:0}.apex-v21-forecast-card em{grid-column:1/-1}}
+</style>
+<script id="apex-v21-early-candle-callouts">
+(()=>{
+ const $=id=>document.getElementById(id);
+ // Remove the large status widget that was added by the reference-layout script.
+ const removeStatus=()=>document.querySelectorAll('.apex-ai-status-card').forEach(e=>e.remove());
+ removeStatus();
+ // Replace the three static outlooks with a dedicated rolling early-callout board.
+ const result=$('apexDeepScanResult');if(!result)return;
+ const board=document.createElement('section');board.className='apex-v21-forecast-board';board.id='apexV21ForecastBoard';
+ board.innerHTML='<h3>EARLY CALL-OUTS · UPCOMING 30S CANDLES</h3><div class="apex-v21-forecast-grid" id="apexV21ForecastGrid"><div class="apex-v21-forecast-card wait"><small>NEXT 30S CANDLE</small><b>WAIT / BUILDING</b><em>Waiting for fresh live ticks and a directional scan.</em></div><div class="apex-v21-forecast-card wait"><small>+2 CANDLES · 60S</small><b>WATCH</b><em>Projection only; will update as live price changes.</em></div><div class="apex-v21-forecast-card wait"><small>+3 CANDLES · 90S</small><b>WATCH</b><em>Lower-confidence projection; not a confirmed trade.</em></div></div>';
+ const insertBoard=()=>{const out=$('apexDeepScanResult');if(out&&board.parentElement!==out)out.append(board);};
+ const cleanOldOutlook=()=>{const old=$('apexOutlookCards');if(old)old.remove();document.querySelectorAll('small').forEach(el=>{if(/Outlooks are projections and automatically age/.test(el.textContent))el.remove();});};
+ const currentPair=()=>$('chartAsset')?.value||$('mobileAsset')?.value||'';
+ const getResult=()=>window.apexDeepLearningSnapshot||null;
+ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function forecast(){insertBoard();cleanOldOutlook();const grid=$('apexV21ForecastGrid');if(!grid)return;
+  const r=getResult(),a=r?.analysis||r||{},bars=(r?.candles||[]).slice(-12),tick=null;
+  let dir=a.direction||a.earlyDirection||a.rawDirection||'WAIT';if(!['CALL','PUT'].includes(dir))dir='WAIT';
+  const stamp=r?.stamp?Date.parse(r.stamp):Number(r?.scannedAt||0),scanAge=stamp?Math.max(0,(Date.now()-stamp)/1000):Infinity;
+  const fresh=scanAge<=35;
+  if(bars.length>=3&&fresh){const closes=bars.map(x=>Number(x.close)).filter(Number.isFinite);const last=closes.at(-1),prior=closes.at(-2),prev=closes.at(-3),momentum=(last-prior)+(prior-prev);if(dir==='WAIT'&&Math.abs(momentum)>0)dir=momentum>0?'CALL':'PUT';}
+  const score=Number(a.score??a.power??0);const cards=[
+   {label:'NEXT 30S CANDLE',d:dir,decay:0,detail:dir==='CALL'?'Early BUY watch · direction may continue if live pressure holds.':dir==='PUT'?'Early SELL watch · direction may continue if live pressure holds.':'Mixed evidence · wait for price pressure to resolve.'},
+   {label:'+2 CANDLES · 60S',d:dir==='WAIT'?'WAIT':(score>=60?dir:'WATCH'),decay:12,detail:'Projection from current trend and structure. Recheck at each new candle; not a trade signal.'},
+   {label:'+3 CANDLES · 90S',d:dir==='WAIT'?'WAIT':(score>=72?dir:'WATCH'),decay:22,detail:'Longer-range outlook has lower reliability. Expect possible reversal or pullback.'}
+  ];
+  if(!fresh)cards.forEach(c=>{c.d='WAIT';c.detail='Live ticks are stale or the latest scan is missing. Projection paused until feed refreshes.'});
+  grid.innerHTML=cards.map(c=>{const label=c.d==='CALL'?'EARLY BUY WATCH':c.d==='PUT'?'EARLY SELL WATCH':c.d==='WAIT'?'WAIT / NO TRADE':'DIRECTION WATCH';const cls=c.d==='CALL'?'call':c.d==='PUT'?'put':'wait';return `<div class="apex-v21-forecast-card ${cls}"><small>${esc(c.label)}</small><b>${esc(label)}</b><em>${esc(c.detail)}</em></div>`}).join('');
+ }
+ // Wrap the existing outlook renderer to suppress its static cards and repaint our live projection.
+ if(typeof window.apexBuildOutlook==='function')window.apexBuildOutlook=()=>'';
+ const scanBtn=$('apexDeepScanBtn');if(scanBtn)scanBtn.addEventListener('click',()=>setTimeout(forecast,250));
+ const timer=setInterval(forecast,2000);forecast();
+})();
+</script>
+
 </body></html>
 
 
@@ -3278,7 +3332,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  const $=id=>document.getElementById(id);
  const btn=$('apexDeepScanBtn')||$('scanNow');
  if(!btn)return;
- const BAR=60000,MIN=30;
+ const BAR=30000,MIN=30;
  let busy=false,activeBucket=null;
  const now=()=>typeof apexServerNow==='function'?apexServerNow():Date.now();
  const bucket=()=>Math.floor(now()/BAR)*BAR;
@@ -3316,34 +3370,29 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(form&&t!==null){form.high=Math.max(+form.high,t);form.low=Math.min(+form.low,t);form.close=t;form.live=true;}
   return {completed,forming:form,bars};
  }
- async function run(){
+ async function run(autoClosed=false,closedTarget=null){
   if(busy)return;busy=true;btn.disabled=true;btn.textContent='🧠 SCANNING FORMING CANDLE…';
-  const status=$('apexDeepScanStatus'),out=$('apexDeepScanResult');if(out){out.style.display='block';out.innerHTML='<div class="deep-foot">Detecting the active 1-minute candle…</div>';}
+  const status=$('apexDeepScanStatus'),out=$('apexDeepScanResult');if(out){out.style.display='block';out.innerHTML='<div class="deep-foot">Detecting the active 30-second candle…</div>';}
   try{
-   let target=bucket();
-   // Always scan a candle that has actually been forming for at least 3 seconds.
-   // If the 3-second settle crosses a minute boundary, restart the settle for the new candle.
-   let settled=false;
-   while(!settled){
-    target=bucket();const elapsed=now()-target,waitMs=elapsed<3000?(target+3000-now()):3000;
-    const until=now()+Math.max(0,waitMs);
-    while(now()<until){const sec=Math.max(1,Math.ceil((until-now())/1000));set('apexDeepScanStatus',`NEW FORMING CANDLE · 3-SECOND SETTLE · ${sec}s`);if(out)out.innerHTML=`<div class="deep-foot">AI is waiting for the active candle to form · <b>${sec}</b>s.</div>`;await new Promise(r=>setTimeout(r,200));}
-    if(bucket()===target&&now()-target>=3000)settled=true;
-   }
-   target=bucket();const id=selectedChart||$('chartAsset')?.value||$('mobileAsset')?.value;const asset=ASSETS.find(a=>a.id===id);if(!asset||asset.kind!=='otc')throw Error('Choose an OTC pair first.');
+   let target=autoClosed&&Number.isFinite(closedTarget)?closedTarget:bucket();
+   if(!autoClosed){set('apexDeepScanStatus','MANUAL SCAN · CURRENT 30-SECOND CANDLE');}
+   const id=selectedChart||$('chartAsset')?.value||$('mobileAsset')?.value;const asset=ASSETS.find(a=>a.id===id);if(!asset||asset.kind!=='otc')throw Error('Choose an OTC pair first.');
    const tick=liveTicks?.[id],age=tickAge(id);if(!tick||age>8)throw Error(`Live tick is stale (${Number.isFinite(age)?age.toFixed(1):'unknown'}s). Wait for fresh feed.`);
-   set('apexDeepScanStatus','FETCHING FRESH 1-MINUTE CANDLES…');const data=await fetchAsset(asset);const merged=currentForming(data,id,target,tick);if(merged.completed.length<MIN)throw Error(`Not enough completed 1-minute context (${merged.completed.length}/${MIN}).`);if(!merged.forming)throw Error('Could not identify or construct the currently forming candle.');
+   set('apexDeepScanStatus','FETCHING 1-MINUTE CONTEXT + LIVE 30-SECOND CANDLE…');const data=await fetchAsset(asset);const merged=currentForming(data,id,target,tick);
+   // Use the tick-built 30-second stream candle as the forming candle; 1m API candles remain context only.
+   const liveBars=(results[id]?.candles||[]).filter(c=>c&&Number.isFinite(Number(c.timeMs))&&Math.floor(Number(c.timeMs)/BAR)*BAR===target);
+   if(liveBars.length){const lb=liveBars.at(-1);merged.forming={...lb,timeMs:target,live:true,tickBuilt:true};merged.completed=merged.completed.filter(c=>Math.floor(Number(c.timeMs)/BAR)*BAR<target);}else if(autoClosed){throw Error('The just-closed 30-second tick-built candle is missing. No synthetic signal was generated.');}if(merged.completed.length<MIN)throw Error(`Not enough completed 1-minute context (${merged.completed.length}/${MIN}).`);if(!merged.forming)throw Error('Could not identify or construct the currently forming candle.');
    const elapsedSec=Math.max(0,Math.floor((now()-target)/1000));const pack=stats(merged.completed,merged.forming);const entry=+tick.price;
-   const payload={pair:asset.name||asset.id,symbol:asset.symbol,timeframe:'1-minute',scanTarget:'CURRENT_FORMING_CANDLE_ONLY',instruction:'Analyze the current newly forming 1-minute candle supplied in formingCandle. Do not generate a signal for a previous completed candle. Use completed candles only as context. ChatGPT is the primary decision-maker; indicators are supporting evidence, not voting gates. If there is a discernible directional lean, choose CALL or PUT rather than defaulting to WAIT because evidence is imperfect. Use WAIT only when data is unusable or genuinely directionless.',livePrice:entry,liveTickAgeSeconds:age,
+   const payload={pair:asset.name||asset.id,symbol:asset.symbol,timeframe:'30-second',contextTimeframe:'1-minute',scanTarget:'CURRENT_FORMING_30S_CANDLE_ONLY',instruction:'Analyze the current newly forming 30-second candle supplied in formingCandle. Do not generate a signal for a previous completed candle. Use completed 1-minute candles only as context. ChatGPT is the primary decision-maker; indicators are supporting evidence, not voting gates. If there is a discernible directional lean, choose CALL or PUT rather than defaulting to WAIT because evidence is imperfect. Use WAIT only when data is unusable or genuinely directionless.',livePrice:entry,liveTickAgeSeconds:age,
     candles:merged.completed.slice(-60).map(c=>({time:new Date(+c.timeMs).toISOString(),open:+c.open,high:+c.high,low:+c.low,close:+c.close,volume:c.volume??null})),
     formingCandle:{time:new Date(target).toISOString(),open:+merged.forming.open,high:+merged.forming.high,low:+merged.forming.low,close:+merged.forming.close,ageSeconds:elapsedSec,tickBuilt:!!merged.forming.tickBuilt,isTarget:true},
-    technical:{direction:pack.direction,score:pack.power,trend:pack.bias,signalLevel:'FORMING 1M CANDLE',reason:pack.reason,osma:pack.osma,keltner:pack.keltner,donchian:pack.donchian,frame:pack.frame,rsi:pack.rsi},indicators:{keltner:pack.keltner,osma:pack.osma,donchian:pack.donchian,frame:pack.frame,rsi:pack.rsi}};
-   set('apexDeepScanStatus','CHATGPT ANALYZING THE NEW FORMING CANDLE…');const resp=await fetch('/.netlify/functions/openai-analysis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store'});const ai=await resp.json();if(!resp.ok||ai.error)throw Error(ai.error||`AI endpoint HTTP ${resp.status}`);if(bucket()!==target)throw Error('The candle changed while AI was analyzing. Result discarded so it cannot label the previous candle as current.');
+    technical:{direction:pack.direction,score:pack.power,trend:pack.bias,signalLevel:'FORMING 30S CANDLE',reason:pack.reason,osma:pack.osma,keltner:pack.keltner,donchian:pack.donchian,frame:pack.frame,rsi:pack.rsi},indicators:{keltner:pack.keltner,osma:pack.osma,donchian:pack.donchian,frame:pack.frame,rsi:pack.rsi}};
+   set('apexDeepScanStatus','CHATGPT ANALYZING THE NEW FORMING CANDLE…');const resp=await fetch('/.netlify/functions/openai-analysis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store'});const ai=await resp.json();if(!resp.ok||ai.error)throw Error(ai.error||`AI endpoint HTTP ${resp.status}`);if((autoClosed?bucket()-BAR:bucket())!==target)throw Error('The target candle changed while AI was analyzing. Result discarded to prevent a stale candle signal.');
    const aiDir=['CALL','PUT'].includes(String(ai.signal||ai.direction||'').toUpperCase())?String(ai.signal||ai.direction).toUpperCase():'WAIT';const aiScore=Number(ai.evidenceScore??ai.evidence_score??ai.confidence_score??ai.power??0);const agreement=aiDir===pack.direction&&['CALL','PUT'].includes(aiDir);const power=clamp(Math.round(aiScore*.75+pack.power*.25),0,100);const techDir=['CALL','PUT'].includes(pack.direction)?pack.direction:'WAIT';const dir=aiDir!=='WAIT'?aiDir:techDir;const aiText=ai.summary||ai.reason||((Array.isArray(ai.reasoning)?ai.reasoning.join(' · '):'')||pack.reason);const reason=dir==='WAIT'?`WAIT · ${aiText}`:(aiDir==='WAIT'?`TECHNICAL DIRECTION FALLBACK · ${pack.reason}`:aiText);
    const hold=30;const result={direction:dir,power,reason,aiReason:ai.reason||'',aiDirection:aiDir,holdSeconds:hold,entry,pair:asset.name||asset.id,frameAge:elapsedSec,riskFlags:[...pack.riskFlags,...(ai.risk_flags||[])],candleTimeMs:target,candleTime:new Date(target).toISOString(),analysis:{direction:dir,rawDirection:dir,earlyDirection:dir,score:power,confidence_score:power,fresh:true,age:elapsedSec,candleTimeMs:target,candleTime:new Date(target).toISOString(),trend:pack.bias,reason,signalLevel:'FORMING CANDLE AI',osma:pack.osma,keltner:pack.keltner,donchian:pack.donchian,projection:{behavior:pack.keltner.read+' · '+pack.donchian.read},suggestedHoldSeconds:hold,holdSeconds:hold},layers:[{name:'Keltner',value:pack.keltner.read},{name:'OsMA',value:pack.osma.read},{name:'Donchian',value:pack.donchian.read}]};
    const old=results[id]||{};results[id]={...old,id,name:asset.name||asset.id,price:entry,livePrice:entry,candles:[...merged.completed,merged.forming],analysis:result.analysis,scannedAt:Date.now(),deepScan:result};window.apexDeepLearningSnapshot={id,name:asset.name||asset.id,direction:dir,score:power,analysis:result.analysis,candles:merged.completed,layers:result.layers,stamp:new Date().toISOString()};
-   const color=dir==='CALL'?'#41f2ad':dir==='PUT'?'#ff6388':'#ffd16a';if(out)out.innerHTML=`<div style="padding:16px;border:1px solid ${color};border-radius:14px;background:#071421"><h2 style="color:${color};margin:0">${dir==='CALL'?'▲ CALL / BUY':dir==='PUT'?'▼ PUT / SELL':'⌁ WAIT / NO TRADE'}</h2><p><b>Target:</b> NEW FORMING 1-MINUTE CANDLE · ${new Date(target).toLocaleTimeString()}</p><p><b>Power:</b> ${power}/100 (setup strength, not win probability)</p><p><b>AI:</b> ${esc(aiDir)} · <b>Technical:</b> ${esc(pack.direction)} · <b>Agreement:</b> ${agreement?'YES':'NO'}</p><p><b>Entry:</b> ${entry} · <b>Suggested hold:</b> ${hold}s</p><p>${esc(reason)}</p><p>Indicators: Keltner ${esc(pack.keltner.read)} · OsMA ${esc(pack.osma.read)} · Donchian ${esc(pack.donchian.read)} · RSI ${pack.rsi.toFixed(1)}</p><small>Fresh tick age ${age.toFixed(1)}s · this result is tagged to the forming candle only.</small></div>`;
-   const outlook=window.apexBuildOutlook?window.apexBuildOutlook(dir,power,pack,ai):null;if(outlook&&out)out.insertAdjacentHTML('beforeend',outlook);if(window.apexSpeakSignal&&window.apexVoiceCallouts)window.apexSpeakSignal(`${asset.name||asset.id}: ${dir==='CALL'?'Call':dir==='PUT'?'Put':'Wait'}. AI strength ${power} out of 100. Suggested hold ${hold} seconds.`);set('apexDeepScanStatus',`SCAN COMPLETE · ${dir} · ACTIVE FORMING CANDLE ${new Date(target).toLocaleTimeString()}`);if(typeof renderScannerDeep==='function')renderScannerDeep();if(typeof setLiveSignal==='function'){}try{drawChart();}catch{}if(typeof renderCandleIntel==='function')renderCandleIntel(results[id]);
+   const color=dir==='CALL'?'#41f2ad':dir==='PUT'?'#ff6388':'#ffd16a';if(out)out.innerHTML=`<div style="padding:16px;border:1px solid ${color};border-radius:14px;background:#071421"><h2 style="color:${color};margin:0">${dir==='CALL'?'▲ CALL / BUY':dir==='PUT'?'▼ PUT / SELL':'⌁ WAIT / NO TRADE'}</h2><p><b>Target:</b> NEW FORMING 30-SECOND CANDLE · ${new Date(target).toLocaleTimeString()}</p><p><b>Power:</b> ${power}/100 (setup strength, not win probability)</p><p><b>AI:</b> ${esc(aiDir)} · <b>Technical:</b> ${esc(pack.direction)} · <b>Agreement:</b> ${agreement?'YES':'NO'}</p><p><b>Entry:</b> ${entry} · <b>Suggested hold:</b> ${hold}s</p><p>${esc(reason)}</p><p>Indicators: Keltner ${esc(pack.keltner.read)} · OsMA ${esc(pack.osma.read)} · Donchian ${esc(pack.donchian.read)} · RSI ${pack.rsi.toFixed(1)}</p><small>Fresh tick age ${age.toFixed(1)}s · this result is tagged to the forming 30-second candle only.</small></div>`;
+   const outlook=window.apexBuildOutlook?window.apexBuildOutlook(dir,power,pack,ai):null;if(outlook&&out)out.insertAdjacentHTML('beforeend',outlook);if(window.apexSpeakSignal&&window.apexVoiceCallouts)window.apexSpeakSignal(`${asset.name||asset.id}: ${dir==='CALL'?'Call':dir==='PUT'?'Put':'Wait'}. AI strength ${power} out of 100. Suggested hold ${hold} seconds.`);set('apexDeepScanStatus',`SCAN COMPLETE · ${dir} · ACTIVE FORMING 30S CANDLE ${new Date(target).toLocaleTimeString()}`);if(typeof renderScannerDeep==='function')renderScannerDeep();if(typeof setLiveSignal==='function'){}try{drawChart();}catch{}if(typeof renderCandleIntel==='function')renderCandleIntel(results[id]);
   }catch(err){if(out)out.innerHTML=`<div class="deep-foot" style="color:#ff879f">SCAN BLOCKED · ${esc(err?.message||err)}</div>`;set('apexDeepScanStatus','WAIT / SCAN BLOCKED · '+(err?.message||err));console.warn('APEXSCAN forming-candle scan:',err);}
   finally{busy=false;btn.disabled=false;btn.textContent='🧠 RUN DEEP SCAN';}
  }
@@ -3362,6 +3411,32 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  const scanNow=$('scanNow');if(scanNow)scanNow.style.display='none';
  // Capture before old click listeners so no legacy/closed-candle scan can run.
  document.addEventListener('click',e=>{const target=e.target?.closest?.('#apexDeepScanBtn');if(target){e.preventDefault();e.stopImmediatePropagation();run();}},true);
- set('apexDeepScanStatus','READY · 30-second callout · current forming 1-minute candle');
+ set('apexDeepScanStatus','READY · automatic signal at every completed 30-second candle');
+ // Automatic signals: trigger once just after each 30-second candle boundary, analyzing the candle that just closed.
+ let lastAutoClosedBucket=null;
+ const autoTimer=setInterval(()=>{const b=bucket(),closedBucket=b-BAR;if(lastAutoClosedBucket!==closedBucket&&!busy){lastAutoClosedBucket=closedBucket;run(true,closedBucket);}},200);
+ // Chart-connected Ace chat. Context is assembled from the selected pair's actual live tick, candle cache, and latest scan.
+ const chat=document.createElement('section');chat.id='apexAceLiveChat';chat.style.cssText='margin-top:12px;border:1px solid #355b83;border-radius:14px;background:#071625;padding:12px;color:#cde5ff';
+ chat.innerHTML='<header style="font-weight:900;color:#9ed6ff;letter-spacing:.08em;margin-bottom:6px">CHAT WITH ACE · LIVE CHART CONTEXT</header><div id="apexAceChatStatus" style="font-size:11px;color:#9bb9d2;margin-bottom:8px">Connected to selected pair context when available.</div><div id="apexAceChatLog" style="max-height:220px;overflow:auto;border:1px solid #1f3d5c;border-radius:9px;padding:8px;margin-bottom:8px;font-size:12px"><div>Ask Ace about the selected pair, latest candle, momentum, or why the signal fired.</div></div><div style="display:flex;gap:6px"><input id="apexAceChatInput" placeholder="Ask Ace about this live chart…" style="flex:1;min-width:0;background:#091b2b;color:#e5f2ff;border:1px solid #315477;border-radius:8px;padding:10px"><button id="apexAceChatSend" style="background:#16b9b0;color:#04202a;border:0;border-radius:8px;padding:10px;font-weight:900">SEND</button></div>';
+ const parent=$('apexDeepScan');if(parent&&!$('apexAceLiveChat'))parent.append(chat);
+ const log=$('apexAceChatLog'),inp=$('apexAceChatInput'),send=$('apexAceChatSend'),chatStatus=$('apexAceChatStatus');
+ const append=(who,msg)=>{const d=document.createElement('div');d.style.cssText='margin:7px 0;white-space:pre-wrap';d.innerHTML='<b style="color:'+(who==='ACE'?'#8bd6ff':'#a5f3d1')+'">'+who+':</b> '+String(msg).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));log.append(d);log.scrollTop=log.scrollHeight;};
+ const sendChat=async()=>{const q=inp?.value?.trim();if(!q||send.disabled)return;inp.value='';send.disabled=true;append('YOU',q);try{const id=selectedChart||$('chartAsset')?.value||$('mobileAsset')?.value,asset=ASSETS.find(a=>a.id===id),tick=liveTicks?.[id],age=tickAge(id),latest=results[id]||{};const ctx={pair:asset?.name||id,symbol:asset?.symbol,livePrice:tick?.price??latest.livePrice??latest.price,tickAgeSeconds:age,chartCandles:(latest.candles||[]).slice(-30).map(c=>({time:c.time,open:c.open,high:c.high,low:c.low,close:c.close})),latestSignal:latest.analysis||latest.deepScan?.analysis||null,question:q};chatStatus.textContent='Sending selected chart context to Ace…';const response=await fetch('/.netlify/functions/openai-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ctx),cache:'no-store'});const data=await response.json();if(!response.ok||data.error)throw Error(data.error||'Chat request failed');append('ACE',data.reply||'No reply returned.');chatStatus.textContent='Chart context sent · live tick age '+(Number.isFinite(age)?age.toFixed(1)+'s':'unknown');}catch(e){append('ACE','Chat connection error: '+(e.message||e)+' (Netlify openai-chat function required.)');chatStatus.textContent='Chat endpoint unavailable';}finally{send.disabled=false;}};
+ send?.addEventListener('click',sendChat);inp?.addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});
 })();
 </script>
+<!-- APEXSCAN V20: ensure UI is paired to the live 30-second tick-built candle. -->
+<script id="apex-v20-pair-30s">
+(()=>{
+ const $=id=>document.getElementById(id);
+ const set=(id,v)=>{const e=$(id);if(e)e.textContent=v;};
+ const chart=$('chartPanel'); const row=chart?.querySelector('.tf-row');
+ if(row){row.innerHTML='<button type="button" class="tf-btn active" data-apex-v20-tf="30">30S</button><span class="tf-note" id="tfNote">Live 30-second tick-built candles · 1-minute history for context</span>';set('chartMeta','30-second live candles · 1-minute historical context');}
+ if($('interval')){$('interval').innerHTML='<option value="30000" selected>30-second scan cycle</option>'; $('interval').value='30000';}
+ if($('mobileInterval')){$('mobileInterval').innerHTML='<option value="30000" selected>30 seconds</option>';$('mobileInterval').disabled=true;}
+ set('cycleText','30s candle · scan at close');set('apexDeepScanStatus','READY · automatic scan at each 30-second candle close');
+ const head=$('apexDeepScan')?.querySelector('.deep-sub');if(head)head.textContent='One selected OTC pair · live 30-second tick-built candles · 1-minute history is context only. Deep Scan evaluates immediately after each completed 30-second candle.';
+ const notice=document.querySelector('.notice');if(notice)notice.innerHTML='<b>APEXSCAN V22 · CLOSE-TRIGGERED AUTO SCAN:</b> Live tick stream builds aligned 30-second candles. Deep Scan automatically evaluates each just-closed candle with 1-minute history as context. No manual button and no opening settle delay for routine signals. Stale feed blocks signals. Paper analysis only.';
+})();
+</script>
+
