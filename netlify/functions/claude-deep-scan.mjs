@@ -1,6 +1,5 @@
 // APEXSCAN PRO · Claude Run Deep endpoint
 // Requires ANTHROPIC_API_KEY in Netlify environment variables.
-// Optional ANTHROPIC_MODEL lets you choose a supported model.
 
 const ALLOWED_DIRECTIONS = new Set(["CALL", "PUT", "WAIT"]);
 const ALLOWED_HOLDS = new Set([15, 30, 60]);
@@ -198,7 +197,6 @@ Return the JSON object exactly in the required schema.
         body: JSON.stringify({
           model,
           max_tokens: 700,
-          temperature: 0.2,
           system,
           messages: [
             {
