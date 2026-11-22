@@ -299,7 +299,7 @@ ${JSON.stringify(scanData, null, 2)}
         input: userInput,
         max_output_tokens: 1200
       }),
-      signal: AbortSignal.timeout(45000)
+      signal: AbortSignal.timeout(28000)
     });
 
     const raw = await response.text();
@@ -421,7 +421,10 @@ ${JSON.stringify(scanData, null, 2)}
     return json(
       {
         success: false,
-        error: error?.message || "AI analysis request failed.",
+        error:
+          error?.name === "TimeoutError"
+            ? "OpenAI analysis timed out after 28 seconds. Try again on the next scan."
+            : (error?.message || "AI analysis request failed."),
         type: error?.name || "UnknownError"
       },
       502
