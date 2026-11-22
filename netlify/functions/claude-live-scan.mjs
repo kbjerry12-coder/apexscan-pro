@@ -15,23 +15,19 @@ const json = (status, body) =>
 function extractJSON(text) {
   if (!text || typeof text !== "string") return null;
 
-  // Try direct parsing first
   try {
     return JSON.parse(text.trim());
   } catch {}
 
-  // Remove markdown fences
   const cleaned = text
     .replace(/```(?:json)?/gi, "")
     .replace(/```/g, "")
     .trim();
 
-  // Try cleaned text
   try {
     return JSON.parse(cleaned);
   } catch {}
 
-  // Extract first balanced JSON object
   let start = -1;
   let depth = 0;
   let inString = false;
@@ -130,7 +126,6 @@ When price action, momentum, and structure establish a dominant direction,
 make a directional decision.
 
 Analyze:
-
 - Forming candle body and direction
 - Candle body size relative to wick
 - Recent completed candle sequence
@@ -175,11 +170,16 @@ Suggested evidence score:
 65-79: strong
 80-100: very strong
 
-For directional signals, explain the strongest supporting factors and the
-main opposing risk.
+For directional signals, explain the strongest supporting factors
+and the main opposing risk.
 
 Choose holdSeconds from:
 15, 30, 60, 180, 300, 900, 1800, 3600, 14400
+
+Keep the response concise.
+The summary should be one short sentence.
+Reasoning should be brief and specific.
+Each array should contain no more than 3 short items.
 
 Return ONLY one JSON object.
 No markdown.
@@ -221,7 +221,7 @@ ${JSON.stringify(data)}
         },
         body: JSON.stringify({
           model,
-          max_tokens: 1100,
+          max_tokens: 2048,
           messages: [
             {
               role: "user",
