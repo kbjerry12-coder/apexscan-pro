@@ -1,12 +1,8 @@
-// APEXSCAN PRO — V20 30-second scanner paired candle endpoint
+
+// APEXSCAN PRO — V20 30-second historical candle endpoint
 // Netlify Function: /.netlify/functions/otc-candles
-//
-// Scanner target: 30 seconds (built from live stream ticks in frontend)
-// Historical context: native 1-minute candles (OTCharts)
-//
-// IMPORTANT:
-// This endpoint supplies historical context.
-// The V20 frontend constructs the active 30-second candle from live ticks.
+// Historical context: 30-second candles
+// Scanner timeframe: 30 seconds
 
 export default async (request) => {
   const key = process.env.OTCHARTS_API_KEY;
@@ -20,14 +16,14 @@ export default async (request) => {
 
   const params = new URL(request.url).searchParams;
   const symbol = params.get("symbol") || "EURUSD_otc";
-  const tf = params.get("tf") || "60";
+  const tf = params.get("tf") || "30";
 
   const limit = Math.min(
     500,
     Math.max(30, Number(params.get("limit") || 500))
   );
 
-  // Validate symbol
+  // Validate OTC symbol
   if (!/^[A-Z0-9#]+_otc$/.test(symbol)) {
     return Response.json(
       { error: "Invalid OTC symbol." },
@@ -35,12 +31,12 @@ export default async (request) => {
     );
   }
 
-  // Historical context remains 1-minute candles.
-  if (tf !== "60") {
+  // Enforce 30-second historical timeframe
+  if (tf !== "30") {
     return Response.json(
       {
-        error: "Historical context endpoint uses 1-minute candles (tf=60).",
-        supportedTimeframes: [60],
+        error: "Historical context endpoint uses 30-second candles (tf=30).",
+        supportedTimeframes: [30],
         scannerTimeframe: 30,
         scannerInterval: "30s"
       },
@@ -58,7 +54,7 @@ export default async (request) => {
   const upstream = new URL("https://otcharts.com/v1/candles");
   upstream.searchParams.set("venue", "otc");
   upstream.searchParams.set("symbol", symbol);
-  upstream.searchParams.set("tf", "60");
+  upstream.searchParams.set("tf", "30");
   upstream.searchParams.set("limit", String(limit));
 
   try {
@@ -126,14 +122,14 @@ export default async (request) => {
         symbol,
 
         // Historical data timeframe
-        timeframe: 60,
-        interval: "1m",
+        timeframe: 30,
+        interval: "30s",
 
-        // V20 scanner pairing metadata
+        // Scanner and historical context both use 30 seconds
         scannerTimeframe: 30,
         scannerInterval: "30s",
-        candleSource: "live_ticks",
-        historicalContextTimeframe: 60,
+        candleSource: "otcharts_historical_30s",
+        historicalContextTimeframe: 30,
 
         count: candles.length,
         candles: candles.slice(-limit),
