@@ -2610,10 +2610,18 @@ renderCandleIntel=function(r){
  }catch(e){setWait('Claude scan failed or unavailable: '+(e.message||e)+'. No local directional signal substituted.');console.error('Claude Live Scanner error',e);
  }finally{claudeBusy=false;}
  };
- // Replace the old scanner scheduler: one Claude decision per 30-second boundary, 3 seconds after close.
- apexIntelligentHeartbeat=function(){const now=apexServerNow(),within=now%30000,remaining=30000-within;apexRenderIntelligentPanel?.();$c('claudePhase').textContent='CLAUDE · MANUAL SCAN ONLY';$c('claudeScanStatus').textContent='Awaiting manual Dual AI Signal Center scan';};
- apexStartScheduler=function(){clearInterval(cycle);running=true;claudeLastBucket='';$c('startBtn').disabled=true;$c('pauseBtn').disabled=false;$c('scanStateBadge').textContent='CLAUDE 30S AUTO';status('CLAUDE LIVE OTC · 30-SECOND AUTO SCAN',true);cycle=setInterval(apexIntelligentHeartbeat,200);};
- apexPauseScheduler=function(){running=false;clearInterval(cycle);cycle=null;$c('startBtn').disabled=false;$c('pauseBtn').disabled=true;$c('scanStateBadge').textContent='PAUSED';status('CLAUDE SCANNER PAUSED');};
+ // Claude auto-scheduler: trigger once per 30-second bucket while running.
+ // Do not mark a bucket consumed until a scan can actually start; this allows a brief
+ // dashboard-fetch busy period to recover without permanently skipping the cycle.
+ apexIntelligentHeartbeat=function(){
+  const now=apexServerNow(),bucket=Math.floor(now/30000),within=now%30000,remaining=30000-within;
+  apexRenderIntelligentPanel?.();
+  if(!running){$c('claudePhase').textContent='CLAUDE · READY';$c('claudeScanStatus').textContent='Start scanner to enable 30s auto scans';return;}
+  $c('claudePhase').textContent='CLAUDE LIVE SCAN · NEXT CYCLE '+Math.ceil(remaining/1000)+'s';
+  if(bucket!==claudeLastBucket&&!claudeBusy&&!busy){claudeLastBucket=bucket;scan().catch(e=>console.error('Claude scheduled scan:',e));}
+ };
+ apexStartScheduler=function(){clearInterval(cycle);running=true;claudeLastBucket='';$c('startBtn').disabled=true;$c('pauseBtn').disabled=false;$c('scanStateBadge').textContent='CLAUDE 30S AUTO';status('CLAUDE LIVE OTC · 30-SECOND AUTO SCAN',true);apexIntelligentHeartbeat();cycle=setInterval(apexIntelligentHeartbeat,500);};
+ apexPauseScheduler=function(){running=false;clearInterval(cycle);cycle=null;$c('startBtn').disabled=false;$c('pauseBtn').disabled=true;$c('scanStateBadge').textContent='PAUSED';$c('claudePhase').textContent='CLAUDE · PAUSED';$c('claudeScanStatus').textContent='Scanner paused';status('CLAUDE SCANNER PAUSED');};
  // Remove old Keltner/early-projection wording wherever it remains visible.
  const note=document.querySelector('.notice');if(note)note.innerHTML=note.innerHTML.replace(/Keltner \+ Early Projection/gi,'Claude Signal Scanner');
 })();
@@ -2766,10 +2774,13 @@ renderCandleIntel=function(r){
   try{early(S)}catch(e){put('Early',{head:'ERROR',cls:'adcs-warn',detail:String(e.message||e)})}bar(25);
   let done=0;const fin=()=>{done++;bar(25+done*37)};
   const errs=[];
-  await Promise.all([confirmed(S).catch(e=>{errs.push('Confirmed: '+(e.message||e));put('Confirm',{head:'ERROR · WAIT',cls:'adcs-warn',detail:String(e.message||e)})}).finally(fin),
-   longTerm(S).catch(e=>{errs.push('Long-term: '+(e.message||e));put('Long',{head:'ERROR',cls:'adcs-warn',detail:String(e.message||e)})}).finally(fin)]);
-  bar(100);status((errs.length?'Finished with errors — '+errs.join(' | '):'Scan finished '+T(Date.now()))+' · scores are evidence strength, not win probability. No paper trades or orders were created.'+rev);
-  lastEnd=Date.now();scanning=false;btn.disabled=false;btn.textContent='⌕ SCAN SIGNALS';setTimeout(()=>{if(!scanning)bar(0)},1500)}
+  try{
+   await Promise.all([confirmed(S).catch(e=>{errs.push('Confirmed: '+(e.message||e));put('Confirm',{head:'ERROR · WAIT',cls:'adcs-warn',detail:String(e.message||e)})}).finally(fin),
+    longTerm(S).catch(e=>{errs.push('Long-term: '+(e.message||e));put('Long',{head:'ERROR',cls:'adcs-warn',detail:String(e.message||e)})}).finally(fin)]);
+   bar(100);status((errs.length?'Finished with errors — '+errs.join(' | '):'Scan finished '+T(Date.now()))+' · scores are evidence strength, not win probability. No paper trades or orders were created.'+rev);
+   lastEnd=Date.now();setTimeout(()=>{if(!scanning)bar(0)},1500)
+  }catch(e){status('Dual scan failed: '+(e.message||e));console.error('Dual Signal Center scan error',e)}
+  finally{scanning=false;btn.disabled=false;btn.textContent='⌕ SCAN SIGNALS';}}
  $d('adcsScan').addEventListener('click',scan);drawHist();drawCalls();
 })();}catch(e){console.error('Dual AI Signal Center error',e)}
 </script>
