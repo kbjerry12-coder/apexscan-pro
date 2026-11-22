@@ -2554,66 +2554,80 @@ renderCandleIntel=function(r){
 })();
 </script>
 
-<!-- CLAUDE LIVE OTC SIGNAL SCANNER · replacement for old Keltner/Early Projection panel -->
+<!-- CLAUDE SCAN MACHINE · Early + Regular calls, independent 30s cycle -->
 <style id="claude-live-scanner-style">
-#apexIntelligentEngine{margin:10px 0;padding:12px;border:1px solid #397c7b;border-radius:13px;background:linear-gradient(155deg,#0d2932,#071923);box-shadow:0 10px 28px #0004}
-#apexIntelligentEngine .claude-title{font-size:11px;letter-spacing:.12em;font-weight:1000;color:#d7ffff}
-#apexIntelligentEngine .claude-badge{font-size:9px;padding:4px 8px;border:1px solid #287a79;border-radius:20px;color:#6fffe3;background:#0a302e}
-#apexIntelligentEngine .claude-phase{margin:8px 0;padding:7px;border-radius:8px;background:#092331;color:#7fe6dc;font-size:9px;font-weight:900;letter-spacing:.08em}
-#apexIntelligentEngine .claude-main{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:12px;border:1px solid #28635f;border-radius:11px;background:#071923}
-#apexIntelligentEngine .claude-dir{font-size:28px;font-weight:1000;letter-spacing:.06em;color:#ffd078}#apexIntelligentEngine .claude-dir.buy{color:#43f0b7}#apexIntelligentEngine .claude-dir.sell{color:#ff718f}
-#apexIntelligentEngine .claude-score{text-align:right;font-size:23px;font-weight:1000;color:#d7eaff}#apexIntelligentEngine .claude-score small{display:block;font-size:9px;color:#93b0c5}
-#apexIntelligentEngine .claude-reason{font-size:10px;line-height:1.5;color:#c4e3e9;margin:9px 0;padding:9px;border:1px solid #29485c;border-radius:9px;background:#091b28}
-#apexIntelligentEngine .claude-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}#apexIntelligentEngine .claude-grid div{padding:8px;border:1px solid #1f4553;border-radius:8px;background:#081a26;min-width:0}#apexIntelligentEngine .claude-grid small{display:block;color:#85aab6;font-size:8px;letter-spacing:.08em}#apexIntelligentEngine .claude-grid b{display:block;margin-top:3px;font-size:10px;color:#d8f2f7;overflow-wrap:anywhere}
-#apexIntelligentEngine .claude-foot{font-size:9px;line-height:1.4;color:#87a7b9;margin-top:8px}#apexIntelligentEngine .claude-wait{color:#ffd078}#apexIntelligentEngine .claude-status{font-size:10px;color:#9db9ca;margin:7px 0 0}
+#adcs{margin:0 0 12px}
+#apexIntelligentEngine{margin:0 0 12px;padding:12px;border:1px solid #397c7b;border-radius:13px;background:linear-gradient(155deg,#0d2932,#071923);box-shadow:0 10px 28px #0004}
+#apexIntelligentEngine .cm-title{font-size:12px;letter-spacing:.12em;font-weight:1000;color:#d7ffff}
+#apexIntelligentEngine .cm-badge{font-size:9px;padding:4px 8px;border:1px solid #287a79;border-radius:20px;color:#6fffe3;background:#0a302e}
+#apexIntelligentEngine .cm-status{margin:8px 0;padding:8px;border-radius:8px;background:#092331;color:#7fe6dc;font-size:10px;font-weight:900;letter-spacing:.07em;text-align:center}
+#apexIntelligentEngine .cm-actions{display:grid;grid-template-columns:1fr;gap:7px;margin:9px 0}
+#apexIntelligentEngine .cm-btn{width:100%;padding:13px;border:0;border-radius:11px;font-weight:1000;letter-spacing:.04em;color:#04232a;background:linear-gradient(110deg,#71f4d7,#20b6b2);cursor:pointer}
+#apexIntelligentEngine .cm-btn.stop{color:#ffe4e8;background:linear-gradient(110deg,#ff8aa5,#b84d73)}
+#apexIntelligentEngine .cm-countdown{font-size:11px;color:#a8c4d6;text-align:center;margin:5px 0 9px}
+#apexIntelligentEngine .cm-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+#apexIntelligentEngine .cm-card{padding:10px;border:1px solid #214b5c;border-radius:10px;background:#081a26;min-width:0}
+#apexIntelligentEngine .cm-card .label{font-size:9px;font-weight:1000;letter-spacing:.1em;color:#90b5c6;margin-bottom:5px}
+#apexIntelligentEngine .cm-card .signal{font-size:21px;font-weight:1000;letter-spacing:.04em;color:#ffd078}
+#apexIntelligentEngine .cm-card .signal.call{color:#43f0b7}#apexIntelligentEngine .cm-card .signal.put{color:#ff718f}#apexIntelligentEngine .cm-card .signal.wait{color:#ffd078}
+#apexIntelligentEngine .cm-card .score{font-size:10px;color:#b7d2e2;margin:4px 0}
+#apexIntelligentEngine .cm-card .reason{font-size:10px;line-height:1.45;color:#c4e3e9;overflow-wrap:anywhere}
+#apexIntelligentEngine .cm-foot{font-size:9px;line-height:1.4;color:#87a7b9;margin-top:8px}
+@media(max-width:380px){#apexIntelligentEngine .cm-grid{grid-template-columns:1fr}}
 </style>
 <script id="claude-live-otc-scanner">
 (()=>{
- const $c=id=>document.getElementById(id); let claudeBusy=false, claudeLastBucket='';
+ const $c=id=>document.getElementById(id);
  const host=$c('adcs'); if(!host)return;
  const oldPanel=$c('apexIntelligentEngine'); if(oldPanel)oldPanel.remove();
  const panel=document.createElement('section');panel.id='apexIntelligentEngine';
- panel.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><b class="claude-title">☼ CLAUDE SIGNAL SCANNER</b><span class="claude-badge">LIVE OTC · AI</span></div><div class="claude-phase" id="claudePhase">CLAUDE LIVE OTC SCAN · 30S AUTO CYCLE</div><div class="claude-main"><div><div class="claude-dir" id="claudeSignal">WAIT</div><small style="color:#a0bacb;font-size:9px">CLAUDE AI DECISION</small><div style="font-size:10px;color:#9bb7c8;margin-top:4px">Hold: <b id="claudeHold">—</b></div></div><div class="claude-score" id="claudeScore">—<small>Evidence score</small></div></div><div id="claudeEvidence" class="claude-grid"><div><small>ENGINE</small><b>Anthropic Claude</b></div><div><small>SCAN STATUS</small><b id="claudeScanStatus">Waiting</b></div><div><small>CONFIRMATIONS</small><b id="claudeConfirmations">—</b></div><div><small>CONFLICTS</small><b id="claudeConflicts">—</b></div></div><div class="claude-reason" id="claudeReason">Claude will make the directional decision from the live candle snapshot.</div><div class="claude-foot" id="claudeFoot">Automated AI scan · 30-second cycle · Paper-trading only · Evidence score is not a win probability.</div>`;
+ panel.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><b class="cm-title">◈ CLAUDE SCAN MACHINE</b><span class="cm-badge">ANTHROPIC · OTC</span></div><div class="cm-status" id="cmStatus">MACHINE OFF · SIGNALS HELD</div><div class="cm-actions"><button type="button" class="cm-btn" id="cmToggle">▶ START CLAUDE SCAN MACHINE</button></div><div class="cm-countdown" id="cmCountdown">30s cycle · Ready when started</div><div class="cm-grid"><div class="cm-card"><div class="label">EARLY CALL · DEVELOPING CANDLE</div><div class="signal wait" id="cmEarlySignal">WAIT</div><div class="score" id="cmEarlyScore">Evidence: —</div><div class="reason" id="cmEarlyReason">Early call analyzes the live developing candle. Its signal remains locked between scans.</div></div><div class="cm-card"><div class="label">REGULAR CALL · CLOSED CANDLE</div><div class="signal wait" id="cmRegularSignal">WAIT</div><div class="score" id="cmRegularScore">Evidence: —</div><div class="reason" id="cmRegularReason">Regular call analyzes the most recent completed candle and confirmation context.</div></div></div><div class="cm-foot" id="cmFoot">Claude only · early and regular calls are independently analyzed · calls lock between scans · no broker orders.</div>`;
  host.replaceWith(panel);
- function safeList(v){return Array.isArray(v)?v.map(x=>String(x)).slice(0,8).join(' · ')||'None':'None';}
- function selected(){return $c('mobileAsset')?.value||$c('chartAsset')?.value||selectedChart;}
- function setPanel(reply,pair){const side=reply.signal||'WAIT',cls=side==='CALL'?'buy':side==='PUT'?'sell':'wait';$c('claudeSignal').textContent=side==='CALL'?'▲ BUY':side==='PUT'?'▼ SELL':'WAIT';$c('claudeSignal').className='claude-dir '+cls;$c('claudeScore').innerHTML=`${Number(reply.evidenceScore)||0}/100<small>Evidence score</small>`;$c('claudeHold').textContent=(reply.holdSeconds||30)+'s';$c('claudeScanStatus').textContent='LIVE · '+pair;$c('claudeConfirmations').textContent=safeList(reply.confirmations);$c('claudeConflicts').textContent=safeList(reply.conflicts);$c('claudeReason').textContent=reply.summary||reply.reasoning||'Claude returned no explanation.';$c('claudePhase').textContent='CLAUDE LIVE SCAN · 30S CYCLE · '+(reply.signal==='WAIT'?'WAIT / NO EDGE':reply.signal+' DECISION');$c('claudeFoot').textContent='Claude AI · '+new Date().toLocaleTimeString()+' · '+(reply.riskFlags?.length?'Risk: '+safeList(reply.riskFlags):'No risk flags reported')+' · Score is evidence strength, not win probability.';}
- function setWait(msg){$c('claudeSignal').textContent='WAIT';$c('claudeSignal').className='claude-dir';$c('claudeScore').textContent='—';$c('claudeHold').textContent='—';$c('claudeScanStatus').textContent='Unavailable';$c('claudeReason').textContent=msg;$c('claudePhase').textContent='CLAUDE SCAN · WAIT';}
- const originalScan=scan; const originalAddSignal=addSignal; let suppressLocalSignals=false;
+ const originalScan=scan, originalAddSignal=addSignal;
+ let machineRunning=false, machineBusy=false, nextScanAt=0, ticker=null, suppressLocalSignals=false;
  addSignal=function(r){if(suppressLocalSignals)return;return originalAddSignal(r);};
- scan=async function(){if(claudeBusy||busy)return;claudeBusy=true;$c('claudePhase').textContent='CLAUDE LIVE SCAN · GATHERING CANDLE SNAPSHOT';$c('claudeScanStatus').textContent='Gathering feed…';suppressLocalSignals=true;
- try{await originalScan();}finally{suppressLocalSignals=false;}
- try{
-  const id=selected(),r=results[id],a=r?.analysis||{},candles=Array.isArray(r?.candles)?r.candles:[];
-  if(!r||candles.length<12||!Number.isFinite(Number(r.livePrice??r.price)))throw new Error('Insufficient live candle data for Claude.');
-  const current=candles.at(-1),closed=candles.slice(0,-1);
-  const payload={pair:r.name||id,symbol:id,market:'OTC',timeframe:'30-second candles',scanTime:new Date().toISOString(),livePrice:Number(r.livePrice??r.price),formingCandle:{open:Number(current.open),high:Number(current.high),low:Number(current.low),close:Number(current.close),volume:Number(current.volume)||null,time:current.timeMs||current.time||null},completedCandles:closed.slice(-60).map(c=>({open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close),volume:Number(c.volume)||null,time:c.timeMs||c.time||null})),indicators:(a.layers||[]).map(x=>({name:String(x.name||''),value:String(x.value??''),bull:!!x.bull,bear:!!x.bear})),marketContext:{trend:a.trend||'unknown',localIndicatorRead:a.direction||'WAIT',localScore:Number(a.score)||0,earlyDirection:a.earlyDirection||'WAIT',support:a.support??null,resistance:a.resistance??null,patterns:a.detected_patterns||[],feedFresh:!!a.fresh,feedAgeSeconds:Number(a.age)||null,learning:a.learning||null}};
-  $c('claudePhase').textContent='CLAUDE · ANALYZING LIVE OTC SNAPSHOT';$c('claudeScanStatus').textContent='AI request in progress';
-  const response=await fetch('/.netlify/functions/claude-live-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const reply=await response.json();if(!response.ok)throw new Error(reply.error||'Claude endpoint failed');
-  setPanel(reply,r.name||id);const signal=reply.signal||'WAIT',dir=signal==='CALL'?'CALL':signal==='PUT'?'PUT':'WAIT';
-  // Claude is the authoritative live signal. Keep the scanner result object shape used by the dashboard.
-  r.analysis={...a,direction:dir,rawDirection:dir,earlyDirection:'WAIT',earlyRawDirection:'WAIT',score:Number(reply.evidenceScore)||0,confidence_score:Number(reply.evidenceScore)||0,signalLevel:dir==='WAIT'?'WAIT':'CLAUDE AI',reason:reply.summary||reply.reasoning||'Claude AI decision',recommended_expiry:(reply.holdSeconds||30)+'s',structured:{signal:dir==='CALL'?'BUY':dir==='PUT'?'SELL':'WAIT',confidence_score:Number(reply.evidenceScore)||0,detected_patterns:[...(reply.confirmations||[]),...(reply.conflicts||[])],recommended_expiry:(reply.holdSeconds||30)+'s',reasoning:reply.summary||reply.reasoning||''},claudeReply:reply,claudeTimestamp:Date.now()};
-  if(dir!=='WAIT'){originalAddSignal(r);}else{$c('signalCallout').textContent='CLAUDE: WAIT · '+(reply.waitReason||reply.summary||'No clear edge');$c('signalCallout').className='signal-callout neutral';}
-  try{renderScanner();renderCandleIntel(r);drawChart();}catch(e){}
- }catch(e){setWait('Claude scan failed or unavailable: '+(e.message||e)+'. No local directional signal substituted.');console.error('Claude Live Scanner error',e);
- }finally{claudeBusy=false;}
- };
- // Claude auto-scheduler: trigger once per 30-second bucket while running.
- // Do not mark a bucket consumed until a scan can actually start; this allows a brief
- // dashboard-fetch busy period to recover without permanently skipping the cycle.
- apexIntelligentHeartbeat=function(){
-  const now=apexServerNow(),bucket=Math.floor(now/30000),within=now%30000,remaining=30000-within;
-  apexRenderIntelligentPanel?.();
-  if(!running){$c('claudePhase').textContent='CLAUDE · READY';$c('claudeScanStatus').textContent='Start scanner to enable 30s auto scans';return;}
-  $c('claudePhase').textContent='CLAUDE LIVE SCAN · NEXT REFRESH '+Math.ceil(remaining/1000)+'s · SIGNAL LOCKED';
-  if(bucket!==claudeLastBucket&&!claudeBusy&&!busy){claudeLastBucket=bucket;scan().catch(e=>console.error('Claude scheduled scan:',e));}
- };
- apexStartScheduler=function(){clearInterval(cycle);running=true;claudeLastBucket='';$c('startBtn').disabled=true;$c('pauseBtn').disabled=false;$c('scanStateBadge').textContent='CLAUDE 30S AUTO';status('CLAUDE LIVE OTC · 30-SECOND AUTO SCAN',true);apexIntelligentHeartbeat();cycle=setInterval(apexIntelligentHeartbeat,500);};
- apexPauseScheduler=function(){running=false;clearInterval(cycle);cycle=null;$c('startBtn').disabled=false;$c('pauseBtn').disabled=true;$c('scanStateBadge').textContent='PAUSED';$c('claudePhase').textContent='CLAUDE · PAUSED';$c('claudeScanStatus').textContent='Scanner paused';status('CLAUDE SCANNER PAUSED');};
- // Remove old Keltner/early-projection wording wherever it remains visible.
- const note=document.querySelector('.notice');if(note)note.innerHTML=note.innerHTML.replace(/Keltner \+ Early Projection/gi,'Claude Signal Scanner');
+ const safeList=v=>Array.isArray(v)?v.map(x=>String(x)).slice(0,6).join(' · ')||'None':String(v||'None');
+ function selected(){return $c('mobileAsset')?.value||$c('chartAsset')?.value||selectedChart;}
+ function setCall(prefix,reply){const sig=String(reply?.signal||'WAIT').toUpperCase(),cls=sig==='CALL'?'call':sig==='PUT'?'put':'wait';$c(prefix+'Signal').textContent=sig==='CALL'?'▲ BUY':sig==='PUT'?'▼ SELL':'WAIT';$c(prefix+'Signal').className='signal '+cls;$c(prefix+'Score').textContent='Evidence: '+(Number(reply?.evidenceScore)||0)+'/100 · Hold '+(Number(reply?.holdSeconds)||30)+'s';$c(prefix+'Reason').textContent=[reply?.summary||reply?.reasoning||reply?.waitReason||'No explanation returned.',safeList(reply?.confirmations),reply?.conflicts?.length?'Conflict: '+safeList(reply.conflicts):''].filter(Boolean).join(' · ');}
+ function setStatus(txt){$c('cmStatus').textContent=txt;}
+ async function getSnapshot(){await originalScan();const id=selected(),r=results[id],a=r?.analysis||{},candles=Array.isArray(r?.candles)?r.candles:[];if(!r||candles.length<12||!Number.isFinite(Number(r.livePrice??r.price)))throw new Error('Insufficient fresh candle data for Claude.');const current=candles.at(-1),closed=candles.slice(0,-1);const common={pair:r.name||id,symbol:id,market:'OTC',timeframe:'30-second candles',scanTime:new Date().toISOString(),livePrice:Number(r.livePrice??r.price),indicators:(a.layers||[]).map(x=>({name:String(x.name||''),value:String(x.value??''),bull:!!x.bull,bear:!!x.bear})),marketContext:{trend:a.trend||'unknown',localIndicatorRead:a.direction||'WAIT',localScore:Number(a.score)||0,support:a.support??null,resistance:a.resistance??null,patterns:a.detected_patterns||[],feedFresh:!!a.fresh,feedAgeSeconds:Number(a.age)||null,learning:a.learning||null}};return {id,r,a,current,closed,common};}
+ async function requestClaude(payload){const res=await fetch('/.netlify/functions/claude-live-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});let reply;try{reply=await res.json();}catch{throw new Error('Claude endpoint returned unreadable data.');}if(!res.ok)throw new Error(reply?.error||'Claude scan request failed');return reply;}
+ async function runMachineScan(){if(machineBusy)return;machineBusy=true;setStatus('SCANNING · EARLY + REGULAR CALLS');$c('cmToggle').disabled=true;$c('cmToggle').textContent='⏳ CLAUDE ANALYZING';try{
+  const snap=await getSnapshot(),{id,r,a,current,closed,common}=snap;
+  const earlyPayload={...common,scanMode:'EARLY_CALL_DEVELOPING_CANDLE',formingCandle:{open:Number(current.open),high:Number(current.high),low:Number(current.low),close:Number(current.close),volume:Number(current.volume)||null,time:current.timeMs||current.time||null},completedCandles:closed.slice(-60).map(c=>({open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close),volume:Number(c.volume)||null,time:c.timeMs||c.time||null}))};
+  const regularTarget=closed.at(-1),regularContext=closed.slice(0,-1);
+  if(!regularTarget)throw new Error('No completed candle available for regular call.');
+  const regularPayload={...common,scanMode:'REGULAR_CALL_COMPLETED_CANDLE',timeframe:'30-second completed candles',formingCandle:{open:Number(regularTarget.open),high:Number(regularTarget.high),low:Number(regularTarget.low),close:Number(regularTarget.close),volume:Number(regularTarget.volume)||null,time:regularTarget.timeMs||regularTarget.time||null},completedCandles:regularContext.slice(-60).map(c=>({open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close),volume:Number(c.volume)||null,time:c.timeMs||c.time||null}))};
+  const [earlyResult,regularResult]=await Promise.allSettled([requestClaude(earlyPayload),requestClaude(regularPayload)]);
+  if(earlyResult.status==='fulfilled')setCall('cmEarly',earlyResult.value);else $c('cmEarlyReason').textContent='Early call failed: '+(earlyResult.reason?.message||earlyResult.reason);
+  if(regularResult.status==='fulfilled')setCall('cmRegular',regularResult.value);else $c('cmRegularReason').textContent='Regular call failed: '+(regularResult.reason?.message||regularResult.reason);
+  if(regularResult.status==='fulfilled'){
+    const reply=regularResult.value,dir=['CALL','PUT'].includes(reply.signal)?reply.signal:'WAIT';
+    r.analysis={...a,direction:dir,rawDirection:dir,earlyDirection:earlyResult.status==='fulfilled'&&['CALL','PUT'].includes(earlyResult.value.signal)?earlyResult.value.signal:'WAIT',earlyRawDirection:earlyResult.status==='fulfilled'&&['CALL','PUT'].includes(earlyResult.value.signal)?earlyResult.value.signal:'WAIT',score:Number(reply.evidenceScore)||0,confidence_score:Number(reply.evidenceScore)||0,signalLevel:dir==='WAIT'?'WAIT':'CLAUDE REGULAR',reason:reply.summary||reply.reasoning||'Claude regular call',recommended_expiry:(reply.holdSeconds||30)+'s',structured:{signal:dir==='CALL'?'BUY':dir==='PUT'?'SELL':'WAIT',confidence_score:Number(reply.evidenceScore)||0,detected_patterns:[...(reply.confirmations||[]),...(reply.conflicts||[])],recommended_expiry:(reply.holdSeconds||30)+'s',reasoning:reply.summary||reply.reasoning||''},claudeReply:reply,claudeTimestamp:Date.now()};
+    if(dir!=='WAIT'){originalAddSignal(r);}else if($c('signalCallout')){$c('signalCallout').textContent='CLAUDE REGULAR: WAIT · '+(reply.waitReason||reply.summary||'No clear edge');$c('signalCallout').className='signal-callout neutral';}
+    try{renderScanner();renderCandleIntel(r);drawChart();}catch(e){}
+  }
+  setStatus('SCAN COMPLETE · SIGNALS LOCKED UNTIL NEXT CYCLE');$c('cmFoot').textContent='Last scan '+new Date().toLocaleTimeString()+' · Early targets the developing candle; Regular targets the latest closed candle. Evidence score is not win probability.';
+ }catch(e){setStatus('SCAN ERROR · SIGNALS RETAINED');$c('cmFoot').textContent='Scan failed: '+(e.message||e)+' · Previous callouts are retained until a successful new scan.';console.error('Claude Scan Machine error',e);
+ }finally{machineBusy=false;$c('cmToggle').disabled=false;$c('cmToggle').textContent=machineRunning?'⏸ STOP CLAUDE SCAN MACHINE':'▶ START CLAUDE SCAN MACHINE';if(machineRunning)nextScanAt=Date.now()+30000;}
+ }
+ function heartbeat(){if(!machineRunning)return;if(machineBusy){$c('cmCountdown').textContent='Analysis running · previous signals locked';return;}const remaining=Math.max(0,nextScanAt-Date.now());$c('cmCountdown').textContent=remaining>0?'Next Claude scan in '+Math.ceil(remaining/1000)+'s':'Starting next Claude scan…';if(remaining<=0)runMachineScan();}
+ function start(){if(machineRunning)return;machineRunning=true;$c('cmToggle').textContent='⏸ STOP CLAUDE SCAN MACHINE';setStatus('MACHINE ACTIVE · FIRST SCAN STARTING');nextScanAt=Date.now();heartbeat();ticker=setInterval(heartbeat,250);}
+ function stop(){machineRunning=false;if(ticker){clearInterval(ticker);ticker=null;}$c('cmToggle').textContent='▶ START CLAUDE SCAN MACHINE';$c('cmCountdown').textContent='Machine stopped · previous calls remain locked';setStatus(machineBusy?'STOPPED · CURRENT REQUEST FINISHING':'MACHINE OFF · SIGNALS HELD');}
+ $c('cmToggle').addEventListener('click',()=>machineRunning?stop():start());
+ // Prevent legacy dashboard start/pause buttons from automatically controlling this machine.
+ // Main scheduler still runs its existing background local feed scan; Claude machine is independent.
+ apexIntelligentHeartbeat=function(){if(running){}apexRenderIntelligentPanel?.();};
+ apexStartScheduler=function(){clearInterval(cycle);running=true;$('startBtn').disabled=true;$('pauseBtn').disabled=false;$('scanStateBadge').textContent='DATA FEED ACTIVE';status('DATA FEED ACTIVE · CLAUDE MACHINE IS INDEPENDENT',true);const refresh=async()=>{if(busy||machineBusy)return;suppressLocalSignals=true;try{await originalScan();}finally{suppressLocalSignals=false;}};refresh();cycle=setInterval(refresh,5000);};
+ apexPauseScheduler=function(){running=false;clearInterval(cycle);cycle=null;$('startBtn').disabled=false;$('pauseBtn').disabled=true;$('scanStateBadge').textContent='FEED PAUSED';status('DATA FEED PAUSED');};
 })();
 </script>
+
+<!-- Claude is the sole AI scanner. -->
+<style id="claude-main-scanner-polish">\n#apexIntelligentEngine .cm-title{font-size:12px!important}
+</style>
+
+
 
 <!-- Dual AI scanner removed: Claude is the sole scanner. -->
 <style id="claude-main-scanner-polish">
