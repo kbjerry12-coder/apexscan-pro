@@ -2780,14 +2780,13 @@ renderCandleIntel=function(r){
   lastDeepResult=result;renderRadar();
   setText('apexDeepScanStatus',`Deep Scan complete · ${side} · power ${power}/100 · signal locked until 00:00 · ${new Date().toLocaleTimeString()}`);
  }
- let v24SignalLockBucket=null, v24LockedSignalSnapshot=null;
+ let stableSignalBucket=null;
  function setLiveSignal(result,pack){
-  const incomingBucket=Number(result?.candleTimeMs);
-  const lockBucket=Number.isFinite(incomingBucket)?incomingBucket:Math.floor(serverNow()/BAR_MS)*BAR_MS;
-  // Hard lock: the first published result for a 30-second candle is immutable until the next bucket.
-  if(v24SignalLockBucket===lockBucket && v24LockedSignalSnapshot) return;
-  if(v24SignalLockBucket!==lockBucket){v24SignalLockBucket=lockBucket;v24LockedSignalSnapshot=null;}
-  v24LockedSignalSnapshot={direction:result?.direction,power:result?.power,reason:result?.reason,entry:result?.entry,candleTimeMs:lockBucket};
+  // Minimal stable signal lock: publish only the first signal for each aligned 30s candle.
+  const stamp=Number(result?.candleTimeMs);
+  const bucket=Number.isFinite(stamp)?Math.floor(stamp/ BAR_MS)*BAR_MS:Math.floor(serverNow()/BAR_MS)*BAR_MS;
+  if(stableSignalBucket===bucket) return;
+  stableSignalBucket=bucket;
   const dir=result.direction,word=dir==='CALL'?'BUY':dir==='PUT'?'SELL':'WAIT',cls=dir==='CALL'?'call':dir==='PUT'?'put':'wait';
   const card=$('topSignal');if(card)card.className='signal-card '+cls;
   setText('topDirection',word);setText('topScore',`POWER ${result.power}/100`);
@@ -3459,10 +3458,6 @@ const id=selectedChart||$('chartAsset')?.value||$('mobileAsset')?.value;const as
  // Existing V18 scheduler already follows this bucket; its trigger is patched to start in the first 1.8s.
 })();
 </script>
-
-<!-- V24 signal stability: one immutable signal per 30s candle -->
-<style id="apex-v24-signal-lock-style">#signalPanel .signal-lock-note{font-size:11px;color:#8fbad0;text-align:center;margin:6px 0}</style>
-<script id="apex-v24-signal-lock-ui">(()=>{const p=document.getElementById("signalPanel");if(!p)return;const note=document.createElement("div");note.className="signal-lock-note";note.textContent="SIGNAL LOCKED · no direction changes during this 30-second countdown";const target=p.querySelector(".signal-card");if(target&&target.parentNode)target.parentNode.insertBefore(note,target.nextSibling);})();</script>
 
 <!-- APEXSCAN V24: Screenshot-based unified primary AI scanner. -->
 <style id="apex-v24-primary-scanner-style">
