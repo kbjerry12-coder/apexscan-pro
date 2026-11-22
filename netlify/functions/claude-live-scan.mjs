@@ -51,12 +51,12 @@ Analyze the supplied:
 - Current price
 - Indicator snapshot
 - Market context
-- Historical learning data, if supplied
+- Historical learning, if supplied
 
 Make your OWN directional decision.
 Do not automatically copy the local indicator direction.
 
-Return ONLY valid JSON with these keys:
+Return ONLY valid JSON:
 
 {
   "signal": "CALL | PUT | WAIT",
@@ -72,22 +72,20 @@ Return ONLY valid JSON with these keys:
 }
 
 RULES:
-
 - CALL means upward expectation.
 - PUT means downward expectation.
 - WAIT means insufficient evidence.
 - Evidence score is strength of evidence, NOT win probability.
-- Favor WAIT when data is stale, incomplete, contradictory, choppy, or lacks a clear edge.
+- Favor WAIT when data is stale, incomplete, contradictory, or choppy.
 - Never invent missing data.
 - Never claim certainty.
-- Evaluate candle body and wick structure.
+- Evaluate candle bodies and wick structure.
 - Evaluate momentum and recent price structure.
 - Evaluate volatility.
-- Evaluate indicator confluence and conflicting indicators.
-- Suggest a reasonable hold duration based on the evidence.
+- Evaluate indicator confluence and conflicts.
+- Suggest an appropriate hold duration.
 - Hold duration must be one of:
   15, 30, 60, 180, 300, 900, 1800, 3600, 14400 seconds.
-- A hold duration is a suggestion, not a guarantee.
 
 DATA SNAPSHOT:
 
@@ -110,7 +108,6 @@ ${JSON.stringify(data)}
         body: JSON.stringify({
           model,
           max_tokens: 1100,
-          temperature: 0.2,
           messages: [
             {
               role: "user",
@@ -123,7 +120,6 @@ ${JSON.stringify(data)}
 
     const body = await res.json();
 
-    // Return actual Anthropic error for diagnosis
     if (!res.ok) {
       return json(res.status, {
         error: body?.error?.message || "Anthropic API error",
@@ -162,7 +158,7 @@ ${JSON.stringify(data)}
       out.signal = "WAIT";
     }
 
-    // Normalize direction
+    // Direction
     out.direction =
       out.signal === "CALL"
         ? "BULLISH"
@@ -170,23 +166,16 @@ ${JSON.stringify(data)}
         ? "BEARISH"
         : "NEUTRAL";
 
-    // Validate evidence score
+    // Evidence score
     out.evidenceScore = Math.max(
       0,
       Math.min(100, Number(out.evidenceScore) || 0)
     );
 
-    // Validate hold duration
+    // Hold duration
     const holds = [
-      15,
-      30,
-      60,
-      180,
-      300,
-      900,
-      1800,
-      3600,
-      14400
+      15, 30, 60, 180, 300,
+      900, 1800, 3600, 14400
     ];
 
     out.holdSeconds = holds.includes(Number(out.holdSeconds))
