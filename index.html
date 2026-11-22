@@ -2584,11 +2584,11 @@ renderCandleIntel=function(r){
  panel.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><b class="cm-title">◈ CLAUDE SCAN MACHINE</b><span class="cm-badge">ANTHROPIC · OTC</span></div><div class="cm-status" id="cmStatus">MACHINE OFF · SIGNALS HELD</div><div class="cm-actions"><button type="button" class="cm-btn" id="cmToggle">▶ START CLAUDE SCAN MACHINE</button></div><div class="cm-countdown" id="cmCountdown">30s cycle · Ready when started</div><div class="cm-grid"><div class="cm-card"><div class="label">EARLY CALL · DEVELOPING CANDLE</div><div class="signal wait" id="cmEarlySignal">WAIT</div><div class="score" id="cmEarlyScore">Evidence: —</div><div class="reason" id="cmEarlyReason">Early call analyzes the live developing candle. Its signal remains locked between scans.</div></div><div class="cm-card"><div class="label">REGULAR CALL · CLOSED CANDLE</div><div class="signal wait" id="cmRegularSignal">WAIT</div><div class="score" id="cmRegularScore">Evidence: —</div><div class="reason" id="cmRegularReason">Regular call analyzes the most recent completed candle and confirmation context.</div></div></div><div class="cm-foot" id="cmFoot">Claude only · early and regular calls are independently analyzed · calls lock between scans · no broker orders.</div>`;
  host.replaceWith(panel);
  const originalScan=scan, originalAddSignal=addSignal;
- let machineRunning=false, machineBusy=false, ticker=null, suppressLocalSignals=false, lastClaudeBucket=-1;
- const claudeBarMs=30000;
- function claudeServerNow(){return typeof apexServerNow==='function'?apexServerNow():Date.now();
- function claudeBucket(){return Math.floor(claudeServerNow()/claudeBarMs);}
- function claudeSecondsLeft(){const now=claudeServerNow(),next=(Math.floor(now/claudeBarMs)+1)*claudeBarMs;return Math.max(0,Math.ceil((next-now)/1000));}
+ let machineRunning=false, machineBusy=false, ticker=null, suppressLocalSignals=false, lastClaudeScanBucket=null;
+ const CLAUDE_BAR_MS=30000;
+ function liveChartNow(){return typeof apexServerNow==='function'?apexServerNow():Date.now();}
+ function liveChartBucket(){return Math.floor(liveChartNow()/CLAUDE_BAR_MS);}
+ function secondsToChartBoundary(){const now=liveChartNow(),next=(Math.floor(now/CLAUDE_BAR_MS)+1)*CLAUDE_BAR_MS;return Math.max(0,Math.ceil((next-now)/1000));}
  addSignal=function(r){if(suppressLocalSignals)return;return originalAddSignal(r);};
  const safeList=v=>Array.isArray(v)?v.map(x=>String(x)).slice(0,6).join(' · ')||'None':String(v||'None');
  function selected(){return $c('mobileAsset')?.value||$c('chartAsset')?.value||selectedChart;}
@@ -2615,8 +2615,8 @@ renderCandleIntel=function(r){
  }catch(e){setStatus('SCAN ERROR · SIGNALS RETAINED');$c('cmFoot').textContent='Scan failed: '+(e.message||e)+' · Previous callouts are retained until a successful new scan.';console.error('Claude Scan Machine error',e);
  }finally{machineBusy=false;$c('cmToggle').disabled=false;$c('cmToggle').textContent=machineRunning?'⏸ STOP CLAUDE SCAN MACHINE':'▶ START CLAUDE SCAN MACHINE';}
  }
- function heartbeat(){if(!machineRunning)return;if(machineBusy){$c('cmCountdown').textContent='Analysis running · previous signals locked';return;}const left=claudeSecondsLeft(),bucket=claudeBucket();$c('cmCountdown').textContent='Next Claude scan in '+left+'s · synced to 30s candle';if(bucket!==lastClaudeBucket){lastClaudeBucket=bucket;runMachineScan();}}
- function start(){if(machineRunning)return;machineRunning=true;lastClaudeBucket=claudeBucket();$c('cmToggle').textContent='⏸ STOP CLAUDE SCAN MACHINE';setStatus('MACHINE ACTIVE · WAITING FOR 30S CANDLE');$c('cmCountdown').textContent='Next Claude scan in '+claudeSecondsLeft()+'s · synced to 30s candle';ticker=setInterval(heartbeat,200);}
+ function heartbeat(){if(!machineRunning)return;if(machineBusy){$c('cmCountdown').textContent='Analysis running · previous signals locked';return;}const bucket=liveChartBucket(),remaining=secondsToChartBoundary();$c('cmCountdown').textContent='Next Claude scan in '+remaining+'s · synced to live 30-second chart';if(lastClaudeScanBucket!==null&&bucket!==lastClaudeScanBucket){lastClaudeScanBucket=bucket;runMachineScan();}}
+ function start(){if(machineRunning)return;machineRunning=true;$c('cmToggle').textContent='⏸ STOP CLAUDE SCAN MACHINE';setStatus('MACHINE ACTIVE · FIRST SCAN STARTING');lastClaudeScanBucket=liveChartBucket();runMachineScan();heartbeat();ticker=setInterval(heartbeat,200);}
  function stop(){machineRunning=false;if(ticker){clearInterval(ticker);ticker=null;}$c('cmToggle').textContent='▶ START CLAUDE SCAN MACHINE';$c('cmCountdown').textContent='Machine stopped · previous calls remain locked';setStatus(machineBusy?'STOPPED · CURRENT REQUEST FINISHING':'MACHINE OFF · SIGNALS HELD');}
  $c('cmToggle').addEventListener('click',()=>machineRunning?stop():start());
  // Prevent legacy dashboard start/pause buttons from automatically controlling this machine.
