@@ -3494,3 +3494,14 @@ const id=selectedChart||$('chartAsset')?.value||$('mobileAsset')?.value;const as
  new MutationObserver(apply).observe(document.body,{childList:true,subtree:true});
 })();
 </script>
+
+<!-- APEXSCAN V16 chart initialization recovery: redraw after final layout relocation -->
+<script id="apex-v16-chart-redraw-recovery">
+(()=>{
+ const redraw=()=>{try{if(typeof drawChart==='function')drawChart();}catch(e){console.warn('APEX chart redraw recovery:',e);}};
+ const schedule=()=>{requestAnimationFrame(()=>{redraw();setTimeout(redraw,120);setTimeout(redraw,500);});};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+ window.addEventListener('resize',schedule,{passive:true});
+ const panel=document.getElementById('chartPanel');if(panel&&'ResizeObserver' in window){new ResizeObserver(()=>schedule()).observe(panel);}
+})();
+</script>
