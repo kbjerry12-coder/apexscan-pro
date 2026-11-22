@@ -2584,7 +2584,11 @@ renderCandleIntel=function(r){
  panel.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><b class="cm-title">◈ CLAUDE SCAN MACHINE</b><span class="cm-badge">ANTHROPIC · OTC</span></div><div class="cm-status" id="cmStatus">MACHINE OFF · SIGNALS HELD</div><div class="cm-actions"><button type="button" class="cm-btn" id="cmToggle">▶ START CLAUDE SCAN MACHINE</button></div><div class="cm-countdown" id="cmCountdown">30s cycle · Ready when started</div><div class="cm-grid"><div class="cm-card"><div class="label">EARLY CALL · DEVELOPING CANDLE</div><div class="signal wait" id="cmEarlySignal">WAIT</div><div class="score" id="cmEarlyScore">Evidence: —</div><div class="reason" id="cmEarlyReason">Early call analyzes the live developing candle. Its signal remains locked between scans.</div></div><div class="cm-card"><div class="label">REGULAR CALL · CLOSED CANDLE</div><div class="signal wait" id="cmRegularSignal">WAIT</div><div class="score" id="cmRegularScore">Evidence: —</div><div class="reason" id="cmRegularReason">Regular call analyzes the most recent completed candle and confirmation context.</div></div></div><div class="cm-foot" id="cmFoot">Claude only · early and regular calls are independently analyzed · calls lock between scans · no broker orders.</div>`;
  host.replaceWith(panel);
  const originalScan=scan, originalAddSignal=addSignal;
- let machineRunning=false, machineBusy=false, nextScanAt=0, ticker=null, suppressLocalSignals=false;
+ let machineRunning=false, machineBusy=false, ticker=null, suppressLocalSignals=false, lastClaudeBucket=-1;
+ const claudeBarMs=30000;
+ function claudeServerNow(){return typeof apexServerNow==='function'?apexServerNow():Date.now();
+ function claudeBucket(){return Math.floor(claudeServerNow()/claudeBarMs);}
+ function claudeSecondsLeft(){const now=claudeServerNow(),next=(Math.floor(now/claudeBarMs)+1)*claudeBarMs;return Math.max(0,Math.ceil((next-now)/1000));}
  addSignal=function(r){if(suppressLocalSignals)return;return originalAddSignal(r);};
  const safeList=v=>Array.isArray(v)?v.map(x=>String(x)).slice(0,6).join(' · ')||'None':String(v||'None');
  function selected(){return $c('mobileAsset')?.value||$c('chartAsset')?.value||selectedChart;}
@@ -2609,10 +2613,10 @@ renderCandleIntel=function(r){
   }
   setStatus('SCAN COMPLETE · SIGNALS LOCKED UNTIL NEXT CYCLE');$c('cmFoot').textContent='Last scan '+new Date().toLocaleTimeString()+' · Early targets the developing candle; Regular targets the latest closed candle. Evidence score is not win probability.';
  }catch(e){setStatus('SCAN ERROR · SIGNALS RETAINED');$c('cmFoot').textContent='Scan failed: '+(e.message||e)+' · Previous callouts are retained until a successful new scan.';console.error('Claude Scan Machine error',e);
- }finally{machineBusy=false;$c('cmToggle').disabled=false;$c('cmToggle').textContent=machineRunning?'⏸ STOP CLAUDE SCAN MACHINE':'▶ START CLAUDE SCAN MACHINE';if(machineRunning)nextScanAt=Date.now()+30000;}
+ }finally{machineBusy=false;$c('cmToggle').disabled=false;$c('cmToggle').textContent=machineRunning?'⏸ STOP CLAUDE SCAN MACHINE':'▶ START CLAUDE SCAN MACHINE';}
  }
- function heartbeat(){if(!machineRunning)return;if(machineBusy){$c('cmCountdown').textContent='Analysis running · previous signals locked';return;}const remaining=Math.max(0,nextScanAt-Date.now());$c('cmCountdown').textContent=remaining>0?'Next Claude scan in '+Math.ceil(remaining/1000)+'s':'Starting next Claude scan…';if(remaining<=0)runMachineScan();}
- function start(){if(machineRunning)return;machineRunning=true;$c('cmToggle').textContent='⏸ STOP CLAUDE SCAN MACHINE';setStatus('MACHINE ACTIVE · FIRST SCAN STARTING');nextScanAt=Date.now();heartbeat();ticker=setInterval(heartbeat,250);}
+ function heartbeat(){if(!machineRunning)return;if(machineBusy){$c('cmCountdown').textContent='Analysis running · previous signals locked';return;}const left=claudeSecondsLeft(),bucket=claudeBucket();$c('cmCountdown').textContent='Next Claude scan in '+left+'s · synced to 30s candle';if(bucket!==lastClaudeBucket){lastClaudeBucket=bucket;runMachineScan();}}
+ function start(){if(machineRunning)return;machineRunning=true;lastClaudeBucket=claudeBucket();$c('cmToggle').textContent='⏸ STOP CLAUDE SCAN MACHINE';setStatus('MACHINE ACTIVE · WAITING FOR 30S CANDLE');$c('cmCountdown').textContent='Next Claude scan in '+claudeSecondsLeft()+'s · synced to 30s candle';ticker=setInterval(heartbeat,200);}
  function stop(){machineRunning=false;if(ticker){clearInterval(ticker);ticker=null;}$c('cmToggle').textContent='▶ START CLAUDE SCAN MACHINE';$c('cmCountdown').textContent='Machine stopped · previous calls remain locked';setStatus(machineBusy?'STOPPED · CURRENT REQUEST FINISHING':'MACHINE OFF · SIGNALS HELD');}
  $c('cmToggle').addEventListener('click',()=>machineRunning?stop():start());
  // Prevent legacy dashboard start/pause buttons from automatically controlling this machine.
