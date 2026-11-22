@@ -638,20 +638,8 @@ header{height:54px;padding:8px 13px!important;background:rgba(5,24,31,.88)!impor
   <aside>
    <div class="panel" id="signalPanel">
     <div class="panel-head"><h2>LIVE OTC SIGNAL</h2><div class="signal-tools"><span class="pill">MULTI-LAYER INTELLIGENCE · REVERSE MODE ON</span><button type="button" id="alertToggle" class="small" aria-pressed="false">🔔 Enable callouts</button></div></div>
-    <!-- DUAL AI SIGNAL CENTER v2 (CLAUDE + GPT) · display/analysis only: never opens paper trades or orders -->
-<section id="adcs">
- <div class="adcs-head"><strong>CLAUDE SIGNAL SCANNER · DUAL AI SIGNAL CENTER</strong><span class="adcs-tag" id="adcsPair">PAIR · SELECT CHART</span></div>
- <div id="adcsCallouts" class="adcs-callouts" aria-live="assertive"></div>
- <button type="button" id="adcsScan" class="adcs-scan">⌕ SCAN SIGNALS</button>
- <div class="adcs-bar"><i id="adcsBar"></i></div>
- <div id="adcsStatus" class="adcs-status">Ready · select a pair and tap SCAN SIGNALS. This panel never opens paper trades or places orders.</div>
- <div class="adcs-grid">
-  <div class="adcs-card"><h4>EARLY SIGNAL · DEVELOPING · HIGHER RISK</h4><div id="adcsEarly" class="adcs-dir adcs-wait">NOT SCANNED</div><div id="adcsEarlyScore" class="adcs-score">—/100</div><div id="adcsEarlyDetail" class="adcs-detail">Reads the still-forming 30s candle and live indicator movement. Not confirmed.</div><div id="adcsEarlyExtra"></div><div id="adcsEarlyTimer" class="adcs-timer">No active callout</div></div>
-  <div class="adcs-card"><h4>CONFIRMED · CLAUDE + GPT</h4><div id="adcsConfirm" class="adcs-dir adcs-wait">NOT SCANNED</div><div id="adcsConfirmScore" class="adcs-score">—/100</div><div id="adcsConfirmDetail" class="adcs-detail">Both AIs receive the identical snapshot. A direction is released only if both agree and the rules pass.</div><div id="adcsConfirmExtra"></div><div id="adcsConfirmTimer" class="adcs-timer">No active callout</div></div>
-  <div class="adcs-card"><h4>LONG-TERM · 5m / 15m / 1h</h4><div id="adcsLong" class="adcs-dir adcs-wait">NOT SCANNED</div><div id="adcsLongScore" class="adcs-score">—/100</div><div id="adcsLongDetail" class="adcs-detail">Uses real higher-timeframe candles only. Unavailable timeframes are shown, never invented.</div><div id="adcsLongExtra"></div><div id="adcsLongTimer" class="adcs-timer">No active callout</div></div>
- </div>
- <details class="adcs-histbox"><summary>SIGNAL HISTORY · <span id="adcsHistN">0</span></summary><div id="adcsHist" class="adcs-hist"></div></details>
-</section>
+    <!-- CLAUDE-ONLY MAIN SCANNER MOUNT -->
+ <section id="adcs" aria-label="Claude main scanner"></section>
 <div id="signalCallout" class="signal-callout" role="status" aria-live="assertive">Scan a loaded OTC pair to generate a BUY or SELL directional bias</div>
     <div class="signal-card wait" id="topSignal"><div class="signal-top"><div class="signal-dir" id="topDirection">SCANNING</div><span class="pill" id="topScore">CHECKING FEED</span></div><p id="topReason">Run a scan to evaluate the selected markets.</p><p class="signal-status-line" id="signalStatusLine">Technical engine is checking trend, momentum and candle structure</p>
     <div id="candleIntel" class="candle-intel"><div class="ci-title">CANDLE & PATTERN INTELLIGENCE · 30S BAR</div><div class="ci-muted">Waiting for completed candle data.</div></div><div class="signal-stats"><div><small>Market</small><b id="topAsset">—</b></div><div><small>Entry</small><b id="topEntry">—</b></div><div><small>INDICATORS</small><b id="topRsi">—</b></div></div><div class="indicator-chips" id="indicatorChips"><span>Donchian Channel 20</span><span>DeMarker 14</span><span>RSI 14</span><span>Pattern backup</span><span>Reverse mode ON</span></div><div id="autoPaperControls" class="auto-paper-controls"><label><input type="checkbox" id="autoPaperToggle" checked> AUTO PAPER TRADING</label><span id="autoPaperStatus">ON · Each fresh BUY/SELL direction can open one simulated trade per candle</span></div>
@@ -2582,11 +2570,11 @@ renderCandleIntel=function(r){
 <script id="claude-live-otc-scanner">
 (()=>{
  const $c=id=>document.getElementById(id); let claudeBusy=false, claudeLastBucket='';
- const host=$c('signalCallout'); if(!host)return;
+ const host=$c('adcs'); if(!host)return;
  const oldPanel=$c('apexIntelligentEngine'); if(oldPanel)oldPanel.remove();
  const panel=document.createElement('section');panel.id='apexIntelligentEngine';
  panel.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><b class="claude-title">☼ CLAUDE SIGNAL SCANNER</b><span class="claude-badge">LIVE OTC · AI</span></div><div class="claude-phase" id="claudePhase">CLAUDE LIVE OTC SCAN · 30S AUTO CYCLE</div><div class="claude-main"><div><div class="claude-dir" id="claudeSignal">WAIT</div><small style="color:#a0bacb;font-size:9px">CLAUDE AI DECISION</small><div style="font-size:10px;color:#9bb7c8;margin-top:4px">Hold: <b id="claudeHold">—</b></div></div><div class="claude-score" id="claudeScore">—<small>Evidence score</small></div></div><div id="claudeEvidence" class="claude-grid"><div><small>ENGINE</small><b>Anthropic Claude</b></div><div><small>SCAN STATUS</small><b id="claudeScanStatus">Waiting</b></div><div><small>CONFIRMATIONS</small><b id="claudeConfirmations">—</b></div><div><small>CONFLICTS</small><b id="claudeConflicts">—</b></div></div><div class="claude-reason" id="claudeReason">Claude will make the directional decision from the live candle snapshot.</div><div class="claude-foot" id="claudeFoot">Automated AI scan · 30-second cycle · Paper-trading only · Evidence score is not a win probability.</div>`;
- host.insertAdjacentElement('afterend',panel);
+ host.replaceWith(panel);
  function safeList(v){return Array.isArray(v)?v.map(x=>String(x)).slice(0,8).join(' · ')||'None':'None';}
  function selected(){return $c('mobileAsset')?.value||$c('chartAsset')?.value||selectedChart;}
  function setPanel(reply,pair){const side=reply.signal||'WAIT',cls=side==='CALL'?'buy':side==='PUT'?'sell':'wait';$c('claudeSignal').textContent=side==='CALL'?'▲ BUY':side==='PUT'?'▼ SELL':'WAIT';$c('claudeSignal').className='claude-dir '+cls;$c('claudeScore').innerHTML=`${Number(reply.evidenceScore)||0}/100<small>Evidence score</small>`;$c('claudeHold').textContent=(reply.holdSeconds||30)+'s';$c('claudeScanStatus').textContent='LIVE · '+pair;$c('claudeConfirmations').textContent=safeList(reply.confirmations);$c('claudeConflicts').textContent=safeList(reply.conflicts);$c('claudeReason').textContent=reply.summary||reply.reasoning||'Claude returned no explanation.';$c('claudePhase').textContent='CLAUDE LIVE SCAN · 30S CYCLE · '+(reply.signal==='WAIT'?'WAIT / NO EDGE':reply.signal+' DECISION');$c('claudeFoot').textContent='Claude AI · '+new Date().toLocaleTimeString()+' · '+(reply.riskFlags?.length?'Risk: '+safeList(reply.riskFlags):'No risk flags reported')+' · Score is evidence strength, not win probability.';}
@@ -2617,7 +2605,7 @@ renderCandleIntel=function(r){
   const now=apexServerNow(),bucket=Math.floor(now/30000),within=now%30000,remaining=30000-within;
   apexRenderIntelligentPanel?.();
   if(!running){$c('claudePhase').textContent='CLAUDE · READY';$c('claudeScanStatus').textContent='Start scanner to enable 30s auto scans';return;}
-  $c('claudePhase').textContent='CLAUDE LIVE SCAN · NEXT CYCLE '+Math.ceil(remaining/1000)+'s';
+  $c('claudePhase').textContent='CLAUDE LIVE SCAN · NEXT REFRESH '+Math.ceil(remaining/1000)+'s · SIGNAL LOCKED';
   if(bucket!==claudeLastBucket&&!claudeBusy&&!busy){claudeLastBucket=bucket;scan().catch(e=>console.error('Claude scheduled scan:',e));}
  };
  apexStartScheduler=function(){clearInterval(cycle);running=true;claudeLastBucket='';$c('startBtn').disabled=true;$c('pauseBtn').disabled=false;$c('scanStateBadge').textContent='CLAUDE 30S AUTO';status('CLAUDE LIVE OTC · 30-SECOND AUTO SCAN',true);apexIntelligentHeartbeat();cycle=setInterval(apexIntelligentHeartbeat,500);};
@@ -2627,164 +2615,14 @@ renderCandleIntel=function(r){
 })();
 </script>
 
-<!-- DUAL AI SIGNAL CENTER v2 · styles -->
-<style id="apex-dual-center-style">
-#adcs{margin:0 0 12px;border:1px solid #267f84;border-radius:18px;background:linear-gradient(145deg,#092a34,#071622);padding:13px;color:#dff6ff;box-shadow:0 12px 28px #0005}
-#adcs .adcs-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid #205461;padding-bottom:10px;margin-bottom:10px}
-#adcs .adcs-head strong{letter-spacing:.1em;color:#a5e9e7;font-size:11px}
-#adcs .adcs-tag{border:1px solid #1a9a92;border-radius:30px;padding:5px 9px;color:#75e5d9;font-size:10px}
-#adcs .adcs-scan{width:100%;padding:14px;border:0;border-radius:12px;background:linear-gradient(100deg,#0d8f83,#087eae);font-size:14px;font-weight:950;color:#fff;letter-spacing:.06em}
-#adcs .adcs-scan:disabled{opacity:.6}
-#adcs .adcs-bar{height:4px;border-radius:4px;background:#0b2a38;margin-top:8px;overflow:hidden}#adcs .adcs-bar i{display:block;height:100%;width:0;background:#2fe0c0;transition:width .3s}
-#adcs .adcs-status{font-size:11px;color:#8db4c8;padding:8px 2px;line-height:1.4}
-#adcs .adcs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
-#adcs .adcs-card{background:#091d2a;border:1px solid #1e5362;border-radius:13px;padding:10px;min-width:0}
-#adcs .adcs-card h4{margin:0 0 7px;font-size:9px;letter-spacing:.09em;color:#82c8d3}
-#adcs .adcs-dir{font-size:21px;font-weight:950;margin:3px 0}#adcs .adcs-score{font-size:12px;color:#a9c4d4;font-weight:800}
-#adcs .adcs-detail{font-size:11px;color:#b7cedc;line-height:1.5;margin-top:6px;overflow-wrap:anywhere}
-#adcs .adcs-timer{font-size:10px;color:#77c7d6;margin-top:8px}
-#adcs .adcs-buy{color:#43e0ac}#adcs .adcs-sell{color:#ff718d}#adcs .adcs-wait{color:#b8c8db}#adcs .adcs-warn{color:#ffd078}
-#adcs .adcs-ai{margin-top:7px;padding:7px;border:1px solid #1e4a5a;border-radius:9px;background:#071823;font-size:10px;line-height:1.5;color:#b7cedc;overflow-wrap:anywhere}#adcs .adcs-ai.err{border-color:#7a3b4b;color:#ffb3c2}#adcs .adcs-ai small{color:#7fa6b8}
-#adcs .adcs-callouts{display:grid;gap:7px;margin-bottom:9px}
-#adcs .adcs-call{padding:10px 12px;border-radius:12px;border:1px solid #2b6672;background:#08202c;animation:adcsIn .35s}
-#adcs .adcs-call.b{border-color:#2fd6a0;box-shadow:0 0 16px #2fd6a033}#adcs .adcs-call.s{border-color:#ff6f8d;box-shadow:0 0 16px #ff6f8d33}
-#adcs .adcs-call .ct{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.08em;color:#9cc7d2;font-weight:900}
-#adcs .adcs-call .cd{font-size:24px;font-weight:950;margin:2px 0}#adcs .adcs-call.b .cd{color:#43e0ac}#adcs .adcs-call.s .cd{color:#ff718d}
-#adcs .adcs-call small{display:block;font-size:10px;color:#8db4c8;line-height:1.4}#adcs .adcs-call.t-EARLY .ct b{color:#ffd078}
-#adcs .adcs-histbox{margin-top:10px;font-size:10px;color:#9cc7d2}#adcs .adcs-histbox summary{cursor:pointer;font-weight:900;letter-spacing:.08em;padding:6px 0}
-#adcs .adcs-hist div{padding:6px 0;border-top:1px solid #16404d;line-height:1.4}
-@keyframes adcsIn{from{opacity:0;transform:translateY(-6px)}}
+<!-- Dual AI scanner removed: Claude is the sole scanner. -->
+<style id="claude-main-scanner-polish">
+#apexIntelligentEngine{margin:0 0 12px!important;padding:12px!important;border-radius:16px!important;background:linear-gradient(155deg,#0b2835,#061722)!important;border:1px solid #27737a!important}
+#apexIntelligentEngine .claude-main{min-height:112px!important}
+#apexIntelligentEngine .claude-dir{font-size:30px!important}
+#apexIntelligentEngine .claude-phase{font-size:10px!important;text-align:center!important}
 </style>
-<!-- DUAL AI SIGNAL CENTER v2 · logic -->
-<script id="apex-dual-center-script">try{(()=>{
- const host=document.getElementById('adcs');if(!host||host.dataset.ready)return;host.dataset.ready='1';
- const $d=id=>document.getElementById(id),BAR=30000,HKEY='apex_dual_ai_history_v1',MINAI=60;
- const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const T=ms=>typeof apexTimeFormatter!=='undefined'?apexTimeFormatter.format(new Date(ms)):new Date(ms).toLocaleTimeString();
- const F=v=>Number.isFinite(v)?(typeof fmt==='function'?fmt(v):String(v)):'—',num=v=>{const n=Number(v);return v!=null&&v!==''&&Number.isFinite(n)?n:null};
- const side=s=>{s=String(s||'WAIT').toUpperCase();return /^(CALL|BUY|BULLISH|UP)$/.test(s)?'CALL':/^(PUT|SELL|BEARISH|DOWN)$/.test(s)?'PUT':'WAIT'};
- const lab=s=>s==='CALL'?'BUY':s==='PUT'?'SELL':'WAIT',cls=s=>s==='CALL'?'adcs-buy':s==='PUT'?'adcs-sell':'adcs-wait';
- let scanning=false,active=[],hist=[],tiers={},lastEnd=0;
- try{hist=JSON.parse(localStorage.getItem(HKEY)||'[]').slice(0,60)}catch(e){}
- const saveH=()=>{try{localStorage.setItem(HKEY,JSON.stringify(hist.slice(0,60)))}catch(e){}};
- const status=t=>{$d('adcsStatus').textContent=t},bar=p=>{$d('adcsBar').style.width=p+'%'};
- const left=ms=>{const s=Math.max(0,Math.ceil((ms-Date.now())/1000));return s>=120?Math.round(s/60)+'m':s+'s'};
- // ---- tier cards ----
- function put(k,o){const e=$d('adcs'+k);if(!e)return;e.textContent=o.head;e.className='adcs-dir '+(o.cls||'adcs-wait');
-  $d('adcs'+k+'Score').textContent=o.score==null?'—/100':Math.round(o.score)+'/100 evidence';$d('adcs'+k+'Detail').textContent=o.detail||'';$d('adcs'+k+'Extra').innerHTML=o.extra||'';
-  tiers[k]={exp:o.exp||0,done:false,msg:o.msg};timer(k)}
- function timer(k){const t=$d('adcs'+k+'Timer'),x=tiers[k];if(!t)return;t.textContent=!x?'No active callout':x.exp?(x.exp>Date.now()?'Active · expires in '+left(x.exp):'Expired'):(x.msg||'No active callout')}
- const aiBox=x=>x.err?`<div class="adcs-ai err"><b>${x.name}</b> · UNAVAILABLE — ${esc(x.err)}</div>`:`<div class="adcs-ai"><b>${x.name}</b> · <span class="${cls(x.sig)}">${lab(x.sig)}</span> · ${x.score}/100<br><small>Reasons:</small> ${esc(x.reasons.join(' · ')||x.summary||'none returned')}<br><small>Conflicts:</small> ${esc(x.conflicts.join(' · ')||'none reported')}${x.risks.length?'<br><small>Risks:</small> '+esc(x.risks.join(' · ')):''}</div>`;
- // ---- callouts + history ----
- function callout(c){if(active.some(x=>x.key===c.key)||hist.some(x=>x.key===c.key))return false;active.unshift(c);drawCalls();return true}
- function drawCalls(){const lbl={EARLY:'EARLY · DEVELOPING · HIGHER RISK',CONFIRMED:'CONFIRMED · CLAUDE + GPT',LONG:'LONG-TERM TREND'};
-  $d('adcsCallouts').innerHTML=active.map(c=>`<div class="adcs-call ${c.dir==='CALL'?'b':'s'} t-${c.tier}"><div class="ct"><b>${lbl[c.tier]}</b><span>${left(c.exp)}</span></div><div class="cd">${esc(c.label)}</div><small>${esc(c.pair)} · candle ${T(c.candle)} · ${esc(c.src)}<br>score ${c.score}/100 · expires ${T(c.exp)}</small></div>`).join('')}
- function drawHist(){$d('adcsHistN').textContent=hist.length;$d('adcsHist').innerHTML=hist.map(h=>`<div><b class="${cls(h.dir)}">${esc(h.label)}</b> · ${esc(h.tier)} · ${esc(h.pair)}<br>candle ${T(h.candle)} · released ${T(h.at)} · ${h.status} · ${h.score}/100 · ${esc(h.src)}</div>`).join('')||'<div>No signals yet.</div>'}
- setInterval(()=>{const now=Date.now();let ch=false;
-  active=active.filter(c=>{if(c.exp>now)return true;hist.unshift({...c,status:'EXPIRED',at:c.at});ch=true;return false});
-  if(ch){hist=hist.slice(0,60);saveH();drawHist()}if(active.length||ch)drawCalls();
-  for(const k in tiers){const x=tiers[k];if(x.exp&&now>=x.exp&&!x.done){x.done=true;$d('adcs'+k).textContent='EXPIRED';$d('adcs'+k).className='adcs-dir adcs-wait';$d('adcs'+k+'Detail').textContent='Callout expired. Rescan for a fresh assessment.';$d('adcs'+k+'Extra').innerHTML='';$d('adcs'+k+'Score').textContent='—/100'}timer(k)}},1000);
- // ---- snapshot from the dashboard's real data (no placeholders) ----
- function snapshot(){
-  const id=$d('mobileAsset')?.value||$d('chartAsset')?.value||selectedChart,asset=ASSETS.find(x=>x.id===id),r=results[id];
-  if(!asset||!r)throw Error('Select a pair and let live candles load first.');
-  const a=r.analysis||{},cs=(r.candles||[]).filter(c=>[c.open,c.high,c.low,c.close,c.timeMs].every(v=>Number.isFinite(Number(v))));
-  if(cs.length<36)throw Error('Only '+cs.length+' valid candles loaded; need 36+.');
-  const price=num(r.livePrice??r.price);if(price===null||price<=0)throw Error('No valid live price.');
-  const tk=liveTicks[id],tickAge=tk?(Date.now()-Number(tk.receivedAt||0))/1000:null;
-  if(!a.fresh)throw Error('Feed is stale'+(tickAge==null?' (no live tick yet)':' (last tick '+tickAge.toFixed(0)+'s ago)')+'. Signals blocked.');
-  const cur=cs.at(-1),m=c=>({open:+c.open,high:+c.high,low:+c.low,close:+c.close,volume:num(c.volume),time:Number(c.timeMs)});
-  const s={pair:r.name||asset.name,symbol:asset.symbol,market:'OTC',timeframe:'30-second candles',candleTimestamp:Number(cur.timeMs),candleTime:new Date(cur.timeMs).toISOString(),scanTime:new Date().toISOString(),livePrice:price,tickAgeSeconds:tickAge,formingCandle:m(cur),completedCandles:cs.slice(0,-1).slice(-60).map(m),
-   indicators:(a.layers||[]).map(x=>({name:String(x.name||''),value:String(x.value??''),bull:!!x.bull,bear:!!x.bear})),
-   marketContext:{trend:a.trend||'unknown',support:num(a.support),resistance:num(a.resistance),donchian:a.donchian||null,envelopes:a.envelopes||null,patterns:a.detected_patterns||[],localIndicatorRead:a.rawDirection||'WAIT',localEarlyRead:a.earlyRawDirection||'WAIT',localScore:num(a.score)||0,feedFresh:true,note:'Local reads are the original engine output; dashboard reverse mode is not applied.'}};
-  s.snapshotId=id+'|'+cur.timeMs+'|'+price;
-  return {id,asset,r,a,s,cur,closed:cs.slice(0,-1)};
- }
- // ---- tier 1: EARLY (local, forming candle) ----
- function early(S){const {a,cur,s}=S,d=side(a.earlyRawDirection),L=a.layers||[],agree=L.filter(x=>d==='CALL'?x.bull:x.bear).length,end=Math.floor(cur.timeMs/BAR)*BAR+BAR;
-  const body=Math.sign(cur.close-cur.open),opp=d!=='WAIT'&&body!==0&&body!==(d==='CALL'?1:-1),dir=opp?'WAIT':d;
-  const detail=dir==='WAIT'?(opp?'Forming candle currently moves against the indicator read — no early call.':(a.earlyReason||'No early setup meets the alignment threshold.')):`${agree}/${L.length} indicators align on the forming candle. ${a.earlyReason||''} DEVELOPING — higher risk, not confirmed.`;
-  const exp=Math.max(end,Date.now()+8000),score=dir==='WAIT'?0:num(a.earlyScore)||0;
-  put('Early',{head:dir==='WAIT'?'EARLY · WAIT':'EARLY '+lab(dir),cls:cls(dir),score:dir==='WAIT'?null:score,detail,exp:dir==='WAIT'?0:exp,msg:'No early setup'});
-  if(dir!=='WAIT')callout({key:'EARLY|'+S.id+'|'+cur.timeMs+'|'+dir,tier:'EARLY',pair:s.pair,dir,label:'EARLY '+lab(dir),score,candle:cur.timeMs,exp,at:Date.now(),src:'Local engine · forming candle'})}
- // ---- AI plumbing: identical body string goes to both analyzers ----
- const norm=(j,name)=>{const l=v=>Array.isArray(v)?v.map(String).filter(Boolean).slice(0,6):v?[String(v)]:[];return{name,sig:side(j.signal??j.direction??j.bias??j.trend),score:Math.round(num(j.evidenceScore??j.confidence_score??j.score)??0),reasons:l(j.confirmations||j.reasons),conflicts:l(j.conflicts),risks:l(j.riskFlags),summary:String(j.summary||j.reasoning||j.reason||j.waitReason||'').slice(0,500)}};
- async function ask(url,body,name){const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),45000);
-  try{const x=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body,cache:'no-store',signal:ctl.signal});let j={};try{j=await x.json()}catch(e){}
-   if(!x.ok||j.success===false)throw Error(j.error||'HTTP '+x.status);return norm(j,name)}
-  catch(e){return{name,err:e.name==='AbortError'?'timed out after 45s':String(e.message||e)}}finally{clearTimeout(to)}}
- const pair=body=>Promise.all([ask('/.netlify/functions/claude-live-scan',body,'Claude'),ask('/.netlify/functions/openai-analysis',body,'GPT')]);
- // ---- tier 2: CONFIRMED ----
- async function confirmed(S){
-  const body=JSON.stringify({...S.s,tier:'CONFIRMED',target:'current live 30-second candle'});
-  const [c,g]=await pair(body),aiHtml=aiBox(c)+aiBox(g);
-  let dir='WAIT',head,det,tag;const lr=side(S.a.rawDirection),sc=c.err||g.err?null:Math.round((c.score+g.score)/2);
-  const nowC=Number(results[S.id]?.candles?.at(-1)?.timeMs||0);
-  if(c.err||g.err){head='ERROR · WAIT';det='One analyzer failed, so no confirmed signal is released.'}
-  else if(c.sig!=='WAIT'&&g.sig!=='WAIT'&&c.sig!==g.sig){head='CONFLICT · WAIT';det='Claude and GPT disagree ('+lab(c.sig)+' vs '+lab(g.sig)+'). No signal forced.'}
-  else if(c.sig==='WAIT'||g.sig==='WAIT'){head='WAIT';det='At least one analyzer sees insufficient evidence.'}
-  else if(Math.min(c.score,g.score)<MINAI){head='WAIT · LOW EVIDENCE';det='Both agree on '+lab(c.sig)+' but a score is below the '+MINAI+' minimum.'}
-  else if(lr!=='WAIT'&&lr!==c.sig){head='WAIT · ENGINE OPPOSES';det='Both AIs say '+lab(c.sig)+' but the local indicator engine reads '+lab(lr)+'.'}
-  else if(nowC-S.cur.timeMs>=2*BAR){head='SUPERSEDED · WAIT';det='Analysis arrived after the snapshot candle was superseded.'}
-  else{dir=c.sig;head='CONFIRMED '+lab(dir);det='Both AIs agree, scores ≥'+MINAI+', local engine not opposed.'}
-  const exp=dir==='WAIT'?0:Date.now()+30000,agree=c.err||g.err?'ERROR':c.sig===g.sig?(c.sig==='WAIT'?'BOTH WAIT':'AGREE '+lab(c.sig)):'DISAGREE';
-  put('Confirm',{head,cls:dir==='WAIT'?(head.startsWith('CONFLICT')||head.startsWith('ERROR')?'adcs-warn':'adcs-wait'):cls(dir),score:sc,detail:`Agreement: ${agree} · snapshot ${T(S.cur.timeMs)}. ${det}`,extra:aiHtml,exp,msg:'No confirmed signal'});
-  if(dir!=='WAIT')callout({key:'CONFIRMED|'+S.id+'|'+S.cur.timeMs+'|'+dir,tier:'CONFIRMED',pair:S.s.pair,dir,label:'CONFIRMED '+lab(dir),score:sc,candle:S.cur.timeMs,exp,at:Date.now(),src:'Claude '+c.score+' · GPT '+g.score})}
- // ---- tier 3: LONG-TERM ----
- const ema=(v,p)=>{const k=2/(p+1);let e=v[0];return v.map((x,i)=>i?(e=x*k+e*(1-k)):e)};
- function agg(cs,ms){const n=ms/BAR,m=new Map();cs.forEach(c=>{const k=Math.floor(c.timeMs/ms)*ms,b=m.get(k);b?(b.high=Math.max(b.high,+c.high),b.low=Math.min(b.low,+c.low),b.close=+c.close,b.n++):m.set(k,{time:k,open:+c.open,high:+c.high,low:+c.low,close:+c.close,n:1})});return[...m.values()].filter(b=>b.n>=n*.9&&b.time+ms<=Date.now())}
- async function provider(sym,sec){try{const x=await fetch('/.netlify/functions/otc-candles?symbol='+encodeURIComponent(sym)+'&tf='+sec,{cache:'no-store'});if(!x.ok)return null;const j=await x.json().catch(()=>null);const L=Array.isArray(j)?j:(j?.candles??j?.data?.candles??j?.data??j?.results??[]);if(!Array.isArray(L))return null;
-   const o=L.map(v=>{const t=v.time??v.timestamp??v.datetime??v.t;let ms=typeof t==='number'?t:/^\d+(\.\d+)?$/.test(String(t).trim())?Number(t):Date.parse(t);if(ms>0&&ms<1e12)ms*=1000;/* Keep the same UTC+2 normalization as the main OTC candle parser; 2h is divisible by all requested TF bucket sizes. */return{time:ms-7200000,open:+(v.open??v.o),high:+(v.high??v.h),low:+(v.low??v.l),close:+(v.close??v.c)}}).filter(c=>[c.time,c.open,c.high,c.low,c.close].every(Number.isFinite)&&c.time+sec*1000<=Date.now()).sort((p,q)=>p.time-q.time);
-   if(o.length<12)return null;const d=o.slice(1).map((c,i)=>c.time-o[i].time).sort((p,q)=>p-q),med=d[d.length>>1];
-   return Math.abs(med-sec*1000)<=sec*100?o.slice(-120):null}catch(e){return null}}
- function tfRead(c,l){if(!c||c.length<10)return{ok:false,lab:l,why:'only '+(c?c.length:0)+' real candles (need 10+)'};
-  const cl=c.map(x=>x.close),e9=ema(cl,9),e21=ema(cl,21),L=cl.length-1,sl=e21[L]-e21[Math.max(0,L-5)];
-  const tr=c.slice(1).map((x,i)=>Math.max(x.high-x.low,Math.abs(x.high-c[i].close),Math.abs(x.low-c[i].close))),atr=tr.slice(-14).reduce((p,q)=>p+q,0)/Math.min(14,tr.length);
-  const hi=(a,b)=>Math.max(...c.slice(a,b).map(x=>x.high)),lo=(a,b)=>Math.min(...c.slice(a,b).map(x=>x.low)),n=c.length;
-  const hh=hi(n-6,n)>hi(n-12,n-6)&&lo(n-6,n)>lo(n-12,n-6),ll=hi(n-6,n)<hi(n-12,n-6)&&lo(n-6,n)<lo(n-12,n-6);
-  const net=(e9[L]>e21[L]?1:-1)+(cl[L]>e21[L]?1:-1)+(sl>atr*.05?1:sl<-atr*.05?-1:0)+(hh?1:ll?-1:0);
-  return{ok:true,lab:l,dir:net>=2?'BULLISH':net<=-2?'BEARISH':'NEUTRAL',strength:Math.round(Math.abs(net)/4*100),support:lo(Math.max(0,n-20),n),resistance:hi(Math.max(0,n-20),n),atr,ema21:e21[L],last:cl[L],n}}
- async function longTerm(S){
-  const defs=[['5m',300],['15m',900],['1h',3600]];
-  const reads=await Promise.all(defs.map(async([l,sec])=>{let c=await provider(S.asset.symbol,sec),src='provider candles';if(!c){c=agg(S.closed,sec*1000);src='derived from your 30s candles'}const r=tfRead(c,l);r.src=src;r.candles=c;return r}));
-  const av=reads.filter(r=>r.ok),W={'5m':1,'15m':2,'1h':3};
-  const lines=reads.map(r=>r.ok?`<div>${r.lab}: <b class="${cls(r.dir==='BULLISH'?'CALL':r.dir==='BEARISH'?'PUT':'WAIT')}">${r.dir}</b> · strength ${r.strength} · ${r.n} candles · ${r.src}</div>`:`<div>${r.lab}: <b class="adcs-warn">UNAVAILABLE</b> · ${r.why}</div>`).join('');
-  if(av.length<2){put('Long',{head:'UNAVAILABLE',cls:'adcs-warn',score:null,detail:'Fewer than 2 timeframes have enough real candle data. Nothing was estimated.',extra:`<div class="adcs-ai">${lines}</div>`,msg:'Insufficient data'});return}
-  const tot=av.reduce((p,r)=>p+W[r.lab],0),diff=av.reduce((p,r)=>p+(r.dir==='BULLISH'?W[r.lab]:r.dir==='BEARISH'?-W[r.lab]:0),0),ratio=diff/tot;
-  const local=ratio>=.4?'BULLISH':ratio<=-.4?'BEARISH':'NEUTRAL',strength=Math.round(Math.abs(ratio)*60+av.reduce((p,r)=>p+r.strength*W[r.lab],0)/tot*.4);
-  const P=av.find(r=>r.lab==='1h')||av.find(r=>r.lab==='15m')||av[0],hold={'1h':'30–90 min','15m':'10–45 min','5m':'5–20 min'}[P.lab];
-  const up=local==='BULLISH',ez=local==='NEUTRAL'?null:up?[Math.max(P.support,P.ema21-.25*P.atr),P.ema21+.25*P.atr]:[P.ema21-.25*P.atr,Math.min(P.resistance,P.ema21+.25*P.atr)],inv=local==='NEUTRAL'?null:up?P.support-.5*P.atr:P.resistance+.5*P.atr;
-  const lv=`<div class="adcs-ai"><small>Levels from ${P.lab} candles (${P.src}) — computed, not predictions</small><br>Support ${F(P.support)} · Resistance ${F(P.resistance)}<br>Entry zone: ${ez?F(ez[0])+' – '+F(ez[1]):'none (trend neutral)'}<br>Invalidation: ${inv==null?'—':F(inv)}<br>Holding range: ${local==='NEUTRAL'?'—':hold+' (heuristic)'}<hr style="border:0;border-top:1px solid #16404d">${lines}</div>`;
-  const pk=r=>r.ok?{lab:r.lab,dir:r.dir,strength:r.strength,support:r.support,resistance:r.resistance,atr:r.atr,source:r.src}:{lab:r.lab,unavailable:r.why};
-  const body=JSON.stringify({...S.s,tier:'LONG_TERM',timeframe:'multi-timeframe (5m/15m/1h)',marketContext:{...S.s.marketContext,localTrend:local,localTrendStrength:strength,timeframeReads:reads.map(pk),levels:{support:P.support,resistance:P.resistance,entryZone:ez,invalidation:inv,holdingRange:hold}},higherTimeframeCandles:Object.fromEntries(av.map(r=>[r.lab,r.candles.slice(-40).map(x=>({time:x.time,open:x.open,high:x.high,low:x.low,close:x.close}))])),instruction:'Assess sustained trend across ONLY the supplied higher-timeframe candles. Do not treat as a next-30-second entry. Do not assume unlisted timeframes.'});
-  const [c,g]=await pair(body),ai=aiBox(c)+aiBox(g),ds=x=>x.err?null:x.sig==='CALL'?'BULLISH':x.sig==='PUT'?'BEARISH':'NEUTRAL';
-  let head,cl,sc=null,exp=0,det;
-  if(c.err||g.err){head='LOCAL ONLY · '+local;cl='adcs-warn';sc=strength;det='An AI analyzer failed, so this trend is from candles only and unconfirmed.'}
-  else if(ds(c)!==ds(g)){head='CONFLICT · NEUTRAL';cl='adcs-warn';det='Claude says '+ds(c)+', GPT says '+ds(g)+'. No trend forced.'}
-  else if(ds(c)!==local){head='CONFLICT · NEUTRAL';cl='adcs-warn';det='Both AIs say '+ds(c)+' but candle structure reads '+local+'.'}
-  else{head=local;cl=local==='BULLISH'?'adcs-buy':local==='BEARISH'?'adcs-sell':'adcs-wait';sc=Math.round((c.score+g.score+strength)/3);det='Claude, GPT and candle structure agree.';exp=local==='NEUTRAL'?0:Date.now()+10*60000}
-  put('Long',{head:head==='BULLISH'?'▲ BULLISH TREND':head==='BEARISH'?'▼ BEARISH TREND':head,cls:cl,score:sc,detail:det+' Trend strength '+strength+'/100.',extra:lv+ai,exp,msg:'No active callout'});
-  if(exp)callout({key:'LONG|'+S.id+'|'+Math.floor(Date.now()/300000)+'|'+(up?'CALL':'PUT'),tier:'LONG',pair:S.s.pair,dir:up?'CALL':'PUT',label:head+' TREND',score:sc,candle:S.cur.timeMs,exp,at:Date.now(),src:'5m/15m/1h · Claude+GPT'})}
- // ---- manual scan ----
- async function scan(){
-  if(scanning||Date.now()-lastEnd<2500)return;scanning=true;const btn=$d('adcsScan');btn.disabled=true;btn.textContent='⌕ SCANNING…';bar(5);
-  let S;try{S=snapshot()}catch(e){status('Scan blocked: '+(e.message||e));scanning=false;btn.disabled=false;btn.textContent='⌕ SCAN SIGNALS';bar(0);return}
-  $d('adcsPair').textContent='PAIR · '+S.s.pair;const rev=S.a.reverseMode?' Dashboard reverse mode is ON; this scanner uses original (non-reversed) reads.':'';
-  status('Snapshot '+T(S.cur.timeMs)+' locked · early read done · asking Claude + GPT…'+rev);
-  try{early(S)}catch(e){put('Early',{head:'ERROR',cls:'adcs-warn',detail:String(e.message||e)})}bar(25);
-  let done=0;const fin=()=>{done++;bar(25+done*37)};
-  const errs=[];
-  try{
-   await Promise.all([confirmed(S).catch(e=>{errs.push('Confirmed: '+(e.message||e));put('Confirm',{head:'ERROR · WAIT',cls:'adcs-warn',detail:String(e.message||e)})}).finally(fin),
-    longTerm(S).catch(e=>{errs.push('Long-term: '+(e.message||e));put('Long',{head:'ERROR',cls:'adcs-warn',detail:String(e.message||e)})}).finally(fin)]);
-   bar(100);status((errs.length?'Finished with errors — '+errs.join(' | '):'Scan finished '+T(Date.now()))+' · scores are evidence strength, not win probability. No paper trades or orders were created.'+rev);
-   lastEnd=Date.now();setTimeout(()=>{if(!scanning)bar(0)},1500)
-  }catch(e){status('Dual scan failed: '+(e.message||e));console.error('Dual Signal Center scan error',e)}
-  finally{scanning=false;btn.disabled=false;btn.textContent='⌕ SCAN SIGNALS';}}
- $d('adcsScan').addEventListener('click',scan);drawHist();drawCalls();
-})();}catch(e){console.error('Dual AI Signal Center error',e)}
-</script>
-<!-- END DUAL AI SIGNAL CENTER v2 -->
+
 
 
 </body></html>
