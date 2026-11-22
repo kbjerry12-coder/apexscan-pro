@@ -2780,13 +2780,7 @@ renderCandleIntel=function(r){
   lastDeepResult=result;renderRadar();
   setText('apexDeepScanStatus',`Deep Scan complete · ${side} · power ${power}/100 · signal locked until 00:00 · ${new Date().toLocaleTimeString()}`);
  }
- let stableSignalBucket=null;
  function setLiveSignal(result,pack){
-  // Minimal stable signal lock: publish only the first signal for each aligned 30s candle.
-  const stamp=Number(result?.candleTimeMs);
-  const bucket=Number.isFinite(stamp)?Math.floor(stamp/ BAR_MS)*BAR_MS:Math.floor(serverNow()/BAR_MS)*BAR_MS;
-  if(stableSignalBucket===bucket) return;
-  stableSignalBucket=bucket;
   const dir=result.direction,word=dir==='CALL'?'BUY':dir==='PUT'?'SELL':'WAIT',cls=dir==='CALL'?'call':dir==='PUT'?'put':'wait';
   const card=$('topSignal');if(card)card.className='signal-card '+cls;
   setText('topDirection',word);setText('topScore',`POWER ${result.power}/100`);
