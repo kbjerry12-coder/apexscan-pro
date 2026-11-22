@@ -13,6 +13,147 @@ const json = (statusCode, body) => ({
   body: JSON.stringify(body),
 });
 
+function extractJsonObject(text) {
+  if (typeof text !== "string" || !text.trim()) return null;
+
+  const cleaned = text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```\s*$/i, "")
+    .trim();
+
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed;
+    }
+  } catch {}
+
+  // Extract first balanced JSON object.
+  // Ignores braces inside quoted strings.
+  const start = cleaned.indexOf("{");
+  if (start < 0) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+
+    if (ch === '"') inString = true;
+    else if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+
+      if (depth === 0) {
+        const candidate = cleaned.slice(start, i + 1);
+
+        try {
+          const parsed = JSON.parse(candidate);
+          if (
+            parsed &&
+            typeof parsed === "object" &&
+            !Array.isArray(parsed)
+          ) {
+            return parsed;
+          }
+        } catch {}
+
+        return null;
+      }
+    }
+  }
+
+  return null;
+}
+
+async function callClaude({
+  apiKey,
+  model,
+  system,
+  messages,
+  maxTokens = 700,
+  timeoutMs = 25000,
+}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const upstream = await fetch(
+      "https://api.anthropic.com/v1/messages",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: maxTokens,
+          system,
+          messages,
+        }),
+        signal: controller.signal,
+      }
+    );
+
+    const responseText = await upstream.text();
+
+    let responseJson;
+
+    try {
+      responseJson = JSON.parse(responseText);
+    } catch {
+      return {
+        ok: false,
+        status: upstream.status,
+        error: "Anthropic returned an unreadable API response.",
+      };
+    }
+
+    if (!upstream.ok) {
+      return {
+        ok: false,
+        status: upstream.status,
+        error:
+          responseJson?.error?.message ||
+          "Anthropic API request failed",
+      };
+    }
+
+    const raw = (responseJson.content || [])
+      .filter((x) => x.type === "text")
+      .map((x) => x.text || "")
+      .join("\n")
+      .trim();
+
+    return {
+      ok: true,
+      raw,
+      responseJson,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error?.name === "AbortError"
+          ? "Claude request timed out."
+          : error?.message || "Claude request failed",
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function handler(event) {
   if (event.httpMethod === "OPTIONS") {
     return {
@@ -45,7 +186,11 @@ export async function handler(event) {
     return json(400, { error: "Invalid JSON request body" });
   }
 
-  if (!input || typeof input !== "object") {
+  if (
+    !input ||
+    typeof input !== "object" ||
+    Array.isArray(input)
+  ) {
     return json(400, {
       error: "Request payload must be an object",
     });
@@ -82,197 +227,235 @@ export async function handler(event) {
   }
 
   const payload = {
-    pair: String(input.pair || input.symbol || "Unknown pair").slice(0, 80),
+    pair: String(
+      input.pair || input.symbol || "Unknown pair"
+    ).slice(0, 80),
+
     symbol: String(input.symbol || "").slice(0, 80),
+
     market: String(input.market || "OTC").slice(0, 30),
-    timeframe: String(input.scanTimeframe || "30-second candles").slice(0, 40),
-    forecast: String(input.forecast || "next candle").slice(0, 60),
+
+    timeframe: String(
+      input.scanTimeframe || "30-second candles"
+    ).slice(0, 40),
+
+    forecast: String(
+      input.forecast || "next candle"
+    ).slice(0, 60),
+
     price: Number(input.price),
 
-    localDirection: ALLOWED_DIRECTIONS.has(input.localDirection)
+    localDirection: ALLOWED_DIRECTIONS.has(
+      input.localDirection
+    )
       ? input.localDirection
       : "WAIT",
 
     localScore: Math.max(
       0,
-      Math.min(100, Math.round(Number(input.localScore) || 0))
+      Math.min(
+        100,
+        Math.round(Number(input.localScore) || 0)
+      )
     ),
 
-    candleBody: String(input.candleBody || "").slice(0, 80),
+    candleBody: String(
+      input.candleBody || ""
+    ).slice(0, 80),
 
     bodyPercent: Math.max(
       0,
-      Math.min(100, Math.round(Number(input.bodyPercent) || 0))
+      Math.min(
+        100,
+        Math.round(Number(input.bodyPercent) || 0)
+      )
     ),
 
-    wickStructure: String(input.wickStructure || "").slice(0, 100),
-    momentum: String(input.momentum || "").slice(0, 50),
+    wickStructure: String(
+      input.wickStructure || ""
+    ).slice(0, 100),
 
-    volumeRatio: Number.isFinite(Number(input.volumeRatio))
+    momentum: String(
+      input.momentum || ""
+    ).slice(0, 50),
+
+    volumeRatio: Number.isFinite(
+      Number(input.volumeRatio)
+    )
       ? Number(input.volumeRatio)
       : null,
 
-    riskAssessment: String(input.riskAssessment || "").slice(0, 100),
+    riskAssessment: String(
+      input.riskAssessment || ""
+    ).slice(0, 100),
 
     indicatorLayers: Array.isArray(input.indicatorLayers)
-      ? input.indicatorLayers.slice(0, 12).map((x) => ({
-          name: String(x.name || "").slice(0, 60),
-          value: String(x.value || "").slice(0, 100),
-          bull: !!x.bull,
-          bear: !!x.bear,
-        }))
+      ? input.indicatorLayers
+          .slice(0, 12)
+          .map((x) => ({
+              name: String(x.name || "").slice(0, 60),
+              value: String(x.value || "").slice(0, 100),
+              bull: !!x.bull,
+              bear: !!x.bear,
+            }))
       : [],
 
     candles: safeCandles,
   };
 
-  const system = `
-You are Claude acting as an independent market-structure analyst
-for APEXSCAN PRO.
+  const system = `You are Claude acting as an independent market-structure analyst for APEXSCAN PRO.
 
-Analyze the supplied OTC candle snapshot and technical indicators.
-
-Consider:
+Analyze supplied OTC candles and indicators:
 - Candle direction and body strength
-- Upper and lower wick rejection
-- Momentum and momentum changes
+- Wicks and rejection
+- Momentum
 - RSI
 - Stochastic
 - CCI
 - MACD
 - Support and resistance
-- Recent candle patterns
+- Candle patterns
 - Trend continuation versus reversal
 - Indicator agreement and disagreement
-- Whether the setup is weak, noisy, or unreliable
+- Setup reliability
 
-Do not blindly follow the local scanner's direction.
+Do not blindly follow the local scanner.
 Independently analyze the supplied data.
 
-This is analysis only. Do not claim certainty.
-Never describe strength as a guaranteed win probability.
+This is analysis only. Do not claim certainty or guaranteed wins.
 If evidence is mixed or insufficient, choose WAIT.
 
-Return ONLY valid JSON using this exact structure:
+Return ONE JSON object only. No markdown and no extra text.
 
+Use exactly these keys:
 {
   "direction": "CALL | PUT | WAIT",
   "strength": 0,
   "reason": "Short analysis",
   "risk": "Low | Moderate | High",
-  "invalidation": "What would invalidate this analysis",
+  "invalidation": "What invalidates this analysis",
   "holdSeconds": 15,
   "caution": "Risk or limitation"
 }
 
-strength must be an integer from 0 to 100.
+Rules:
+- strength must be an integer from 0 to 100.
+- holdSeconds must be 15, 30, 60, or null.
+- Do not return markdown.
+- Do not add text outside the JSON.`;
 
-holdSeconds must be 15, 30, 60, or null.
-
-Do not return markdown.
-Do not add text outside the JSON.
-`;
-
-  const userPrompt = `
-Analyze this live market snapshot:
+  const userPrompt = `Analyze this live market snapshot:
 
 ${JSON.stringify(payload)}
 
-Return the JSON object exactly in the required schema.
-`;
+Return the required JSON object only.`;
 
   const model =
-    process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5";
+    process.env.ANTHROPIC_MODEL ||
+    "claude-sonnet-5-5";
 
   try {
-    const upstream = await fetch(
-      "https://api.anthropic.com/v1/messages",
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
+    // First request: normal analysis.
+    const first = await callClaude({
+      apiKey,
+      model,
+      system,
+      messages: [
+        {
+          role: "user",
+          content: userPrompt,
         },
-        body: JSON.stringify({
-          model,
-          max_tokens: 700,
-          system,
-          messages: [
-            {
-              role: "user",
-              content: userPrompt,
-            },
-          ],
-        }),
-      }
-    );
+      ],
+    });
 
-    const responseText = await upstream.text();
-
-    if (!upstream.ok) {
-      let errMsg = "Anthropic API request failed";
-
-      try {
-        errMsg =
-          JSON.parse(responseText)?.error?.message || errMsg;
-      } catch {}
-
+    if (!first.ok) {
       return json(
-        upstream.status >= 500 ? 502 : upstream.status,
-        { error: errMsg }
+        first.status >= 500
+          ? 502
+          : first.status || 502,
+        {
+          error:
+            first.error ||
+            "Claude Deep Scan failed",
+        }
       );
     }
 
-    let responseJson;
+    let result = extractJsonObject(first.raw);
+    let repairAttempted = false;
 
-    try {
-      responseJson = JSON.parse(responseText);
-    } catch {
+    // Retry only when the output format is invalid.
+    // Normal valid scans do not incur another request.
+    if (!result) {
+      repairAttempted = true;
+
+      const repair = await callClaude({
+        apiKey,
+        model,
+        maxTokens: 500,
+        timeoutMs: 15000,
+
+        system:
+          "You are a strict JSON repair service. " +
+          "Convert the supplied Claude analysis into one valid " +
+          "JSON object matching the required schema. " +
+          "Do not add new market claims. " +
+          "If a field is missing, use conservative defaults. " +
+          "Return only JSON.",
+
+        messages: [
+          {
+            role: "user",
+            content: `Repair/format this response as valid JSON with keys:
+direction (CALL/PUT/WAIT),
+strength (0-100 integer),
+reason,
+risk (Low/Moderate/High),
+invalidation,
+holdSeconds (15/30/60/null),
+caution.
+
+Preserve the analysis meaning.
+Do not invent evidence.
+
+Original response:
+${first.raw}`,
+          },
+        ],
+      });
+
+      if (repair.ok) {
+        result = extractJsonObject(repair.raw);
+      }
+    }
+
+    if (!result) {
       return json(502, {
-        error: "Unexpected response from Anthropic API",
+        error:
+          "Claude response could not be converted to valid JSON after one repair attempt.",
+        repairAttempted,
+        detail:
+          "No directional forecast was issued because the response format could not be validated.",
       });
     }
 
-    const raw = (responseJson.content || [])
-      .filter((x) => x.type === "text")
-      .map((x) => x.text)
-      .join("\n")
-      .trim();
-
-    let result;
-
-    try {
-      result = JSON.parse(raw);
-    } catch {
-      const match = raw.match(/\{[\s\S]*\}/);
-
-      if (!match) {
-        return json(502, {
-          error: "Claude returned non-JSON output",
-        });
-      }
-
-      try {
-        result = JSON.parse(match[0]);
-      } catch {
-        return json(502, {
-          error: "Claude response JSON could not be parsed",
-        });
-      }
-    }
-
-    const direction = String(result.direction || "").toUpperCase();
+    const direction = String(
+      result.direction || ""
+    ).toUpperCase();
 
     if (!ALLOWED_DIRECTIONS.has(direction)) {
       return json(502, {
         error: "Claude returned an invalid direction",
+        repairAttempted,
       });
     }
 
     const strength = Math.max(
       0,
-      Math.min(100, Math.round(Number(result.strength) || 0))
+      Math.min(
+        100,
+        Math.round(Number(result.strength) || 0)
+      )
     );
 
     const hold = Number(result.holdSeconds);
@@ -293,7 +476,9 @@ Return the JSON object exactly in the required schema.
         result.invalidation || "Not clear"
       ).slice(0, 220),
 
-      holdSeconds: ALLOWED_HOLDS.has(hold) ? hold : null,
+      holdSeconds: ALLOWED_HOLDS.has(hold)
+        ? hold
+        : null,
 
       caution: String(
         result.caution ||
@@ -301,6 +486,7 @@ Return the JSON object exactly in the required schema.
       ).slice(0, 300),
 
       model,
+      repairAttempted,
     });
   } catch (error) {
     return json(502, {
