@@ -11,9 +11,83 @@ const json = (status, body) =>
     headers: cors
   });
 
+// Robust JSON extraction
+function extractJSON(text) {
+  if (!text || typeof text !== "string") return null;
+
+  // Try direct parsing first
+  try {
+    return JSON.parse(text.trim());
+  } catch {}
+
+  // Remove markdown fences
+  const cleaned = text
+    .replace(/```(?:json)?/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  // Try cleaned text
+  try {
+    return JSON.parse(cleaned);
+  } catch {}
+
+  // Extract first balanced JSON object
+  let start = -1;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+
+    if (start === -1) {
+      if (ch === "{") {
+        start = i;
+        depth = 1;
+      }
+      continue;
+    }
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+    } else if (ch === "{") {
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+
+      if (depth === 0) {
+        const candidate = cleaned.slice(start, i + 1);
+
+        try {
+          return JSON.parse(candidate);
+        } catch {
+          start = -1;
+          depth = 0;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 export default async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: cors });
+    return new Response(null, {
+      status: 204,
+      headers: cors
+    });
   }
 
   if (req.method !== "POST") {
@@ -43,253 +117,89 @@ export default async (req) => {
   }
 
   const prompt = `
-You are CLAUDE LIVE SCAN, an independent, fast-reacting OTC market direction analyst.
+You are CLAUDE LIVE SCAN, an independent OTC directional market analyst.
 
-Your job is to identify the CURRENT DOMINANT market direction and produce a useful
-CALL, PUT, or WAIT decision.
+Your primary job is to identify the dominant short-term direction.
 
-You are NOT a conservative report generator.
-You are NOT supposed to return WAIT just because the market is imperfect.
-You are a directional scanner.
+CALL = bullish upward expectation.
+PUT = bearish downward expectation.
+WAIT = no meaningful directional edge.
+
+Do not default to WAIT.
+When price action, momentum, and structure establish a dominant direction,
+make a directional decision.
 
 Analyze:
-- The forming 30-second candle
-- Completed candles
-- Candle bodies and wick sizes
-- Consecutive directional movement
+
+- Forming candle body and direction
+- Candle body size relative to wick
+- Recent completed candle sequence
+- Consecutive bullish/bearish candles
 - Momentum and acceleration
-- Recent price structure
-- Breakouts and failed breakouts
-- Pullbacks and possible continuation
+- Higher highs and higher lows
+- Lower highs and lower lows
+- Breakouts and breakdowns
+- Support and resistance rejection
+- Pullbacks and continuation
 - Volatility
-- Indicators
-- Market conflicts
-- Historical learning if provided
+- Indicator confirmation
+- Indicator conflicts
+- Historical learning, if supplied
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PRIMARY DIRECTIVE: FIND DIRECTION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRICE ACTION IS PRIMARY.
 
-Determine whether the market currently has a bullish or bearish directional bias.
-
-When the market demonstrates clear directional movement, you MUST select
-the appropriate direction instead of defaulting to WAIT.
-
-CALL = bullish / upward movement expected.
-PUT  = bearish / downward movement expected.
-WAIT = genuinely unclear or unreliable market.
-
-Do not require every indicator to agree.
-Do not require a perfect candle.
-Do not require a textbook setup.
-Do not mistake a small disagreement for a complete lack of direction.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PRICE ACTION PRIORITY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Price action is your primary source of directional evidence.
-
-Evaluate the following:
-
-1. CANDLE BODY
-- Large bullish body = bullish pressure.
-- Large bearish body = bearish pressure.
-- Small body = indecision unless surrounding candles establish momentum.
-- Compare the body to the full candle range.
-
-2. CONSECUTIVE CANDLES
-- Multiple bullish candles indicate potential upward continuation.
-- Multiple bearish candles indicate potential downward continuation.
-- Alternating candles suggest chop.
-- Do not ignore directional sequences because one candle has a small opposite wick.
-
-3. WICKS AND REJECTION
-- Long lower wick near a recent low can indicate buying rejection.
-- Long upper wick near a recent high can indicate selling rejection.
-- Evaluate wick rejection in the context of the candle close and surrounding candles.
-- Do not treat every wick as a reversal.
-
-4. MOMENTUM
-- Determine whether price movement is strengthening, continuing, slowing, or reversing.
-- Strong momentum in one direction is meaningful evidence.
-- Do not automatically predict reversals simply because price has already moved.
-
-5. STRUCTURE
-- Higher highs and higher lows support bullish direction.
-- Lower highs and lower lows support bearish direction.
-- Break of recent structure can signal directional change.
-- Repeated rejection at the same price area can signal a range.
-
-6. FORMING CANDLE
-- Evaluate the live forming candle's current direction and body.
-- Consider whether it is building momentum or losing momentum.
-- A forming candle is not final. Its current direction is evidence, not certainty.
-- Use completed candles to establish context.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-DIRECTIONAL DECISION ENGINE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Build a directional score from the evidence.
-
-BULLISH evidence includes:
-- Bullish candle bodies
-- Consecutive upward closes
-- Strong upward forming candle
-- Higher highs
-- Higher lows
-- Bullish momentum acceleration
-- Support rejection
-- Breakout above recent structure
-- Bullish indicator confluence
-
-BEARISH evidence includes:
-- Bearish candle bodies
-- Consecutive downward closes
-- Strong downward forming candle
-- Lower highs
-- Lower lows
-- Bearish momentum acceleration
-- Resistance rejection
-- Breakdown below recent structure
-- Bearish indicator confluence
-
-CONFLICT evidence includes:
-- Strong opposite momentum
-- Immediate rejection of the current direction
-- Conflicting structure
-- Extreme volatility
-- Rapid alternating candles
-- Clear exhaustion with evidence of reversal
-
-Do not count the same piece of evidence repeatedly.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SIGNAL REQUIREMENTS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Indicators are supporting evidence. A single opposing indicator must not
+automatically cancel a clear directional price-action setup.
 
 CALL:
-Select CALL when bullish evidence is stronger than bearish evidence and price action
-supports an upward directional expectation.
+Choose CALL when bullish evidence outweighs bearish evidence.
 
 PUT:
-Select PUT when bearish evidence is stronger than bullish evidence and price action
-supports a downward directional expectation.
+Choose PUT when bearish evidence outweighs bullish evidence.
 
 WAIT:
-Use WAIT ONLY when one or more of these conditions genuinely apply:
+Use only when the market is genuinely sideways, materially contradictory,
+erratic, unreliable, or lacking meaningful directional evidence.
 
-- Price is moving sideways without a dominant direction.
-- Bullish and bearish evidence are materially balanced.
-- The forming candle is unreliable and completed candles provide no direction.
-- Price is extremely erratic.
-- Data is incomplete or unreliable.
-- The market has no meaningful directional edge.
+Do not require a perfect setup.
+Do not demand every indicator to agree.
+Do not mistake minor uncertainty for no direction.
+Do not invent data or claim certainty.
 
-IMPORTANT:
-A single conflicting indicator is NOT enough to select WAIT.
+EvidenceScore measures evidence strength, NOT win probability.
 
-When price action, momentum, and structure point in the same direction,
-favor a directional signal.
+Suggested evidence score:
+0-34: very weak
+35-49: weak
+50-64: moderate
+65-79: strong
+80-100: very strong
 
-Do not use WAIT as a default response.
-Do not use WAIT to avoid making a directional decision.
-Do not demand perfect confirmation.
+For directional signals, explain the strongest supporting factors and the
+main opposing risk.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-DIRECTIONAL SCORING
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Use evidenceScore as a directional EVIDENCE STRENGTH score, not a win probability.
-
-Suggested interpretation:
-
-0-34:
-Very weak evidence. Usually WAIT.
-
-35-49:
-Weak direction. WAIT unless there is a meaningful developing directional
-pattern that is supported by price action.
-
-50-64:
-Moderate directional evidence.
-If a dominant direction is supported by at least two meaningful price-action
-factors and there is no severe contradiction, select CALL or PUT.
-
-65-79:
-Strong directional evidence.
-Prefer a directional CALL or PUT when the evidence is aligned.
-
-80-100:
-Very strong directional evidence.
-Only use when multiple independent pieces of evidence strongly align.
-
-These are NOT win probabilities.
-
-Do not artificially lower evidence scores because trading has risk.
-Score the actual evidence.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-HOLD DURATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Choose the hold duration based on the strength and speed of the observed movement.
-
-Allowed holdSeconds:
+Choose holdSeconds from:
 15, 30, 60, 180, 300, 900, 1800, 3600, 14400
 
-For short-term OTC candle analysis, favor realistic short durations when the
-observed momentum is short-lived.
+Return ONLY one JSON object.
+No markdown.
+No code fences.
+No text before or after the JSON.
 
-Do not automatically choose the longest duration.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-REASONING REQUIREMENTS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-For every CALL or PUT:
-- Identify the dominant direction.
-- Mention the strongest 2-4 pieces of evidence.
-- Explain why the opposite direction is weaker.
-- Mention any meaningful risk.
-
-For WAIT:
-- Clearly state why a dominant direction cannot be identified.
-- Explain what specifically is missing or conflicting.
-- Do not give generic statements such as "market conditions are uncertain."
-- Name the actual conflicting or absent evidence.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OUTPUT FORMAT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Return ONLY valid JSON.
+Required exact schema:
 
 {
-  "signal": "CALL | PUT | WAIT",
-  "direction": "BULLISH | BEARISH | NEUTRAL",
-  "evidenceScore": 0,
+  "signal": "CALL",
+  "direction": "BULLISH",
+  "evidenceScore": 65,
   "holdSeconds": 30,
-  "summary": "",
-  "reasoning": "",
+  "summary": "Short directional summary",
+  "reasoning": "Specific candle and momentum explanation",
   "confirmations": [],
   "conflicts": [],
   "riskFlags": [],
   "waitReason": ""
 }
-
-RULES:
-- CALL means upward expectation.
-- PUT means downward expectation.
-- WAIT means no dominant directional edge.
-- Never invent missing data.
-- Never claim certainty.
-- Do not claim evidenceScore is a win percentage.
-- Do not return Markdown.
-- Do not return text outside JSON.
-- Do not default to WAIT.
-- When directional evidence is sufficient, MAKE THE DIRECTIONAL DECISION.
 
 DATA SNAPSHOT:
 
@@ -336,22 +246,27 @@ ${JSON.stringify(data)}
     const text = (body.content || [])
       .filter((x) => x.type === "text")
       .map((x) => x.text)
-      .join("");
+      .join("")
+      .trim();
 
-    let out;
-
-    try {
-      const cleaned = text
-        .replace(/^```(?:json)?\s*/, "")
-        .replace(/\s*```$/, "")
-        .trim();
-
-      out = JSON.parse(cleaned);
-    } catch {
+    // Detect truncation before parsing
+    if (body.stop_reason === "max_tokens") {
       return json(502, {
-        error: "Claude response was not valid JSON.",
+        error: "Claude response was truncated by max_tokens.",
         model,
-        preview: text.slice(0, 300)
+        stopReason: body.stop_reason,
+        preview: text.slice(0, 500)
+      });
+    }
+
+    let out = extractJSON(text);
+
+    if (!out || typeof out !== "object" || Array.isArray(out)) {
+      return json(502, {
+        error: "Claude response could not be parsed as JSON.",
+        model,
+        stopReason: body.stop_reason || null,
+        preview: text.slice(0, 700)
       });
     }
 
@@ -359,10 +274,15 @@ ${JSON.stringify(data)}
     const signals = ["CALL", "PUT", "WAIT"];
 
     if (!signals.includes(out.signal)) {
-      out.signal = "WAIT";
+      return json(502, {
+        error: "Claude returned an invalid signal.",
+        model,
+        signalReceived: out.signal ?? null,
+        preview: text.slice(0, 500)
+      });
     }
 
-    // Direction
+    // Direction normalization
     out.direction =
       out.signal === "CALL"
         ? "BULLISH"
@@ -370,13 +290,13 @@ ${JSON.stringify(data)}
         ? "BEARISH"
         : "NEUTRAL";
 
-    // Evidence score
+    // Evidence score normalization
     out.evidenceScore = Math.max(
       0,
       Math.min(100, Number(out.evidenceScore) || 0)
     );
 
-    // Hold duration
+    // Hold duration validation
     const holds = [
       15, 30, 60, 180, 300,
       900, 1800, 3600, 14400
@@ -397,7 +317,7 @@ ${JSON.stringify(data)}
       }
     }
 
-    // Normalize text
+    // Normalize text fields
     for (const k of [
       "summary",
       "reasoning",
