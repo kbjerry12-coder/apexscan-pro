@@ -57,6 +57,8 @@ select,input{width:100%;background:#0a1226;border:1px solid var(--ln);border-rad
 .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--mu);margin-top:8px}
 .legend i{display:inline-block;width:12px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .btnrow{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.earlybox{margin-top:10px;border:1px solid var(--ln);border-radius:12px;padding:12px;background:linear-gradient(90deg,rgba(34,211,238,.07),rgba(139,92,246,.07));display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.earlybox .eleft{display:flex;flex-direction:column;gap:3px}.earlybox .etitle{font-size:11px;letter-spacing:.1em;color:var(--cy);font-weight:800}.earlybox .edir{font-size:22px;font-weight:900}.earlybox .edir.buy{color:var(--up)}.earlybox .edir.sell{color:var(--dn)}.earlybox .edir.wait{color:var(--warn)}.earlybox .emeta{font-size:11px;color:var(--mu)}.earlybox .badge{border:1px solid var(--ln);border-radius:10px;padding:8px 12px;font-weight:800;font-size:12px}
 .scanbtn{flex:2 1 230px;display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;font-size:18px;font-weight:800;letter-spacing:.05em;color:#fff;border:1px solid #c4b5fd;border-radius:14px;background:linear-gradient(180deg,#8b5cf6,#5b21b6);box-shadow:0 0 26px rgba(139,92,246,.65);cursor:pointer}
 .scanbtn:disabled{opacity:.6;cursor:wait}
 .deep{flex:1 1 160px;padding:12px;font-size:14px;font-weight:800;letter-spacing:.04em;color:#fff;border:1px solid #6d5bd0;border-radius:14px;background:linear-gradient(180deg,#2a1a6a,#140b3a);cursor:pointer}
@@ -132,14 +134,14 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
     </section>
     <section class="card autoc" id="cAuto">AUTO SCAN <button class="sw" id="auto" aria-pressed="true" aria-label="Auto scan each new candle"></button></section>
     <section class="card" id="cEng">
-      <h3>AI SCAN ENGINES</h3>
+      <h3>BOT SCAN ENGINES</h3>
       <div class="ck" id="en_dna">Candle DNA Analyzer</div>
       <div class="ck" id="en_mem">Pattern Memory Match</div>
       <div class="ck" id="en_fake">Fakeout &amp; Trap Detector</div>
       <div class="ck" id="en_wick">Wick &amp; Rejection Scan</div>
       <div class="ck" id="en_mom">Momentum &amp; Structure</div>
       <div class="ck" id="en_mag">Magnet &amp; Reaction Zone</div>
-      <div class="ck" id="en_ai">OpenAI Cross-check</div>
+      <div class="ck" id="en_ai">Internal Direction Engine</div>
     </section>
     <section class="card wr" id="cWr">
       <div class="lbl" style="text-align:center">WIN RATE (PAPER)</div>
@@ -160,14 +162,18 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
       <div class="legend"><span><i style="background:rgba(34,211,238,.5)"></i>Scanned 4 candles</span><span><i style="background:var(--dn)"></i>Bearish trap (false breakout / sweep)</span><span><i style="background:var(--up)"></i>Bullish trap (wick trap / reclaim)</span><span><i style="background:#22e66b;height:3px"></i>Magnet path</span><span><i style="background:rgba(255,80,140,.5)"></i>Reaction zone</span></div>
       <div class="btnrow">
         <button class="scanbtn" id="scan4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><path d="M8 8l8 8M16 8l-8 8" opacity=".55"/></svg>SCAN 4 CANDLES</button>
-        <button class="deep" id="deep">◎ CLAUDE DEEP SCAN</button>
+        <button class="deep" id="deep">◎ OPTIONAL CLAUDE DEEP SCAN</button>
+      </div>
+      <div class="earlybox" id="earlyBox">
+        <div class="eleft"><div class="etitle">LIVE EARLY-SIGNAL ENGINE</div><div class="edir wait" id="earlyDir">WAIT · MONITORING</div><div class="emeta" id="earlyMeta">Watching the developing candle and short-term momentum.</div></div>
+        <div class="badge" id="earlyConf">CONFLUENCE 0/5</div>
       </div>
     </section>
     <section class="card vio why" id="cWhy">
-      <h3>AI REASONING</h3>
+      <h3>BOT ENGINE REASONING</h3>
       <ul id="why"><li>Run a scan to see why the engine picks UP, DOWN or WAIT.</li></ul>
       <div class="rec" id="rec">Recommendation: —</div>
-      <details id="aiDet" hidden><summary>OpenAI breakdown</summary><div id="aiBody"></div></details>
+      
     </section>
   </div>
 
@@ -182,7 +188,7 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
         <span>Fakeout risk</span><b id="k_risk">—</b>
         <span>Magnet target</span><b id="k_mag">—</b>
         <span>Reaction zone</span><b id="k_zone">—</b>
-        <span>OpenAI cross-check</span><b id="k_ai">—</b>
+        <span>Internal engine</span><b id="k_ai">—</b>
         <span>Engine track record</span><b id="k_track">—</b>
       </div>
       <div class="eh"><span id="en">Entry: —</span><span id="hold">Hold: 1 Min</span></div>
@@ -225,7 +231,7 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
     <section class="card"><h3>Recent Paper Signals</h3><div id="log"></div></section>
     <section class="card" id="perfCard"><h3>Performance (Paper Trade)</h3>
       <div class="perf"><div><small>Win Rate</small><b class="W" id="pw">—</b></div><div><small>Total</small><b id="pt">0</b></div><div><small>Wins</small><b class="W" id="pwi">0</b></div><div><small>Losses</small><b class="Lo" id="pl2">0</b></div><div><small>P/L</small><b id="pp">$0.00</b></div></div>
-      <div class="note">Paper entries open only when the 4-candle engine and OpenAI agree. Results come from the live feed and are not proof of profitability.</div>
+      <div class="note">Paper entries are generated by the internal candle engine alone. Results come from the live feed and are not proof of profitability.</div>
     </section>
     <section class="card"><h3>Active Indicators <small>(scan candle 4)</small></h3>
       <div class="inds"><span>MACD<i id="i_macd">–</i></span><span>Stochastic<i id="i_stoch">–</i></span><span>Bollinger<i id="i_bb">–</i></span><span>EMA 9/21<i id="i_ema">–</i></span><span>S/R<i id="i_sr">–</i></span></div>
@@ -242,7 +248,7 @@ const A = {
   AUDCAD:{n:"AUD/CAD OTC",symbol:"AUDCAD_otc",d:5}, XAUUSD:{n:"GOLD OTC",symbol:"XAUUSD_otc",d:2}
 };
 const TF={30:"30S",60:"1M",300:"5M",900:"15M"}, DUR={60:"1 Min",120:"2 Min",300:"5 Min"};
-const ENDPOINTS={candles:"/.netlify/functions/otc-candles",openaiScan:"/.netlify/functions/openai-analysis",claude:"/.netlify/functions/claude-deep-scan"};
+const ENDPOINTS={candles:"/.netlify/functions/otc-candles",claude:"/.netlify/functions/claude-deep-scan"};
 
 // ==ENGINE== (pure functions; no DOM)
 const LOOK=8;            // candles used to define the "prior range" a trap must break
@@ -366,7 +372,7 @@ function runEngine(rows,tf,nowSec){
 }
 // ==/ENGINE==
 
-let pair="EURUSD",tf=60,needFit=true,hold=60,auto=true,candles=[],memRows=[],ind=null,trade=null,scanBusy=false,sig=null,FC=null,chartTraps=[],plines=[],timeline=[],W=0,L=0,pnl=0,log=[],lastFeedAt=0,deepBusy=false,feedBusy=false,lastFormingTime=0,formingMarkerUntil=0,lastAutoStamp=0,lastPaperEntryStamp=0,memBase={},lastMemSave=0,dnaSel=3,feedOk=false;
+let pair="EURUSD",tf=60,needFit=true,hold=60,auto=true,candles=[],memRows=[],ind=null,trade=null,scanBusy=false,sig=null,FC=null,chartTraps=[],plines=[],timeline=[],W=0,L=0,pnl=0,log=[],lastFeedAt=0,deepBusy=false,feedBusy=false,lastFormingTime=0,formingMarkerUntil=0,lastAutoStamp=0,lastPaperEntryStamp=0,memBase={},lastMemSave=0,dnaSel=3,feedOk=false,earlyLockedStamp=0,earlyCandidate=null,earlyHistory=[];
 const $=id=>document.getElementById(id);
 const LW=LightweightCharts;
 const chart=LW.createChart($("chart"),{autoSize:true,layout:{background:{type:"solid",color:"#050a17"},textColor:"#9fb0d8",fontSize:11},grid:{vertLines:{color:"rgba(70,90,160,.12)"},horzLines:{color:"rgba(70,90,160,.12)"}},rightPriceScale:{borderColor:"#1b2a4a"},timeScale:{borderColor:"#1b2a4a",timeVisible:true,secondsVisible:true,rightOffset:12}});
@@ -400,6 +406,32 @@ function aggregateCandles(src,seconds){if(seconds<=30)return src.slice();const o
 function contiguousTail(rows,step,max){let i=rows.length-1;while(i>0&&rows.length-i<max&&rows[i].time-rows[i-1].time<=step*3)i--;return rows.slice(i);}
 function renderCandles(){if(!candles.length)return;const a=A[pair];cs.applyOptions({priceFormat:{type:"price",precision:a.d,minMove:10**-a.d}});const ts=chart.timeScale();let vr=null;try{vr=needFit?null:ts.getVisibleLogicalRange();}catch(e){}cs.setData(candles);ind=paint(true);try{if(needFit){const n=candles.length,span=$("chart").clientWidth<600?20:55;ts.setVisibleLogicalRange({from:n-span,to:n+10});needFit=false;}else if(vr)ts.setVisibleLogicalRange(vr);}catch(e){}}
 async function fetchLiveCandles(){const symbol=A[pair].symbol;const url=`${ENDPOINTS.candles}?symbol=${encodeURIComponent(symbol)}&venue=otc&tf=30&limit=500`;const res=await fetch(url,{cache:"no-store"});if(!res.ok)throw new Error(`Candle endpoint HTTP ${res.status}`);const json=await res.json();const parsed=normalizeCandleRows(json);if(parsed.length<8)throw new Error(`Feed returned only ${parsed.length} usable candles`);return parsed;}
+// ---------- Live developing-candle EARLY signal engine ----------
+function earlyReset(){earlyLockedStamp=0;earlyCandidate=null;earlyHistory=[];$('earlyDir').textContent='WAIT · MONITORING';$('earlyDir').className='edir wait';$('earlyMeta').textContent='Watching the developing candle and short-term momentum.';$('earlyConf').textContent='CONFLUENCE 0/5';}
+function evaluateEarlySignal(){
+ if(!feedOk||!candles.length||Date.now()-lastFeedAt>5000)return;
+ const rows=candles.slice(-5);if(rows.length<4)return;
+ const cur=rows.at(-1),prev=rows.at(-2),p2=rows.at(-3),p3=rows.at(-4);
+ const stamp=cur.time;if(earlyLockedStamp===stamp)return;
+ const range=Math.max(cur.high-cur.low,1e-9),body=cur.close-cur.open,closePos=(cur.close-cur.low)/range;
+ const upWick=(cur.high-Math.max(cur.open,cur.close))/range,loWick=(Math.min(cur.open,cur.close)-cur.low)/range;
+ const shortMove=cur.close-p3.close,vol=Math.max(rows.slice(1).reduce((a,c)=>a+c.high-c.low,0)/4,1e-9);
+ let up=0,dn=0;
+ if(cur.close>prev.close)up++;else if(cur.close<prev.close)dn++;
+ if(prev.close>p2.close)up++;else if(prev.close<p2.close)dn++;
+ if(shortMove>0)up++;else if(shortMove<0)dn++;
+ if(body>0&&closePos>.62)up++;if(body<0&&closePos<.38)dn++;
+ if(cur.close>Math.max(prev.high,p2.high))up++;if(cur.close<Math.min(prev.low,p2.low))dn++;
+ if(loWick>.42&&closePos>.55)up++;if(upWick>.42&&closePos<.45)dn++;
+ if(Math.abs(shortMove)/vol<.22){up=Math.max(0,up-1);dn=Math.max(0,dn-1);}
+ const dir=up>=4&&up>dn?'BUY':dn>=4&&dn>up?'SELL':'WAIT',confidence=Math.min(100,Math.round(Math.max(up,dn)/5*100));
+ if(dir==='WAIT'){$('earlyDir').textContent='WAIT · MONITORING';$('earlyDir').className='edir wait';$('earlyMeta').textContent=`Developing candle ${hm(stamp)} UTC · momentum ${shortMove>=0?'+':''}${fx(shortMove)} · no early confluence yet`;$('earlyConf').textContent=`CONFLUENCE ${Math.min(5,Math.max(up,dn))}/5`;return;}
+ earlyLockedStamp=stamp;earlyCandidate={dir,confidence,stamp,pair,price:cur.close,up,dn,bodyRatio:Math.abs(body)/range,closePos,upWick,loWick};earlyHistory.unshift(earlyCandidate);earlyHistory=earlyHistory.slice(0,10);
+ $('earlyDir').textContent=`${dir} · EARLY`;$('earlyDir').className='edir '+(dir==='BUY'?'buy':'sell');
+ $('earlyMeta').textContent=`${A[pair].n} · developing candle ${hm(stamp)} UTC · ${confidence}% confluence · price ${fx(cur.close)}`;
+ $('earlyConf').textContent=`CONFLUENCE ${Math.min(5,Math.max(up,dn))}/5`;
+}
+
 async function refreshFeed(){if(feedBusy)return;feedBusy=true;if(!navigator.onLine){setFeedState(false,"Feed: OFFLINE");feedBusy=false;return;}
  const reqPair=pair,reqTf=tf;
  try{const incoming=await fetchLiveCandles();if(reqPair!==pair||reqTf!==tf)return;const base=memMerge(pair,incoming);lastFeedAt=Date.now();
@@ -407,7 +439,7 @@ async function refreshFeed(){if(feedBusy)return;feedBusy=true;if(!navigator.onLi
   const last=view.at(-1),sourceAge=Math.max(0,Date.now()/1000-incoming.at(-1).time);
   if(last.time!==lastFormingTime){if(lastFormingTime)formingMarkerUntil=Date.now()+5000;lastFormingTime=last.time;}
   if(sourceAge>45)throw new Error(`Feed stale (${Math.round(sourceAge)}s)`);
-  memRows=all;candles=view;renderCandles();setFeedState(true,"OTCHARTS · 1S REFRESH");
+  memRows=all;candles=view;renderCandles();setFeedState(true,"OTCHARTS · 1S REFRESH");evaluateEarlySignal();
   resolveTimeline();settleTrade();
   if(auto&&!scanBusy&&last.time!==lastAutoStamp){lastAutoStamp=last.time;doScan("AUTO");}
  }catch(e){setFeedState(false,"Feed: ERROR");setStatus("Live feed unavailable — "+e.message,"bad");
@@ -427,46 +459,23 @@ async function doScan(kind){
  if(!feedOk||!memRows.length||Date.now()-lastFeedAt>5000){setStatus("Scan blocked — live feed is not fresh","bad");return;}
  let f;try{f=runEngine(memRows,tf,Date.now()/1000);}catch(e){setStatus(e.message,"bad");return;}
  scanBusy=true;$("scan4").disabled=true;f.pair=pair;f.kind=kind;f.at=Date.now();
- setStatus(`Scanning candles ${hm(f.scanTimes[0])} → ${hm(f.scanTimes[3])}…`,"busy");
+ setStatus(`Scanning 4 candles with internal engine ${hm(f.scanTimes[0])} → ${hm(f.scanTimes[3])}…`,"busy");
  FC=f;chartTraps=[];for(let i=LOOK+1;i<candles.length;i++){if(candles[i].time>=f.forecastTime)break;chartTraps.push(...trapsAt(candles,i));}
  await animateEngines();engineNotes(f);applyPriceLines();try{cs.applyOptions({});}catch(e){}
- sig={dir:f.dir,ai:null,aiError:null,conflict:false};showForecast();renderPanels();
+ sig={dir:f.dir,engineOnly:true};showForecast();renderPanels();
  const rec={stamp:f.forecastTime,time:f.scanTimes[3],colors:f.win.map(colorOf),dir:f.dir,engineDir:f.dir,ref:f.price,res:null};
  timeline=timeline.filter(x=>x.stamp!==rec.stamp);timeline.unshift(rec);timeline=timeline.slice(0,50);saveTimeline();renderTimeline();
- try{
-  const ai=await requestOpenAIAnalysis(localAnalyze(),kind,f);
-  if(!ai||ai.aiUnavailable||ai.modelUnavailable)throw new Error(ai?.error||ai?.modelError||"AI unavailable");
-  if(FC!==f)return;
-  const s=ai.signal&&typeof ai.signal==="object"?ai.signal:ai,d=String(s.direction||ai.direction||ai.call||ai.signal||"WAIT").toUpperCase();
-  const aiDir=/CALL|UP|BUY/.test(d)?1:/PUT|DOWN|SELL/.test(d)?-1:0,details=ai.analysis||ai.details||{};
-  const conf=Number(s.evidenceScore??s.confidence??ai.evidenceScore??ai.confidence),allowed=[60,120,300],sh=Number(s.holdSeconds);if(allowed.includes(sh))hold=sh;
-  sig.ai={dir:aiDir,reason:s.reasoning||details.finalReasoning||ai.summary||ai.reasoning||"",details,model:ai.model||"",conf:Number.isFinite(conf)?Math.round(conf):null};
-  if(f.dir&&aiDir!==f.dir){sig.dir=0;sig.conflict=true;}
-  $("en_ai").className="ck ok";
- }catch(e){sig.aiError=String(e.message||e);$("en_ai").className="ck no";}
- finally{
-  if(FC===f){rec.dir=sig.dir;saveTimeline();renderTimeline();showForecast();
-   if(sig.dir&&sig.ai&&!trade&&f.forecastTime!==lastPaperEntryStamp&&candles.length){const entryTime=Math.floor(Date.now()/1000);lastPaperEntryStamp=f.forecastTime;
-    trade={call:sig.dir>0,entry:candles.at(-1).close,left:hold,stake:+$("amt").value||5,pair,tf,hold,entryTime,targetTime:entryTime+hold};
-    log.unshift({call:trade.call,pair,tf,res:"Pending",entry:trade.entry,hold,stake:trade.stake,stamp:f.forecastTime,kind});}
-   setStatus(`Scan complete · 4 candles${sig.aiError?" · AI offline":""}`,"ok");drawStats();}
-  scanBusy=false;$("scan4").disabled=false;
+ if(FC===f){
+  rec.dir=f.dir;saveTimeline();renderTimeline();showForecast();
+  if(f.dir&&!trade&&f.forecastTime!==lastPaperEntryStamp&&candles.length){
+   const entryTime=Math.floor(Date.now()/1000);lastPaperEntryStamp=f.forecastTime;
+   trade={call:f.dir>0,entry:candles.at(-1).close,left:hold,stake:+$("amt").value||5,pair,tf,hold,entryTime,targetTime:entryTime+hold};
+   log.unshift({call:trade.call,pair,tf,res:"Pending",entry:trade.entry,hold,stake:trade.stake,stamp:f.forecastTime,kind});
+  }
+  setStatus("Scan complete · 4 candles · Internal engine only","ok");drawStats();
  }
+ scanBusy=false;$("scan4").disabled=false;
 }
-function localAnalyze(){const I=ind||calc(candles),i=candles.length-1,c=candles[i],mid=I.bb[i]?.[1]??c.close,k=I.k[i]??50,d=I.d[i]??50;const votes=[c.close>=c.open,I.ml[i]>=I.ms[i],k>=d,c.close>=mid,I.e9[i]>=I.e21[i]],bull=votes.filter(Boolean).length;return{call:bull>=3,votes,price:c.close};}
-function summarizeFC(f){const r=v=>Math.round(v*100)/100;return{scanCandles:f.win,engineDirection:f.dir>0?"UP":f.dir<0?"DOWN":"WAIT",evidenceScore:f.score,scoreParts:f.parts,
- candleDNA:f.dnas.map((d,q)=>({candle:q+1,type:d.type,bodyPct:r(d.body*100),upperWickPct:r(d.upper*100),lowerWickPct:r(d.lower*100),closeLocationPct:r(d.closeLoc*100)})),
- traps:f.traps.map(t=>({candle:t.i-f.s+1,type:t.name,direction:t.dir>0?"bullish":"bearish",level:t.level})),
- patternMemory:{similar:f.pm.n,reliable:f.pm.reliable,quality:f.pm.quality,threshold:f.pm.threshold,up:f.pm.up,down:f.pm.down,upPct:r(f.pm.upPct)},fakeoutRisk:f.risk,fakeoutRiskReasons:f.riskWhy,
- magnetTarget:f.magnet?.target??null,magnetSource:f.magnet?.src??null,magnetQuality:f.magnet?.quality??null,reactionZone:f.zone?[f.zone.lo,f.zone.hi]:null,atr:f.atr,reasoning:buildReasons(f,null).map(stripTags)};}
-const stripTags=s=>s.replace(/<[^>]+>/g,"");
-async function requestOpenAIAnalysis(baseSignal,kind,f){try{const forming=candles.at(-1);if(!forming)return null;const completed=candles.slice(0,-1),I=calc(candles);
- const payload={symbol:A[pair].symbol,pair,market:"OTC",timeframeSeconds:tf,timeframe:TF[tf]||`${tf}s`,scanType:kind,scanMode:"FOUR_CANDLE_SCAN",
-  aiDirective:"You are cross-checking a deterministic 4-candle scan (fourCandleScan): candle DNA, wick traps, pattern-memory outcomes, magnet target and reaction zone. Weigh it with price action, trend and momentum. Treat pattern memory as evidence only when it has at least 5 close matches; do not extrapolate weak matches. Treat magnetQuality=fallback as an ATR estimate, not detected liquidity. Output CALL if evidence leans bullish for the next candle, PUT if bearish, WAIT if direction is unclear or fakeout risk is high. Do not claim confidence is a calibrated win probability. Explain which evidence decided it.",
-  fourCandleScan:summarizeFC(f),latestVerifiedPrice:forming.close,priceTimestamp:forming.time,formingCandle:forming,completedCandles:completed.slice(-120),
-  indicators:{macd:I.ml.at(-1),macdSignal:I.ms.at(-1),stochasticK:I.k.at(-1),stochasticD:I.d.at(-1),bollinger:I.bb.at(-1),ema9:I.e9.at(-1),ema21:I.e21.at(-1)},ruleSignal:baseSignal,scanTimestamp:new Date().toISOString()};
- const r=await fetch(ENDPOINTS.openaiScan,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const body=await r.json().catch(()=>({error:"OpenAI endpoint returned invalid JSON"}));if(!r.ok)throw new Error(body.error||`OpenAI HTTP ${r.status}`);return body;}catch(e){return{aiUnavailable:true,error:String(e.message||e)};}}
-
 // ---------- Reasoning ----------
 function buildReasons(f,s){
  const out=[],d4=f.dnas[3],cols=f.win.map(c=>c.close>c.open?"▲":c.close<c.open?"▼":"•").join(""),pct=v=>Math.round(v*100)+"%";
@@ -483,8 +492,6 @@ function buildReasons(f,s){
   out.push(`Magnet ${fx(f.magnet.target)} (${f.magnet.quality}) = ${f.magnet.src}; reaction zone ${fx(f.zone.lo)}–${fx(f.zone.hi)} is where the move could stall or reverse. Fakeout risk ${f.risk.toLowerCase()}${f.riskWhy.length?`: ${f.riskWhy.join("; ")}`:""}.`);
   out.push(`Invalidated if price trades ${f.dir>0?"below":"above"} candle 4's ${f.dir>0?"low":"high"} (${fx(f.invalidation)}).`);
  }else{out.push(`<b>Engine says WAIT</b> because ${f.waitWhy.join(", and ")}.`);out.push(`Watch the resistance zone ${fx(f.zones.up.lo)}–${fx(f.zones.up.hi)} and support zone ${fx(f.zones.dn.lo)}–${fx(f.zones.dn.hi)}.`);}
- if(s){if(s.ai){const ad=s.ai.dir>0?"UP":s.ai.dir<0?"DOWN":"WAIT";out.push(s.conflict?`<b>OpenAI said ${ad}</b>, which disagrees with the engine — final call downgraded to WAIT.`:`OpenAI cross-check: ${ad}${s.ai.dir===f.dir?" (agrees)":""}.${s.ai.reason?" "+escapeHtml(String(s.ai.reason).slice(0,320)):""}`);}
-  else if(s.aiError)out.push(`OpenAI cross-check unavailable (${escapeHtml(s.aiError)}). Showing the local engine only; no paper entry is opened.`);}
  return out;
 }
 
@@ -497,11 +504,10 @@ function showForecast(){const f=FC;if(!f)return;const s=sig||{dir:f.dir},d=s.dir
  $("k_mem").innerHTML=f.pm.n?`${f.pm.n} setups · <span class="up2">${f.pm.upPct.toFixed(0)}%↑</span> <span class="dn2">${f.pm.downPct.toFixed(0)}%↓</span>`:"no matches yet";
  $("k_risk").innerHTML=`<span class="${f.risk==="Low"?"up2":f.risk==="High"?"dn2":"wt"}">${f.risk}</span>`;
  $("k_mag").textContent=f.magnet?`${fx(f.magnet.target)} · ${f.magnet.quality}`:"—";$("k_zone").textContent=f.zone?`${fx(f.zone.lo)} – ${fx(f.zone.hi)}`:`R ${fx(f.zones.up.lo)} / S ${fx(f.zones.dn.hi)}`;
- $("k_ai").innerHTML=s.ai?(s.conflict?`<span class="wt">Disagrees → WAIT</span>`:`<span class="up2">${s.ai.dir>0?"UP":s.ai.dir<0?"DOWN":"WAIT"}${s.ai.dir===f.dir?" · agrees":""}</span>`):s.aiError?`<span class="dn2">Offline</span>`:"checking…";
+ $("k_ai").innerHTML=`<span class="up2">LOCAL ENGINE ACTIVE</span>`;
  $("en").textContent="Ref: "+fx(f.price);$("hold").textContent="Hold: "+DUR[hold]+(trade?` · ${trade.left}s`:"");
  $("why").innerHTML=buildReasons(f,s).map(x=>`<li>${x}</li>`).join("");
- $("rec").innerHTML=d?`Recommendation: <b class="${d>0?"up2":"dn2"}">${d>0?"UP (CALL)":"DOWN (PUT)"} – ${DUR[hold]}</b>${s.ai?"":" · <span class='wt'>no paper entry (AI offline)</span>"}`:`Recommendation: <b class="wt">WAIT</b> — no entry`;
- const det=s.ai?.details;if(det&&Object.keys(det).length){const j=v=>Array.isArray(v)?v.join(" · "):String(v??"—");$("aiDet").hidden=false;$("aiBody").innerHTML=[["Model",s.ai.model],["Bullish evidence",j(det.bullishEvidence||det.bullish)],["Bearish evidence",j(det.bearishEvidence||det.bearish)],["Momentum",j(det.momentum)],["Trend",j(det.trend)],["Candle structure",j(det.candleStructure)],["Conflicts",j(det.conflicts)],["Risk flags",j(det.riskFlags)]].map(([k,v])=>`<div><b>${k}:</b> ${escapeHtml(v||"—")}</div>`).join("");}else $("aiDet").hidden=true;
+ $("rec").innerHTML=d?`Recommendation: <b class="${d>0?"up2":"dn2"}">${d>0?"BUY":"SELL"} – ${DUR[hold]}</b>`:`Recommendation: <b class="wt">WAIT</b> — no entry`;
  const set=(id,v)=>{const e=$(id);e.textContent=v?"▲":"▼";e.className=v?"ok":"no";};set("i_macd",f.votes.macd);set("i_stoch",f.votes.stoch);set("i_bb",f.votes.bb);set("i_ema",f.votes.ema);set("i_sr",f.votes.sr);
  renderTrack();
 }
@@ -581,7 +587,7 @@ function drawOverlay(){requestAnimationFrame(drawOverlay);if(document.hidden)ret
   g.items.forEach(t=>{const q=t.i-f.s,x=xs[q],c=f.win[q],tip=Y(t.dir<0?c.high:c.low);if(tip==null)return;
    ox.strokeStyle=col;ox.lineWidth=1.4;ox.beginPath();const above=ly+b.h<=tip;ox.moveTo(clamp(x,b.x0+6,b.x0+b.w-6),above?ly+b.h:ly>tip?ly:ly+b.h/2);ox.lineTo(x,tip+(t.dir<0?-4:4));ox.stroke();
    ox.beginPath();ox.arc(x,tip,4,0,7);ox.fillStyle="#fff";ox.fill();ox.strokeStyle=col;ox.stroke();});});
- placePill([[x0,y0-24,"left"],[x0,y1+6,"left"],[x0-8,y0,"right"],[x1+8,y1-22,"left"]],"AI CANDLE SCAN · 4","rgba(34,211,238,.9)","rgba(6,22,34,.92)","#bff4ff",false);
+ placePill([[x0,y0-24,"left"],[x0,y1+6,"left"],[x0-8,y0,"right"],[x1+8,y1-22,"left"]],"BOT CANDLE SCAN · 4","rgba(34,211,238,.9)","rgba(6,22,34,.92)","#bff4ff",false);
  ox.restore();
 }
 requestAnimationFrame(drawOverlay);
@@ -589,12 +595,12 @@ requestAnimationFrame(drawOverlay);
 // ---------- Paper trades + stats ----------
 function drawStats(){const tot=W+L,wr=tot?(W/tot*100).toFixed(1)+"%":"—";$("wr").textContent=wr;$("pw").textContent=wr;$("w1").textContent=$("pwi").textContent=W;$("l1").textContent=$("pl2").textContent=L;$("pt").textContent=tot;$("pp").textContent=(pnl<0?"-$":"$")+Math.abs(pnl).toFixed(2);$("pp").className=pnl<0?"Lo":pnl>0?"W":"";$("hold").textContent="Hold: "+DUR[hold]+(trade?` · ${trade.left}s`:"");$("log").innerHTML=log.length?log.slice(0,4).map(x=>`<div class="rw"><i class="${x.call?"up2":"dn2"}">${x.call?"CALL":"PUT"}</i><span>${A[x.pair].n}</span><span>${TF[x.tf]}</span><b class="${x.res==="Win"?"W":x.res==="Loss"?"Lo":"P"}">${x.res}</b></div>`).join(""):'<div class="note">No paper entries yet.</div>';}
 function settleTrade(){if(!trade||!candles.length)return;const now=Date.now()/1000;if(now<trade.targetTime||Date.now()-lastFeedAt>5000)return;const resultCandle=candles.find(c=>c.time+tf>=trade.targetTime&&c.time+tf<=now);if(!resultCandle)return;const cur=resultCandle.close,win=trade.call?cur>trade.entry:cur<trade.entry;win?W++:L++;pnl+=win?trade.stake*PAYOUT:-trade.stake;const item=log.find(x=>x.res==="Pending");if(item)item.res=win?"Win":"Loss";trade=null;drawStats();}
-async function runDeepScan(){if(deepBusy||candles.length<8)return;deepBusy=true;$("deep").disabled=true;$("deep").textContent="CLAUDE ANALYZING…";try{const recent=candles.slice(-40),body={symbol:A[pair].symbol,pair,market:"OTC",scanTimeframe:TF[tf],forecast:"next candle",price:recent.at(-1).close,fourCandleScan:FC?summarizeFC(FC):null,recentCandles:recent.map(({time,open,high,low,close})=>({time,open,high,low,close}))};const res=await fetch(ENDPOINTS.claude,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await res.json().catch(()=>({error:"Claude returned invalid JSON"}));if(!res.ok)throw new Error(j.error||`Claude endpoint HTTP ${res.status}`);const result=j.deepScan||j.analysis||j;const textOut=typeof result==="string"?result:JSON.stringify(result,null,2);$("aiDet").hidden=false;$("aiDet").open=true;$("aiDet").querySelector("summary").textContent="Claude deep scan";$("aiBody").innerHTML=`<div style="white-space:pre-wrap">${escapeHtml(textOut)}</div>`;}catch(e){$("aiDet").hidden=false;$("aiDet").open=true;$("aiBody").innerHTML=`<div class="dn2">${escapeHtml(e.message)}. Check the Claude Netlify function and API key.</div>`;}finally{deepBusy=false;$("deep").disabled=false;$("deep").textContent="◎ CLAUDE DEEP SCAN";}}
+async function runDeepScan(){if(deepBusy||candles.length<8)return;deepBusy=true;$("deep").disabled=true;$("deep").textContent="CLAUDE ANALYZING…";try{const recent=candles.slice(-40),body={symbol:A[pair].symbol,pair,market:"OTC",scanTimeframe:TF[tf],forecast:"next candle",price:recent.at(-1).close,fourCandleScan:FC?summarizeFC(FC):null,recentCandles:recent.map(({time,open,high,low,close})=>({time,open,high,low,close}))};const res=await fetch(ENDPOINTS.claude,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await res.json().catch(()=>({error:"Claude returned invalid JSON"}));if(!res.ok)throw new Error(j.error||`Claude endpoint HTTP ${res.status}`);const result=j.deepScan||j.analysis||j;const textOut=typeof result==="string"?result:JSON.stringify(result,null,2);$("aiDet").hidden=false;$("aiDet").open=true;$("aiDet").querySelector("summary").textContent="Claude deep scan";$("aiBody").innerHTML=`<div style="white-space:pre-wrap">${escapeHtml(textOut)}</div>`;}catch(e){$("aiDet").hidden=false;$("aiDet").open=true;$("aiBody").innerHTML=`<div class="dn2">${escapeHtml(e.message)}. Check the Claude Netlify function and API key.</div>`;}finally{deepBusy=false;$("deep").disabled=false;$("deep").textContent="◎ OPTIONAL CLAUDE DEEP SCAN";}}
 function tick(){const now=Math.floor(Date.now()/1000),r=tf-now%tf,mmss=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0");$("timer").textContent="Candle: "+mmss;$("cnt").textContent="00:"+mmss;$("cbar").style.width=((tf-r)/tf*100)+"%";$("clk").textContent="UTC "+new Date().toISOString().slice(11,19);
  if(trade){trade.left=Math.max(0,trade.entryTime+trade.hold-now);drawStats();settleTrade();}
  const lc=candles.at(-1),fc=$("fc"),wrap=$("chart").parentElement;if(lc&&wrap){const x=chart.timeScale().timeToCoordinate(lc.time),y=cs.priceToCoordinate(lc.close);if(x!=null&&y!=null&&Date.now()<formingMarkerUntil){fc.style.display="block";fc.style.left=Math.max(58,Math.min(wrap.clientWidth-58,x))+"px";fc.style.top=Math.max(8,y-66)+"px";}else fc.style.display="none";}else fc.style.display="none";}
 function fill(sel){sel.innerHTML=Object.entries(A).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join("");}fill($("pairL"));fill($("pairT"));
-function resetScan(){FC=null;sig=null;chartTraps=[];applyPriceLines();candles=[];memRows=[];trade=null;log=[];lastAutoStamp=0;lastFormingTime=0;formingMarkerUntil=0;needFit=true;engines("");
+function resetScan(){FC=null;sig=null;earlyReset();chartTraps=[];applyPriceLines();candles=[];memRows=[];trade=null;log=[];lastAutoStamp=0;lastFormingTime=0;formingMarkerUntil=0;needFit=true;engines("");
  ENG.concat("en_ai").forEach(id=>{const sp=$(id).querySelector("span");if(sp){sp.querySelector("small")?.remove();$(id).innerHTML=sp.innerHTML;}});$("dir").className="fdir";$("dir").textContent="— No scan yet";$("sig").className="card sigc";["k_score","k_mem","k_risk","k_mag","k_zone","k_ai"].forEach(id=>$(id).textContent="—");
  $("why").innerHTML="<li>Run a scan to see why the engine picks UP, DOWN or WAIT.</li>";$("rec").textContent="Recommendation: —";$("tfLbl").textContent=TF[tf];loadTimeline();renderTimeline();renderTrack();setStatus("Loading candles…","busy");refreshFeed();drawStats();}
 function setPair(k){pair=k;$("pairL").value=$("pairT").value=k;resetScan();}
