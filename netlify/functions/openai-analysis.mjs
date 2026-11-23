@@ -4,6 +4,9 @@
 // Target: newly FORMING candle
 // Completed candles: context only
 // Trading execution: paper analysis only
+//
+// Works with the ApexScan HTML page: it POSTs one `candles` array whose LAST
+// item is the forming candle, and reads `signal.{direction,confidence,reasoning}`.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -120,12 +123,15 @@ export default async function handler(request) {
     body.asset ||
     "UNKNOWN";
 
-  const timeframe =
+  const rawTimeframe =
     body.timeframe ||
     body.tf ||
     "1m";
 
-  const formingCandle =
+  const timeframe =
+    typeof rawTimeframe === "number" ? `${rawTimeframe}s` : rawTimeframe;
+
+  let formingCandle =
     body.formingCandle ||
     body.currentCandle ||
     body.targetCandle ||
@@ -133,12 +139,29 @@ export default async function handler(request) {
     body.candle ||
     null;
 
-  const completedCandles =
+  let completedCandles =
     body.completedCandles ||
     body.previousCandles ||
     body.history ||
-    body.candles ||
     [];
+
+  // HTML page payload: one `candles` array, last item = forming candle.
+  if (Array.isArray(body.candles) && body.candles.length) {
+    if (!formingCandle && body.candles.length > 1) {
+      formingCandle = body.candles[body.candles.length - 1];
+      completedCandles = body.candles.slice(0, -1);
+    } else if (!completedCandles.length) {
+      completedCandles = body.candles;
+    }
+  }
+
+  if (Array.isArray(completedCandles)) {
+    completedCandles = completedCandles.slice(-100);
+  }
+
+  const requestedHoldSeconds = safeNumber(
+    body.hold_seconds ?? body.holdSeconds
+  );
 
   const indicators =
     body.indicators ||
@@ -174,11 +197,17 @@ export default async function handler(request) {
     );
   }
 
-  const candleAge = safeNumber(
-    body.formingCandleAgeSeconds ??
-    body.candleAgeSeconds ??
-    body.ageSeconds
-  );
+  const formingTime = safeNumber(formingCandle?.time);
+
+  const candleAge =
+    safeNumber(
+      body.formingCandleAgeSeconds ??
+      body.candleAgeSeconds ??
+      body.ageSeconds
+    ) ??
+    (formingTime
+      ? Math.max(0, Math.round(Date.now() / 1000 - formingTime))
+      : null);
 
   const scanData = {
     symbol,
@@ -188,6 +217,7 @@ export default async function handler(request) {
     livePrice,
     formingCandle,
     completedCandles,
+    requestedHoldSeconds,
     indicators,
     learning,
     marketContext: body.marketContext || null,
@@ -263,7 +293,9 @@ SIGNAL RULE:
 - signal must be CALL, PUT, or WAIT.
 - direction must be BULLISH, BEARISH, or NEUTRAL.
 - evidenceScore must be an integer 0-100.
-- holdSeconds must be one of 15, 30, 60, 180, 300, 900, 1800, 3600, or 14400.
+- holdSeconds must be one of 15, 30, 60, 120, 180, 300, 900, 1800, 3600, or 14400.
+- If requestedHoldSeconds is supplied, judge the direction over that holding
+  window and use it as holdSeconds.
 - When signal is WAIT, direction should normally be NEUTRAL,
   evidenceScore should reflect weak/conflicting evidence,
   and waitReason must explain why.
@@ -283,7 +315,7 @@ Remember:
 - Never switch the target to a completed candle.
 
 SCAN DATA:
-${JSON.stringify(scanData, null, 2)}
+${JSON.stringify(scanData)}
 `;
 
   try {
@@ -350,27 +382,29 @@ ${JSON.stringify(scanData, null, 2)}
     if (!analysis) {
       return json({
         success: true,
-        symbol,
-        timeframe,
-        targetCandle: "FORMING",
-        signal: "WAIT",
-        direction: "NEUTRAL",
-        evidenceScore: 0,
-        holdSeconds: 60,
-        summary: outputText,
-        reasoning: [],
-        confirmations: [],
-        conflicts: [],
-        riskFlags: ["Model output was not valid structured JSON."],
-        waitReason: "Structured analysis could not be parsed.",
-        rawAnalysis: outputText
+        signal: {
+          direction: "WAIT",
+          confidence: 0,
+          reasoning: "AI advises WAIT: structured analysis could not be parsed.",
+          riskFlags: ["Model output was not valid structured JSON."]
+        },
+        analysis: {
+          symbol,
+          timeframe,
+          targetCandle: "FORMING",
+          signal: "WAIT",
+          direction: "NEUTRAL",
+          evidenceScore: 0,
+          summary: outputText,
+          waitReason: "Structured analysis could not be parsed."
+        }
       });
     }
 
     // Normalize and validate AI fields
     const validSignals = ["CALL", "PUT", "WAIT"];
     const validDirections = ["BULLISH", "BEARISH", "NEUTRAL"];
-    const validHolds = [15, 30, 60, 180, 300, 900, 1800, 3600, 14400];
+    const validHolds = [15, 30, 60, 120, 180, 300, 900, 1800, 3600, 14400];
 
     const signal = validSignals.includes(analysis.signal)
       ? analysis.signal
@@ -389,8 +423,30 @@ ${JSON.stringify(scanData, null, 2)}
       ? Number(analysis.holdSeconds)
       : 60;
 
-    return json({
-      success: true,
+    const summary = String(analysis.summary || "");
+    const reasoning = Array.isArray(analysis.reasoning)
+      ? analysis.reasoning.slice(0, 8)
+      : [];
+    const confirmations = Array.isArray(analysis.confirmations)
+      ? analysis.confirmations
+      : [];
+    const conflicts = Array.isArray(analysis.conflicts)
+      ? analysis.conflicts
+      : [];
+    const riskFlags = Array.isArray(analysis.riskFlags)
+      ? analysis.riskFlags
+      : [];
+    const waitReason = String(analysis.waitReason || "");
+
+    // One short string for the HTML page's "AI:" note.
+    const reasoningText =
+      signal === "WAIT"
+        ? `AI advises WAIT: ${waitReason || summary || "evidence is weak or conflicting."}`
+        : [summary, ...reasoning.slice(0, 2).map(String)]
+            .filter(Boolean)
+            .join(" · ");
+
+    const full = {
       symbol,
       timeframe,
       targetCandle: "FORMING",
@@ -400,22 +456,33 @@ ${JSON.stringify(scanData, null, 2)}
       direction,
       evidenceScore: score,
       holdSeconds,
-      summary: String(analysis.summary || ""),
-      reasoning: Array.isArray(analysis.reasoning)
-        ? analysis.reasoning.slice(0, 8)
-        : [],
-      confirmations: Array.isArray(analysis.confirmations)
-        ? analysis.confirmations
-        : [],
-      conflicts: Array.isArray(analysis.conflicts)
-        ? analysis.conflicts
-        : [],
-      riskFlags: Array.isArray(analysis.riskFlags)
-        ? analysis.riskFlags
-        : [],
-      waitReason: String(analysis.waitReason || ""),
+      summary,
+      reasoning,
+      confirmations,
+      conflicts,
+      riskFlags,
+      waitReason,
       model,
       paperOnly: true
+    };
+
+    // The HTML page reads j.signal as an OBJECT with
+    // direction (CALL/PUT/WAIT), confidence (0-100) and reasoning (string).
+    // The full structured result is under `analysis`.
+    return json({
+      success: true,
+      signal: {
+        direction: signal,
+        confidence: score,
+        reasoning: reasoningText,
+        summary,
+        confirmations,
+        conflicts,
+        riskFlags,
+        waitReason,
+        holdSeconds
+      },
+      analysis: full
     });
   } catch (error) {
     return json(
