@@ -1,335 +1,486 @@
+// APEXSCAN PRO — Fast Directional Market Brain
+// Netlify function: netlify/functions/openai-analysis.mjs
+// Keltner Channel + ADX + Donchian Channel
+// Directional AI with local fallback
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json",
+  "Cache-Control": "no-store"
+};
+
 const ALLOWED_HOLDS = [15, 30, 60, 180, 300, 900, 1800, 3600, 14400];
 
-const cleanList = (v) =>
-  Array.isArray(v) ? v.slice(0, 10).map(x => String(x).slice(0, 240)) : [];
+const reply = (data, status = 200) =>
+  new Response(JSON.stringify(data), { status, headers: CORS });
 
-const clamp = (n, min, max) =>
-  Math.max(min, Math.min(max, Number(n) || min));
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
-const direction = (v) =>
-  ['CALL', 'PUT', 'WAIT'].includes(String(v).toUpperCase())
-    ? String(v).toUpperCase()
-    : 'WAIT';
+const ema = (arr, period) => {
+  if (!arr.length) return [];
+  const alpha = 2 / (period + 1);
+  const out = [arr[0]];
+  for (let i = 1; i < arr.length; i++) {
+    out.push(arr[i] * alpha + out[i - 1] * (1 - alpha));
+  }
+  return out;
+};
 
-const hold = (v) =>
-  ALLOWED_HOLDS.includes(Number(v)) ? Number(v) : 60;
+// ================================
+// INDICATOR CALCULATIONS
+// ================================
+function indicators(candles) {
+  const close = candles.map(x => Number(x.close));
+  const high = candles.map(x => Number(x.high));
+  const low = candles.map(x => Number(x.low));
 
-exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS')
-    return { statusCode: 204, headers: cors(), body: '' };
+  const tr = [];
+  const plusDM = [];
+  const minusDM = [];
 
-  if (event.httpMethod !== 'POST')
-    return reply(405, { error: 'POST required' });
+  for (let i = 0; i < candles.length; i++) {
+    const prevClose = i ? close[i - 1] : close[i];
+    const up = i ? high[i] - high[i - 1] : 0;
+    const down = i ? low[i - 1] - low[i] : 0;
 
-  if (!process.env.OPENAI_API_KEY)
-    return reply(500, { error: 'OPENAI_API_KEY is missing' });
+    tr.push(Math.max(
+      high[i] - low[i],
+      Math.abs(high[i] - prevClose),
+      Math.abs(low[i] - prevClose)
+    ));
 
-  let data;
-
-  try {
-    data = JSON.parse(event.body || '{}');
-  } catch {
-    return reply(400, { error: 'Invalid JSON body' });
+    plusDM.push(up > down && up > 0 ? up : 0);
+    minusDM.push(down > up && down > 0 ? down : 0);
   }
 
-  const candles = Array.isArray(data.completedCandles)
-    ? data.completedCandles.slice(-120)
-    : [];
+  const atr = ema(tr, 14);
+  const middle = ema(close, 20);
 
-  const payload = {
-    pair: String(data.pair || data.symbol || 'unknown'),
-    timeframe: String(data.timeframe || data.timeframeSeconds || 'unknown'),
-    scanType: String(data.scanType || 'EARLY'),
-    currentPrice: data.latestVerifiedPrice ?? data.formingCandle?.close ?? null,
-    priceTimestamp: data.priceTimestamp ?? data.formingCandle?.time ?? null,
-    formingCandle: data.formingCandle || null,
-    formingCandleAgeSeconds: data.formingCandleAgeSeconds ?? null,
-    indicators: data.indicators || {},
-    candlestickPatterns: cleanList(data.candlePatterns),
-    chartPatterns: cleanList(data.chartPatterns),
-    recentCompletedCandles: candles,
-    localEvidence: data.ruleSignal || null
-  };
+  const upper = middle.map((v, i) => v + 1.5 * (atr[i] || 0));
+  const lower = middle.map((v, i) => v - 1.5 * (atr[i] || 0));
 
-  const system = `You are APEXSCAN PRO's decisive OTC market-direction analyst.
+  const window = Math.min(20, candles.length);
+  const donchianHigh = Math.max(...high.slice(-window));
+  const donchianLow = Math.min(...low.slice(-window));
 
-You are NOT a rigid signal detector, checklist, or confirmation gate.
+  const plusDI = plusDM.map((v, i) =>
+    atr[i] ? 100 * v / atr[i] : 0
+  );
 
-YOUR JOB:
-Read the market and make a directional decision based on what price is
-actually doing. Do not sit on WAIT while price action and indicators
-provide a reasonably readable directional bias.
+  const minusDI = minusDM.map((v, i) =>
+    atr[i] ? 100 * v / atr[i] : 0
+  );
 
-ANALYZE:
-- Current candle direction and developing movement
-- Recent candle sequence and color
-- Higher highs and higher lows
-- Lower highs and lower lows
-- Momentum and momentum acceleration/deceleration
-- Candle body size relative to wick size
-- Rejection wicks and exhaustion
-- Engulfing and reversal behavior
-- Pullbacks and continuation
-- Breakouts and breakdowns
-- Support and resistance
-- Market structure
-- Trend direction
-- MACD and signal relationship
-- Stochastic K/D relationship and position
-- Bollinger position and middle-band behavior
-- EMA relationships when supplied
-- Conflicting signals and their relative strength
+  const dx = plusDI.map((v, i) =>
+    v + minusDI[i] === 0
+      ? 0
+      : 100 * Math.abs(v - minusDI[i]) / (v + minusDI[i])
+  );
 
-CANDLE PATTERN RECOGNITION:
-Recognize these when supported by actual candle data:
+  const adxSeries = ema(dx, 14);
+  const last = close.length - 1;
+  const previous = Math.max(0, last - 1);
 
-Bullish:
-Hammer, inverted hammer, bullish engulfing, piercing pattern,
-morning star, bullish harami, dragonfly doji, tweezer bottom,
-three white soldiers, rising three methods, bullish marubozu,
-three inside up, bullish kicker, bullish belt hold, bullish pin bar,
-abandoned baby bullish, bullish breakout, bullish continuation.
+  const price = close[last];
 
-Bearish:
-Shooting star, hanging man, bearish engulfing, dark cloud cover,
-evening star, bearish harami, gravestone doji, tweezer top,
-three black crows, falling three methods, bearish marubozu,
-three inside down, bearish kicker, bearish belt hold, bearish pin bar,
-abandoned baby bearish, bearish breakdown, bearish continuation.
+  return {
+    price,
+    atr: atr[last],
 
-CHART PATTERN RECOGNITION:
-Identify when evidence exists:
-Double top, double bottom, head and shoulders,
-inverse head and shoulders, ascending triangle, descending triangle,
-symmetrical triangle, rising wedge, falling wedge,
-bull flag, bear flag, bullish pennant, bearish pennant,
-ascending channel, descending channel, range breakout,
-range breakdown, compression, expansion, trend continuation,
-trend reversal, swing failure, support rejection, resistance rejection.
-
-Do not invent a pattern. If it is forming but not confirmed,
-identify it as a developing or candidate pattern.
-
-DIRECTIONAL DECISION:
-Indicators are evidence, NOT gates.
-
-Do not require:
-- All indicators to agree
-- Multiple confirmations
-- Perfect pattern completion
-- A minimum confluence checklist
-- A fully closed candle for EARLY scans
-- An arbitrarily high confidence threshold
-
-When bullish evidence is stronger, choose CALL.
-When bearish evidence is stronger, choose PUT.
-
-When indicators conflict, WEIGH THEM. Determine which side has
-the stronger price action and momentum. Do not automatically turn
-conflict into WAIT.
-
-If the market is moving clearly green with bullish momentum,
-recognize the bullish bias.
-
-If the market is moving clearly red with bearish momentum,
-recognize the bearish bias.
-
-WAIT is reserved for genuinely flat, chaotic, or directionless price
-action with no credible directional advantage, or unreliable/stale data.
-
-If one side has even a moderate but credible directional advantage,
-make the directional call and explain its risk.
-
-EARLY SCAN:
-Analyze the currently developing candle and immediate live movement.
-Make a timely directional judgment. Clearly note that a forming candle
-can reverse before close. Do not wait for candle completion.
-
-REGULAR SCAN:
-Analyze the latest completed candle together with the broader structure.
-Do not mechanically copy the previous EARLY signal. Re-evaluate the market.
-
-OUTPUT:
-Return a CALL, PUT, or WAIT.
-Give a realistic evidence score from 0-100.
-Select holdSeconds only from the allowed list.
-Explain the actual price behavior behind your decision.
-List bullish evidence, bearish evidence, detected patterns, momentum,
-trend, candle structure, chart pattern, conflicts, and risk flags.
-
-Never fabricate candles, prices, indicators, volume, or patterns.
-Use only the supplied data.
-
-Return valid JSON only.`;
-
-  const schema = {
-    type: 'object',
-    properties: {
-      signal: {
-        type: 'object',
-        properties: {
-          direction: {
-            type: 'string',
-            enum: ['CALL', 'PUT', 'WAIT']
-          },
-          evidenceScore: {
-            type: 'integer',
-            minimum: 0,
-            maximum: 100
-          },
-          holdSeconds: {
-            type: 'integer',
-            enum: ALLOWED_HOLDS
-          },
-          reasoning: {
-            type: 'string'
-          }
-        },
-        required: [
-          'direction',
-          'evidenceScore',
-          'holdSeconds',
-          'reasoning'
-        ],
-        additionalProperties: false
-      },
-      analysis: {
-        type: 'object',
-        properties: {
-          bullishEvidence: {
-            type: 'array',
-            items: { type: 'string' }
-          },
-          bearishEvidence: {
-            type: 'array',
-            items: { type: 'string' }
-          },
-          momentum: { type: 'string' },
-          trend: { type: 'string' },
-          candleStructure: { type: 'string' },
-          chartPattern: { type: 'string' },
-          detectedPatterns: {
-            type: 'array',
-            items: { type: 'string' }
-          },
-          conflicts: {
-            type: 'array',
-            items: { type: 'string' }
-          },
-          riskFlags: {
-            type: 'array',
-            items: { type: 'string' }
-          },
-          finalReasoning: { type: 'string' }
-        },
-        required: [
-          'bullishEvidence',
-          'bearishEvidence',
-          'momentum',
-          'trend',
-          'candleStructure',
-          'chartPattern',
-          'detectedPatterns',
-          'conflicts',
-          'riskFlags',
-          'finalReasoning'
-        ],
-        additionalProperties: false
-      }
+    keltner: {
+      mid: middle[last],
+      upper: upper[last],
+      lower: lower[last],
+      position:
+        upper[last] !== lower[last]
+          ? (price - lower[last]) / (upper[last] - lower[last])
+          : 0,
+      midSlope: middle[last] - middle[previous]
     },
-    required: ['signal', 'analysis'],
-    additionalProperties: false
+
+    adx: {
+      value: adxSeries[last] || 0,
+      plusDI: plusDI[last] || 0,
+      minusDI: minusDI[last] || 0
+    },
+
+    donchian: {
+      high: donchianHigh,
+      low: donchianLow,
+      range: donchianHigh - donchianLow,
+      position:
+        donchianHigh !== donchianLow
+          ? (price - donchianLow) / (donchianHigh - donchianLow)
+          : 0
+    },
+
+    priceChange: price - close[previous],
+    changePct: close[previous]
+      ? 100 * (price - close[previous]) / close[previous]
+      : 0
   };
+}
+
+// ================================
+// DIRECTIONAL FALLBACK
+// ================================
+function localBias(candles, ind) {
+  const last = candles.at(-1);
+  const previous = candles.at(-2);
+  const price = Number(last.close);
+
+  let score = 0;
+  const evidence = [];
+
+  // Candle direction
+  if (last.close > last.open) {
+    score += 1.2;
+    evidence.push("Latest candle bullish");
+  } else if (last.close < last.open) {
+    score -= 1.2;
+    evidence.push("Latest candle bearish");
+  }
+
+  // Price movement
+  if (previous) {
+    if (last.close > previous.close) {
+      score += 0.8;
+      evidence.push("Price rising");
+    } else if (last.close < previous.close) {
+      score -= 0.8;
+      evidence.push("Price falling");
+    }
+  }
+
+  // ADX directional movement
+  if (ind.adx.plusDI > ind.adx.minusDI) {
+    score += 1;
+    evidence.push("+DI exceeds -DI");
+  } else if (ind.adx.minusDI > ind.adx.plusDI) {
+    score -= 1;
+    evidence.push("-DI exceeds +DI");
+  }
+
+  // Keltner direction
+  if (ind.keltner.midSlope > 0) {
+    score += 0.7;
+    evidence.push("Keltner midline slopes upward");
+  } else if (ind.keltner.midSlope < 0) {
+    score -= 0.7;
+    evidence.push("Keltner midline slopes downward");
+  }
+
+  // Donchian breakout pressure
+  if (price >= ind.donchian.high) {
+    score += 0.8;
+    evidence.push("Donchian upper breakout pressure");
+  }
+
+  if (price <= ind.donchian.low) {
+    score -= 0.8;
+    evidence.push("Donchian lower breakdown pressure");
+  }
+
+  // Keltner location
+  if (ind.keltner.position > 0.65) {
+    score += 0.35;
+    evidence.push("Price in upper Keltner region");
+  } else if (ind.keltner.position < 0.35) {
+    score -= 0.35;
+    evidence.push("Price in lower Keltner region");
+  }
+
+  return {
+    direction: score >= 0 ? "CALL" : "PUT",
+    score,
+    confidence: clamp(52 + Math.abs(score) * 9, 52, 86),
+    evidence
+  };
+}
+
+// ================================
+// NETLIFY HANDLER
+// ================================
+export default async (request) => {
+  if (request.method === "OPTIONS") {
+    return new Response("", { status: 204, headers: CORS });
+  }
+
+  if (request.method !== "POST") {
+    return reply({ error: "POST required" }, 405);
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    return reply({ error: "OPENAI_API_KEY is missing" }, 500);
+  }
+
+  let body;
 
   try {
-    const response = await fetch(
-      'https://api.openai.com/v1/chat/completions',
+    body = await request.json();
+  } catch {
+    return reply({ error: "Invalid JSON body" }, 400);
+  }
+
+  const inputCandles = Array.isArray(body.completedCandles)
+    ? body.completedCandles
+    : [];
+
+  const forming = body.formingCandle;
+
+  const all = (
+    forming && Number.isFinite(Number(forming.close))
+      ? [...inputCandles, forming]
+      : inputCandles
+  ).filter(x =>
+    [x.open, x.high, x.low, x.close].every(v =>
+      Number.isFinite(Number(v))
+    )
+  );
+
+  if (all.length < 5) {
+    return reply({
+      error: `Need at least 5 valid OHLC candles; received ${all.length}`
+    }, 422);
+  }
+
+  const usable = all.slice(-80);
+  const ind = indicators(usable);
+  const local = localBias(usable, ind);
+
+  const patternData = {
+    candlestickPatterns: Array.isArray(body.candlePatterns)
+      ? body.candlePatterns.slice(0, 12)
+      : [],
+    chartPatterns: Array.isArray(body.chartPatterns)
+      ? body.chartPatterns.slice(0, 12)
+      : []
+  };
+
+  // ================================
+  // OPENAI MARKET ANALYSIS PROMPT
+  // ================================
+  const prompt = `
+You are APEXSCAN PRO's fast, decisive directional market-reading AI.
+
+Your task is to analyze the newly forming candle and choose CALL or PUT
+based on the stronger near-term directional lean.
+
+WAIT IS NOT YOUR DEFAULT.
+
+Use WAIT only when price is genuinely flat, chaotic, or data is unusable.
+
+DO NOT REQUIRE:
+- Indicator confirmation
+- All indicators to agree
+- Pattern completion
+- High ADX
+- Multiple confirmation candles
+- Arbitrary confidence thresholds
+
+INDICATORS:
+
+KELTNER CHANNEL:
+Interpret channel riding, midline slope, squeeze, expansion, rejection,
+and price position.
+
+ADX:
+Measure trend strength. Low ADX does NOT block directional signals.
+
++DI / -DI:
+Compare bullish and bearish directional pressure.
+
+DONCHIAN CHANNEL:
+Analyze range boundaries, upper/lower tests, breakout and breakdown pressure.
+
+ALSO ANALYZE:
+- Current candle direction
+- Candle body and wick
+- Recent candle sequence
+- Momentum
+- Swing structure
+- Higher highs and higher lows
+- Lower highs and lower lows
+- Trend continuation
+- Reversals
+- Pullbacks
+- Bullish patterns
+- Bearish patterns
+- Chart patterns
+
+DECISION:
+
+Bullish evidence stronger = CALL.
+Bearish evidence stronger = PUT.
+
+If evidence conflicts, WEIGH IT and choose the stronger side.
+Do not automatically turn conflicts into WAIT.
+
+If the candle is moving bullish with bullish pressure, favor CALL.
+If the candle is moving bearish with bearish pressure, favor PUT.
+
+Make your decision quickly and explain it concisely.
+
+Never invent prices, indicators, candles, or patterns.
+
+Return JSON only with these fields:
+direction, evidenceScore, holdSeconds, reasoning,
+bullishEvidence, bearishEvidence, momentum, trend,
+candleStructure, chartPattern, detectedPatterns,
+conflicts, riskFlags, finalReasoning.
+
+Allowed holdSeconds:
+${ALLOWED_HOLDS.join(", ")}
+`;
+
+  const userData = {
+    symbol: body.symbol || body.pair || "unknown",
+    pair: body.pair || "",
+    timeframe: body.timeframe || body.timeframeSeconds || "unknown",
+    scanType: body.scanType || "EARLY",
+    formingCandle: forming || usable.at(-1),
+    candles: usable.slice(-40),
+    calculatedIndicators: ind,
+    localDirectionalBias: local,
+    patterns: patternData
+  };
+
+  let ai = null;
+  const model = process.env.OPENAI_MODEL || "gpt-6";
+
+  // ================================
+  // OPENAI REQUEST
+  // ================================
+  try {
+    const res = await fetch(
+      "https://api.openai.com/v1/chat/completions",
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: process.env.OPENAI_MODEL || 'gpt-6',
-          temperature: 0.35,
-          max_tokens: 1100,
+          model,
+          temperature: 0.25,
+          max_tokens: 650,
           response_format: {
-            type: 'json_schema',
-            json_schema: {
-              name: 'apexscan_directional_analysis',
-              strict: true,
-              schema
-            }
+            type: "json_object"
           },
           messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: JSON.stringify(payload) }
+            { role: "system", content: prompt },
+            { role: "user", content: JSON.stringify(userData) }
           ]
         })
       }
     );
 
-    const result = await response.json();
+    const data = await res.json();
 
-    if (!response.ok) {
-      return reply(
-        response.status,
-        { error: result?.error?.message || `OpenAI API HTTP ${response.status}` }
+    if (!res.ok) {
+      throw new Error(
+        data?.error?.message || `OpenAI HTTP ${res.status}`
       );
     }
 
-    const content = result?.choices?.[0]?.message?.content;
+    const content = data?.choices?.[0]?.message?.content;
 
-    if (!content)
-      return reply(502, { error: 'OpenAI returned empty analysis' });
+    if (!content) {
+      throw new Error("Empty OpenAI response");
+    }
 
-    const parsed = JSON.parse(content);
-
-    parsed.signal.direction = direction(parsed.signal.direction);
-    parsed.signal.evidenceScore = Math.round(
-      clamp(parsed.signal.evidenceScore, 0, 100)
-    );
-    parsed.signal.holdSeconds = hold(parsed.signal.holdSeconds);
-
-    parsed.analysis.bullishEvidence =
-      cleanList(parsed.analysis.bullishEvidence);
-    parsed.analysis.bearishEvidence =
-      cleanList(parsed.analysis.bearishEvidence);
-    parsed.analysis.detectedPatterns =
-      cleanList(parsed.analysis.detectedPatterns);
-    parsed.analysis.conflicts =
-      cleanList(parsed.analysis.conflicts);
-    parsed.analysis.riskFlags =
-      cleanList(parsed.analysis.riskFlags);
-
-    parsed.model = process.env.OPENAI_MODEL || 'gpt-6';
-
-    return reply(200, parsed);
+    ai = JSON.parse(content);
 
   } catch (err) {
-    return reply(
-      502,
-      { error: `OpenAI scan failed: ${err.message || err}` }
-    );
+    // Directional local fallback if OpenAI is unavailable
+    ai = {
+      direction: local.direction,
+      evidenceScore: local.confidence,
+      holdSeconds: 60,
+      reasoning: `OpenAI unavailable; local directional bias: ${local.direction}. ${local.evidence.join("; ")}`,
+      bullishEvidence: local.score > 0 ? local.evidence : [],
+      bearishEvidence: local.score < 0 ? local.evidence : [],
+      momentum: `Price change ${ind.changePct.toFixed(4)}%; ADX ${ind.adx.value.toFixed(1)}; +DI ${ind.adx.plusDI.toFixed(1)} / -DI ${ind.adx.minusDI.toFixed(1)}`,
+      trend: ind.keltner.midSlope >= 0
+        ? "Keltner midline rising"
+        : "Keltner midline falling",
+      candleStructure: `Latest candle ${
+        Number(usable.at(-1).close) >= Number(usable.at(-1).open)
+          ? "bullish"
+          : "bearish"
+      }`,
+      chartPattern: "Not reliably inferred in fallback mode",
+      detectedPatterns: [
+        ...patternData.candlestickPatterns,
+        ...patternData.chartPatterns
+      ],
+      conflicts: [],
+      riskFlags: ["Local fallback used; not an OpenAI-generated analysis"],
+      finalReasoning: local.evidence.join("; "),
+      modelUnavailable: true,
+      modelError: String(err.message || err)
+    };
   }
-};
 
-function cors() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
-  };
-}
+  const direction = ["CALL", "PUT", "WAIT"].includes(
+    String(ai.direction || "").toUpperCase()
+  )
+    ? String(ai.direction).toUpperCase()
+    : local.direction;
 
-function reply(statusCode, body) {
-  return {
-    statusCode,
-    headers: {
-      ...cors(),
-      'Content-Type': 'application/json'
+  const holdSeconds = ALLOWED_HOLDS.includes(Number(ai.holdSeconds))
+    ? Number(ai.holdSeconds)
+    : 60;
+
+  const output = {
+    signal: {
+      direction,
+      evidenceScore: clamp(
+        Math.round(Number(ai.evidenceScore) || local.confidence),
+        0,
+        100
+      ),
+      holdSeconds,
+      reasoning: String(
+        ai.reasoning ||
+        ai.finalReasoning ||
+        local.evidence.join("; ")
+      )
     },
-    body: JSON.stringify(body)
+
+    analysis: {
+      bullishEvidence: Array.isArray(ai.bullishEvidence)
+        ? ai.bullishEvidence.slice(0, 8)
+        : [],
+      bearishEvidence: Array.isArray(ai.bearishEvidence)
+        ? ai.bearishEvidence.slice(0, 8)
+        : [],
+      momentum: String(ai.momentum || ""),
+      trend: String(ai.trend || ""),
+      candleStructure: String(ai.candleStructure || ""),
+      chartPattern: String(ai.chartPattern || ""),
+      detectedPatterns: Array.isArray(ai.detectedPatterns)
+        ? ai.detectedPatterns.slice(0, 10)
+        : [],
+      conflicts: Array.isArray(ai.conflicts)
+        ? ai.conflicts.slice(0, 8)
+        : [],
+      riskFlags: Array.isArray(ai.riskFlags)
+        ? ai.riskFlags.slice(0, 8)
+        : [],
+      finalReasoning: String(
+        ai.finalReasoning || ai.reasoning || ""
+      )
+    },
+
+    model: ai.modelUnavailable ? "LOCAL FALLBACK" : model,
+    indicators: ind,
+    modelUnavailable: Boolean(ai.modelUnavailable)
   };
-}
+
+  return reply(output);
+};
