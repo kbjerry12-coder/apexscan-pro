@@ -379,6 +379,10 @@ Make your decision quickly and explain it concisely.
 
 Never invent prices, indicators, candles, or patterns.
 
+IMPORTANT OUTPUT REQUIREMENT:
+Your response MUST be valid JSON.
+Do not include markdown, code fences, or text outside the JSON object.
+
 Return JSON only with these fields:
 direction, evidenceScore, holdSeconds, reasoning,
 bullishEvidence, bearishEvidence, momentum, trend,
@@ -430,7 +434,10 @@ ${ALLOWED_HOLDS.join(", ")}
           input: [
             {
               role: "user",
-              content: JSON.stringify(userData)
+              content: `Return valid JSON only. Analyze the following market data and respond using the required JSON object schema.
+
+MARKET DATA (JSON):
+${JSON.stringify(userData)}`
             }
           ],
 
