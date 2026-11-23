@@ -357,7 +357,7 @@ ${ALLOWED_HOLDS.join(", ")}
   };
 
   let ai = null;
-  const model = process.env.OPENAI_MODEL || "gpt-6";
+  const model = process.env.OPENAI_MODEL || "gpt-6.1-sol";
 
   // ================================
   // OPENAI REQUEST
