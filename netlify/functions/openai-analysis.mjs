@@ -1,198 +1,335 @@
-// APEXSCAN PRO — OpenAI Auto Analysis
-// Early + Regular signals
-// Requires OPENAI_API_KEY in Netlify environment variables
-
-const MODEL = process.env.OPENAI_MODEL || "gpt-6";
-
 const ALLOWED_HOLDS = [15, 30, 60, 180, 300, 900, 1800, 3600, 14400];
 
-const json = (statusCode, body) => ({
-  statusCode,
-  headers: {
-    "Content-Type": "application/json",
-    "Cache-Control": "no-store",
-    "Access-Control-Allow-Origin": "*",
-  },
-  body: JSON.stringify(body),
-});
+const cleanList = (v) =>
+  Array.isArray(v) ? v.slice(0, 10).map(x => String(x).slice(0, 240)) : [];
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
+const clamp = (n, min, max) =>
+  Math.max(min, Math.min(max, Number(n) || min));
 
-function normalizeDirection(value) {
-  const direction = String(value || "WAIT").toUpperCase();
-  return ["CALL", "PUT", "WAIT"].includes(direction) ? direction : "WAIT";
-}
+const direction = (v) =>
+  ['CALL', 'PUT', 'WAIT'].includes(String(v).toUpperCase())
+    ? String(v).toUpperCase()
+    : 'WAIT';
 
-function normalizeHold(value) {
-  const hold = Number(value);
-  return ALLOWED_HOLDS.includes(hold) ? hold : 60;
-}
-
-function normalizeArray(value) {
-  if (Array.isArray(value)) return value.slice(0, 8).map(String);
-  return [];
-}
-
-function normalizeAnalysis(value = {}) {
-  return {
-    bullishEvidence: normalizeArray(value.bullishEvidence),
-    bearishEvidence: normalizeArray(value.bearishEvidence),
-    momentum: String(value.momentum || "Unclear"),
-    trend: String(value.trend || "Unclear"),
-    candleStructure: String(value.candleStructure || "Unclear"),
-    chartPattern: String(value.chartPattern || "No confirmed pattern"),
-    conflicts: normalizeArray(value.conflicts),
-    riskFlags: normalizeArray(value.riskFlags),
-    reasoning: String(value.reasoning || ""),
-  };
-}
+const hold = (v) =>
+  ALLOWED_HOLDS.includes(Number(v)) ? Number(v) : 60;
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== "POST") {
-    return json(405, { error: "POST only" });
-  }
+  if (event.httpMethod === 'OPTIONS')
+    return { statusCode: 204, headers: cors(), body: '' };
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return json(500, { error: "OPENAI_API_KEY is missing" });
-  }
+  if (event.httpMethod !== 'POST')
+    return reply(405, { error: 'POST required' });
 
-  let input;
+  if (!process.env.OPENAI_API_KEY)
+    return reply(500, { error: 'OPENAI_API_KEY is missing' });
+
+  let data;
+
   try {
-    input = JSON.parse(event.body || "{}");
+    data = JSON.parse(event.body || '{}');
   } catch {
-    return json(400, { error: "Invalid JSON request body" });
+    return reply(400, { error: 'Invalid JSON body' });
   }
 
-  const candles = Array.isArray(input.completedCandles)
-    ? input.completedCandles.slice(-60)
+  const candles = Array.isArray(data.completedCandles)
+    ? data.completedCandles.slice(-120)
     : [];
 
   const payload = {
-    scanType: input.scanType || "REGULAR",
-    pair: input.pair || "UNKNOWN",
-    timeframe: input.timeframe || "1m",
-    timeframeSeconds: Number(input.timeframeSeconds) || null,
-    livePrice: input.livePrice ?? null,
-    priceTimestamp: input.priceTimestamp || null,
-    candleTimestamp: input.candleTimestamp || null,
-    formingCandle: input.formingCandle || null,
-    formingCandleAgeSeconds:
-      input.formingCandleAgeSeconds ?? null,
-    indicators: input.indicators || {},
-    ruleSignal: input.ruleSignal || null,
-    marketStructure: input.marketStructure || null,
-    completedCandles: candles,
+    pair: String(data.pair || data.symbol || 'unknown'),
+    timeframe: String(data.timeframe || data.timeframeSeconds || 'unknown'),
+    scanType: String(data.scanType || 'EARLY'),
+    currentPrice: data.latestVerifiedPrice ?? data.formingCandle?.close ?? null,
+    priceTimestamp: data.priceTimestamp ?? data.formingCandle?.time ?? null,
+    formingCandle: data.formingCandle || null,
+    formingCandleAgeSeconds: data.formingCandleAgeSeconds ?? null,
+    indicators: data.indicators || {},
+    candlestickPatterns: cleanList(data.candlePatterns),
+    chartPatterns: cleanList(data.chartPatterns),
+    recentCompletedCandles: candles,
+    localEvidence: data.ruleSignal || null
   };
 
-  const system = `
-You are the primary market-analysis brain for APEXSCAN PRO.
+  const system = `You are APEXSCAN PRO's decisive OTC market-direction analyst.
 
-Analyze the provided OTC market data and chart structure.
-Do not impose artificial confirmation delays.
-When a newly forming candle is supplied, analyze the developing market
-structure and provide an early signal when the evidence supports one.
+You are NOT a rigid signal detector, checklist, or confirmation gate.
 
-Analyze:
-- Bullish and bearish evidence
-- Momentum and directional strength
-- Trend and market structure
-- Candle formations and chart patterns
-- Support/resistance reactions if data supports them
-- Conflicting evidence
-- Risk flags and uncertainty
+YOUR JOB:
+Read the market and make a directional decision based on what price is
+actually doing. Do not sit on WAIT while price action and indicators
+provide a reasonably readable directional bias.
 
-Respect scanType:
-EARLY = analyze the developing candle and emerging structure.
-REGULAR = analyze the latest market context for the next move.
+ANALYZE:
+- Current candle direction and developing movement
+- Recent candle sequence and color
+- Higher highs and higher lows
+- Lower highs and lower lows
+- Momentum and momentum acceleration/deceleration
+- Candle body size relative to wick size
+- Rejection wicks and exhaustion
+- Engulfing and reversal behavior
+- Pullbacks and continuation
+- Breakouts and breakdowns
+- Support and resistance
+- Market structure
+- Trend direction
+- MACD and signal relationship
+- Stochastic K/D relationship and position
+- Bollinger position and middle-band behavior
+- EMA relationships when supplied
+- Conflicting signals and their relative strength
 
-Do not fabricate candles, prices, indicators, or timestamps.
-Do not claim the price is live if its timestamp is stale.
-Do not force a trade if evidence is weak or conflicting.
+CANDLE PATTERN RECOGNITION:
+Recognize these when supported by actual candle data:
 
-If the evidence is insufficient, return WAIT.
-WAIT must remain WAIT. Never disguise WAIT as CALL or PUT.
+Bullish:
+Hammer, inverted hammer, bullish engulfing, piercing pattern,
+morning star, bullish harami, dragonfly doji, tweezer bottom,
+three white soldiers, rising three methods, bullish marubozu,
+three inside up, bullish kicker, bullish belt hold, bullish pin bar,
+abandoned baby bullish, bullish breakout, bullish continuation.
 
-Return ONLY valid JSON in this schema:
-{
-  "direction": "CALL|PUT|WAIT",
-  "evidenceScore": 0,
-  "bullishEvidence": [],
-  "bearishEvidence": [],
-  "momentum": "",
-  "trend": "",
-  "candleStructure": "",
-  "chartPattern": "",
-  "conflicts": [],
-  "riskFlags": [],
-  "reasoning": "",
-  "holdSeconds": 60
-}
+Bearish:
+Shooting star, hanging man, bearish engulfing, dark cloud cover,
+evening star, bearish harami, gravestone doji, tweezer top,
+three black crows, falling three methods, bearish marubozu,
+three inside down, bearish kicker, bearish belt hold, bearish pin bar,
+abandoned baby bearish, bearish breakdown, bearish continuation.
 
-Allowed holdSeconds:
-15,30,60,180,300,900,1800,3600,14400.
-`;
+CHART PATTERN RECOGNITION:
+Identify when evidence exists:
+Double top, double bottom, head and shoulders,
+inverse head and shoulders, ascending triangle, descending triangle,
+symmetrical triangle, rising wedge, falling wedge,
+bull flag, bear flag, bullish pennant, bearish pennant,
+ascending channel, descending channel, range breakout,
+range breakdown, compression, expansion, trend continuation,
+trend reversal, swing failure, support rejection, resistance rejection.
+
+Do not invent a pattern. If it is forming but not confirmed,
+identify it as a developing or candidate pattern.
+
+DIRECTIONAL DECISION:
+Indicators are evidence, NOT gates.
+
+Do not require:
+- All indicators to agree
+- Multiple confirmations
+- Perfect pattern completion
+- A minimum confluence checklist
+- A fully closed candle for EARLY scans
+- An arbitrarily high confidence threshold
+
+When bullish evidence is stronger, choose CALL.
+When bearish evidence is stronger, choose PUT.
+
+When indicators conflict, WEIGH THEM. Determine which side has
+the stronger price action and momentum. Do not automatically turn
+conflict into WAIT.
+
+If the market is moving clearly green with bullish momentum,
+recognize the bullish bias.
+
+If the market is moving clearly red with bearish momentum,
+recognize the bearish bias.
+
+WAIT is reserved for genuinely flat, chaotic, or directionless price
+action with no credible directional advantage, or unreliable/stale data.
+
+If one side has even a moderate but credible directional advantage,
+make the directional call and explain its risk.
+
+EARLY SCAN:
+Analyze the currently developing candle and immediate live movement.
+Make a timely directional judgment. Clearly note that a forming candle
+can reverse before close. Do not wait for candle completion.
+
+REGULAR SCAN:
+Analyze the latest completed candle together with the broader structure.
+Do not mechanically copy the previous EARLY signal. Re-evaluate the market.
+
+OUTPUT:
+Return a CALL, PUT, or WAIT.
+Give a realistic evidence score from 0-100.
+Select holdSeconds only from the allowed list.
+Explain the actual price behavior behind your decision.
+List bullish evidence, bearish evidence, detected patterns, momentum,
+trend, candle structure, chart pattern, conflicts, and risk flags.
+
+Never fabricate candles, prices, indicators, volume, or patterns.
+Use only the supplied data.
+
+Return valid JSON only.`;
+
+  const schema = {
+    type: 'object',
+    properties: {
+      signal: {
+        type: 'object',
+        properties: {
+          direction: {
+            type: 'string',
+            enum: ['CALL', 'PUT', 'WAIT']
+          },
+          evidenceScore: {
+            type: 'integer',
+            minimum: 0,
+            maximum: 100
+          },
+          holdSeconds: {
+            type: 'integer',
+            enum: ALLOWED_HOLDS
+          },
+          reasoning: {
+            type: 'string'
+          }
+        },
+        required: [
+          'direction',
+          'evidenceScore',
+          'holdSeconds',
+          'reasoning'
+        ],
+        additionalProperties: false
+      },
+      analysis: {
+        type: 'object',
+        properties: {
+          bullishEvidence: {
+            type: 'array',
+            items: { type: 'string' }
+          },
+          bearishEvidence: {
+            type: 'array',
+            items: { type: 'string' }
+          },
+          momentum: { type: 'string' },
+          trend: { type: 'string' },
+          candleStructure: { type: 'string' },
+          chartPattern: { type: 'string' },
+          detectedPatterns: {
+            type: 'array',
+            items: { type: 'string' }
+          },
+          conflicts: {
+            type: 'array',
+            items: { type: 'string' }
+          },
+          riskFlags: {
+            type: 'array',
+            items: { type: 'string' }
+          },
+          finalReasoning: { type: 'string' }
+        },
+        required: [
+          'bullishEvidence',
+          'bearishEvidence',
+          'momentum',
+          'trend',
+          'candleStructure',
+          'chartPattern',
+          'detectedPatterns',
+          'conflicts',
+          'riskFlags',
+          'finalReasoning'
+        ],
+        additionalProperties: false
+      }
+    },
+    required: ['signal', 'analysis'],
+    additionalProperties: false
+  };
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        temperature: 0.2,
-        max_tokens: 900,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: JSON.stringify(payload) },
-        ],
-      }),
-    });
+    const response = await fetch(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: process.env.OPENAI_MODEL || 'gpt-6',
+          temperature: 0.35,
+          max_tokens: 1100,
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'apexscan_directional_analysis',
+              strict: true,
+              schema
+            }
+          },
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: JSON.stringify(payload) }
+          ]
+        })
+      }
+    );
 
-    const data = await response.json();
+    const result = await response.json();
 
     if (!response.ok) {
-      return json(response.status, {
-        error: data?.error?.message || `OpenAI HTTP ${response.status}`,
-      });
+      return reply(
+        response.status,
+        { error: result?.error?.message || `OpenAI API HTTP ${response.status}` }
+      );
     }
 
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) {
-      return json(502, { error: "OpenAI returned an empty analysis" });
-    }
+    const content = result?.choices?.[0]?.message?.content;
+
+    if (!content)
+      return reply(502, { error: 'OpenAI returned empty analysis' });
 
     const parsed = JSON.parse(content);
-    const direction = normalizeDirection(parsed.direction);
-    const analysis = normalizeAnalysis(parsed);
 
-    return json(200, {
-      model: data.model || MODEL,
-      scanType: payload.scanType,
-      pair: payload.pair,
-      timeframe: payload.timeframe,
-      priceTimestamp: payload.priceTimestamp,
-      candleTimestamp: payload.candleTimestamp,
-      signal: {
-        direction,
-        evidenceScore: clamp(
-          Math.round(Number(parsed.evidenceScore) || 0),
-          0,
-          100
-        ),
-        reasoning: analysis.reasoning,
-        holdSeconds: normalizeHold(parsed.holdSeconds),
-        analysis,
-      },
-    });
-  } catch (error) {
-    return json(500, {
-      error: String(error?.message || error),
-    });
+    parsed.signal.direction = direction(parsed.signal.direction);
+    parsed.signal.evidenceScore = Math.round(
+      clamp(parsed.signal.evidenceScore, 0, 100)
+    );
+    parsed.signal.holdSeconds = hold(parsed.signal.holdSeconds);
+
+    parsed.analysis.bullishEvidence =
+      cleanList(parsed.analysis.bullishEvidence);
+    parsed.analysis.bearishEvidence =
+      cleanList(parsed.analysis.bearishEvidence);
+    parsed.analysis.detectedPatterns =
+      cleanList(parsed.analysis.detectedPatterns);
+    parsed.analysis.conflicts =
+      cleanList(parsed.analysis.conflicts);
+    parsed.analysis.riskFlags =
+      cleanList(parsed.analysis.riskFlags);
+
+    parsed.model = process.env.OPENAI_MODEL || 'gpt-6';
+
+    return reply(200, parsed);
+
+  } catch (err) {
+    return reply(
+      502,
+      { error: `OpenAI scan failed: ${err.message || err}` }
+    );
   }
 };
+
+function cors() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  };
+}
+
+function reply(statusCode, body) {
+  return {
+    statusCode,
+    headers: {
+      ...cors(),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  };
+}
