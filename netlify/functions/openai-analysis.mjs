@@ -1,7 +1,7 @@
 // APEXSCAN PRO — Fast Directional Market Brain
 // Netlify function: netlify/functions/openai-analysis.mjs
 // Keltner Channel + ADX + Donchian Channel
-// Directional AI with local fallback
+// Directional AI — no directional fallback on AI failure
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -22,9 +22,11 @@ const ema = (arr, period) => {
   if (!arr.length) return [];
   const alpha = 2 / (period + 1);
   const out = [arr[0]];
+
   for (let i = 1; i < arr.length; i++) {
     out.push(arr[i] * alpha + out[i - 1] * (1 - alpha));
   }
+
   return out;
 };
 
@@ -124,7 +126,9 @@ function indicators(candles) {
 }
 
 // ================================
-// DIRECTIONAL FALLBACK
+// LOCAL INDICATOR BIAS
+// Used as analytical context only.
+// Never issued as a fallback signal.
 // ================================
 function localBias(candles, ind) {
   const last = candles.at(-1);
@@ -205,7 +209,10 @@ function localBias(candles, ind) {
 // ================================
 export default async (request) => {
   if (request.method === "OPTIONS") {
-    return new Response("", { status: 204, headers: CORS });
+    return new Response("", {
+      status: 204,
+      headers: CORS
+    });
   }
 
   if (request.method !== "POST") {
@@ -396,41 +403,31 @@ ${ALLOWED_HOLDS.join(", ")}
     ai = JSON.parse(content);
 
   } catch (err) {
-    // Directional local fallback if OpenAI is unavailable
-    ai = {
-      direction: local.direction,
-      evidenceScore: local.confidence,
-      holdSeconds: 60,
-      reasoning: `OpenAI unavailable; local directional bias: ${local.direction}. ${local.evidence.join("; ")}`,
-      bullishEvidence: local.score > 0 ? local.evidence : [],
-      bearishEvidence: local.score < 0 ? local.evidence : [],
-      momentum: `Price change ${ind.changePct.toFixed(4)}%; ADX ${ind.adx.value.toFixed(1)}; +DI ${ind.adx.plusDI.toFixed(1)} / -DI ${ind.adx.minusDI.toFixed(1)}`,
-      trend: ind.keltner.midSlope >= 0
-        ? "Keltner midline rising"
-        : "Keltner midline falling",
-      candleStructure: `Latest candle ${
-        Number(usable.at(-1).close) >= Number(usable.at(-1).open)
-          ? "bullish"
-          : "bearish"
-      }`,
-      chartPattern: "Not reliably inferred in fallback mode",
-      detectedPatterns: [
-        ...patternData.candlestickPatterns,
-        ...patternData.chartPatterns
-      ],
-      conflicts: [],
-      riskFlags: ["Local fallback used; not an OpenAI-generated analysis"],
-      finalReasoning: local.evidence.join("; "),
+    // FAIL CLOSED:
+    // Do not return a directional local fallback when OpenAI fails.
+    return reply({
+      error: String(err.message || err),
       modelUnavailable: true,
-      modelError: String(err.message || err)
-    };
+      signal: {
+        direction: "WAIT",
+        evidenceScore: 0,
+        holdSeconds: 60,
+        reasoning: "OpenAI unavailable; no fallback direction generated."
+      },
+      analysis: {
+        riskFlags: [
+          "OpenAI unavailable; directional fallback disabled"
+        ]
+      }
+    }, 503);
   }
 
+  // Validate AI direction. Invalid directions become WAIT.
   const direction = ["CALL", "PUT", "WAIT"].includes(
     String(ai.direction || "").toUpperCase()
   )
     ? String(ai.direction).toUpperCase()
-    : local.direction;
+    : "WAIT";
 
   const holdSeconds = ALLOWED_HOLDS.includes(Number(ai.holdSeconds))
     ? Number(ai.holdSeconds)
@@ -477,7 +474,7 @@ ${ALLOWED_HOLDS.join(", ")}
       )
     },
 
-    model: ai.modelUnavailable ? "LOCAL FALLBACK" : model,
+    model: ai.modelUnavailable ? "UNAVAILABLE" : model,
     indicators: ind,
     modelUnavailable: Boolean(ai.modelUnavailable)
   };
