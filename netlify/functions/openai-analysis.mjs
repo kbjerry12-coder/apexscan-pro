@@ -1,7 +1,7 @@
-// APEXSCAN PRO — Fast Directional Market Brain
+// APEXSCAN PRO — GPT-6.2 Astra Fast Directional Market Brain
 // Netlify function: netlify/functions/openai-analysis.mjs
 // Keltner Channel + ADX + Donchian Channel
-// Directional AI — no directional fallback on AI failure
+// Responses API — no directional fallback on AI failure
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -18,8 +18,12 @@ const reply = (data, status = 200) =>
 
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
+// ==================================
+// EMA
+// ==================================
 const ema = (arr, period) => {
   if (!arr.length) return [];
+
   const alpha = 2 / (period + 1);
   const out = [arr[0]];
 
@@ -30,9 +34,9 @@ const ema = (arr, period) => {
   return out;
 };
 
-// ================================
+// ==================================
 // INDICATOR CALCULATIONS
-// ================================
+// ==================================
 function indicators(candles) {
   const close = candles.map(x => Number(x.close));
   const high = candles.map(x => Number(x.high));
@@ -44,14 +48,17 @@ function indicators(candles) {
 
   for (let i = 0; i < candles.length; i++) {
     const prevClose = i ? close[i - 1] : close[i];
+
     const up = i ? high[i] - high[i - 1] : 0;
     const down = i ? low[i - 1] - low[i] : 0;
 
-    tr.push(Math.max(
-      high[i] - low[i],
-      Math.abs(high[i] - prevClose),
-      Math.abs(low[i] - prevClose)
-    ));
+    tr.push(
+      Math.max(
+        high[i] - low[i],
+        Math.abs(high[i] - prevClose),
+        Math.abs(low[i] - prevClose)
+      )
+    );
 
     plusDM.push(up > down && up > 0 ? up : 0);
     minusDM.push(down > up && down > 0 ? down : 0);
@@ -64,6 +71,7 @@ function indicators(candles) {
   const lower = middle.map((v, i) => v - 1.5 * (atr[i] || 0));
 
   const window = Math.min(20, candles.length);
+
   const donchianHigh = Math.max(...high.slice(-window));
   const donchianLow = Math.min(...low.slice(-window));
 
@@ -82,9 +90,9 @@ function indicators(candles) {
   );
 
   const adxSeries = ema(dx, 14);
+
   const last = close.length - 1;
   const previous = Math.max(0, last - 1);
-
   const price = close[last];
 
   return {
@@ -95,10 +103,12 @@ function indicators(candles) {
       mid: middle[last],
       upper: upper[last],
       lower: lower[last],
+
       position:
         upper[last] !== lower[last]
           ? (price - lower[last]) / (upper[last] - lower[last])
           : 0,
+
       midSlope: middle[last] - middle[previous]
     },
 
@@ -112,6 +122,7 @@ function indicators(candles) {
       high: donchianHigh,
       low: donchianLow,
       range: donchianHigh - donchianLow,
+
       position:
         donchianHigh !== donchianLow
           ? (price - donchianLow) / (donchianHigh - donchianLow)
@@ -119,17 +130,18 @@ function indicators(candles) {
     },
 
     priceChange: price - close[previous],
+
     changePct: close[previous]
       ? 100 * (price - close[previous]) / close[previous]
       : 0
   };
 }
 
-// ================================
+// ==================================
 // LOCAL INDICATOR BIAS
-// Used as analytical context only.
-// Never issued as a fallback signal.
-// ================================
+// Analytical context only.
+// Never used as a fallback signal.
+// ==================================
 function localBias(candles, ind) {
   const last = candles.at(-1);
   const previous = candles.at(-2);
@@ -204,9 +216,37 @@ function localBias(candles, ind) {
   };
 }
 
-// ================================
+// ==================================
+// RESPONSES API OUTPUT EXTRACTION
+// ==================================
+function extractOutputText(data) {
+  // Handle direct output_text if present
+  if (typeof data.output_text === "string" && data.output_text.trim()) {
+    return data.output_text.trim();
+  }
+
+  // Otherwise collect text from output message items
+  const textParts = [];
+
+  for (const item of data.output || []) {
+    if (item.type !== "message") continue;
+
+    for (const content of item.content || []) {
+      if (
+        content.type === "output_text" &&
+        typeof content.text === "string"
+      ) {
+        textParts.push(content.text);
+      }
+    }
+  }
+
+  return textParts.join("\n").trim();
+}
+
+// ==================================
 // NETLIFY HANDLER
-// ================================
+// ==================================
 export default async (request) => {
   if (request.method === "OPTIONS") {
     return new Response("", {
@@ -222,7 +262,9 @@ export default async (request) => {
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
-    return reply({ error: "OPENAI_API_KEY is missing" }, 500);
+    return reply({
+      error: "OPENAI_API_KEY is missing"
+    }, 500);
   }
 
   let body;
@@ -230,7 +272,9 @@ export default async (request) => {
   try {
     body = await request.json();
   } catch {
-    return reply({ error: "Invalid JSON body" }, 400);
+    return reply({
+      error: "Invalid JSON body"
+    }, 400);
   }
 
   const inputCandles = Array.isArray(body.completedCandles)
@@ -263,14 +307,15 @@ export default async (request) => {
     candlestickPatterns: Array.isArray(body.candlePatterns)
       ? body.candlePatterns.slice(0, 12)
       : [],
+
     chartPatterns: Array.isArray(body.chartPatterns)
       ? body.chartPatterns.slice(0, 12)
       : []
   };
 
-  // ================================
-  // OPENAI MARKET ANALYSIS PROMPT
-  // ================================
+  // ==================================
+  // APEXSCAN DIRECTIONAL AI PROMPT
+  // ==================================
   const prompt = `
 You are APEXSCAN PRO's fast, decisive directional market-reading AI.
 
@@ -356,32 +401,46 @@ ${ALLOWED_HOLDS.join(", ")}
     patterns: patternData
   };
 
-  let ai = null;
-  const model = process.env.OPENAI_MODEL || "gpt-6.1-sol";
+  // ==================================
+  // MODEL SELECTION
+  // ==================================
+  const model = process.env.OPENAI_MODEL || "gpt-6.2-astra";
 
-  // ================================
-  // OPENAI REQUEST
-  // ================================
+  // ==================================
+  // OPENAI RESPONSES API REQUEST
+  // ==================================
+  let ai = null;
+
   try {
     const res = await fetch(
-      "https://api.openai.com/v1/chat/completions",
+      "https://api.openai.com/v1/responses",
       {
         method: "POST",
+
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json"
         },
+
         body: JSON.stringify({
           model,
-          temperature: 0.25,
-          max_tokens: 650,
-          response_format: {
-            type: "json_object"
-          },
-          messages: [
-            { role: "system", content: prompt },
-            { role: "user", content: JSON.stringify(userData) }
-          ]
+
+          instructions: prompt,
+
+          input: [
+            {
+              role: "user",
+              content: JSON.stringify(userData)
+            }
+          ],
+
+          max_output_tokens: 650,
+
+          text: {
+            format: {
+              type: "json_object"
+            }
+          }
         })
       }
     );
@@ -394,26 +453,29 @@ ${ALLOWED_HOLDS.join(", ")}
       );
     }
 
-    const content = data?.choices?.[0]?.message?.content;
+    const content = extractOutputText(data);
 
     if (!content) {
-      throw new Error("Empty OpenAI response");
+      throw new Error("Empty OpenAI Responses API output");
     }
 
     ai = JSON.parse(content);
 
   } catch (err) {
     // FAIL CLOSED:
-    // Do not return a directional local fallback when OpenAI fails.
+    // Never generate a fake direction when AI fails.
     return reply({
       error: String(err.message || err),
+
       modelUnavailable: true,
+
       signal: {
         direction: "WAIT",
         evidenceScore: 0,
         holdSeconds: 60,
         reasoning: "OpenAI unavailable; no fallback direction generated."
       },
+
       analysis: {
         riskFlags: [
           "OpenAI unavailable; directional fallback disabled"
@@ -422,7 +484,9 @@ ${ALLOWED_HOLDS.join(", ")}
     }, 503);
   }
 
-  // Validate AI direction. Invalid directions become WAIT.
+  // ==================================
+  // VALIDATE AI DIRECTION
+  // ==================================
   const direction = ["CALL", "PUT", "WAIT"].includes(
     String(ai.direction || "").toUpperCase()
   )
@@ -433,15 +497,22 @@ ${ALLOWED_HOLDS.join(", ")}
     ? Number(ai.holdSeconds)
     : 60;
 
+  // ==================================
+  // BUILD OUTPUT
+  // Keeps existing dashboard response shape
+  // ==================================
   const output = {
     signal: {
       direction,
+
       evidenceScore: clamp(
         Math.round(Number(ai.evidenceScore) || local.confidence),
         0,
         100
       ),
+
       holdSeconds,
+
       reasoning: String(
         ai.reasoning ||
         ai.finalReasoning ||
@@ -453,30 +524,38 @@ ${ALLOWED_HOLDS.join(", ")}
       bullishEvidence: Array.isArray(ai.bullishEvidence)
         ? ai.bullishEvidence.slice(0, 8)
         : [],
+
       bearishEvidence: Array.isArray(ai.bearishEvidence)
         ? ai.bearishEvidence.slice(0, 8)
         : [],
+
       momentum: String(ai.momentum || ""),
       trend: String(ai.trend || ""),
       candleStructure: String(ai.candleStructure || ""),
       chartPattern: String(ai.chartPattern || ""),
+
       detectedPatterns: Array.isArray(ai.detectedPatterns)
         ? ai.detectedPatterns.slice(0, 10)
         : [],
+
       conflicts: Array.isArray(ai.conflicts)
         ? ai.conflicts.slice(0, 8)
         : [],
+
       riskFlags: Array.isArray(ai.riskFlags)
         ? ai.riskFlags.slice(0, 8)
         : [],
+
       finalReasoning: String(
         ai.finalReasoning || ai.reasoning || ""
       )
     },
 
-    model: ai.modelUnavailable ? "UNAVAILABLE" : model,
+    model,
+
     indicators: ind,
-    modelUnavailable: Boolean(ai.modelUnavailable)
+
+    modelUnavailable: false
   };
 
   return reply(output);
