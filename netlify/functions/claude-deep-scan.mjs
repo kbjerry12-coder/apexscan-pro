@@ -2,7 +2,7 @@
 // Requires ANTHROPIC_API_KEY in Netlify environment variables.
 
 const ALLOWED_DIRECTIONS = new Set(["CALL", "PUT", "WAIT"]);
-const ALLOWED_HOLDS = new Set([15, 30, 60]);
+const ALLOWED_HOLDS = new Set([15, 30, 60, 120, 300]);
 
 const json = (statusCode, body) => ({
   statusCode,
@@ -154,6 +154,19 @@ async function callClaude({
   }
 }
 
+function formatDeepScan(o) {
+  const lines = [
+    `${o.direction} · Strength ${o.strength}/100 · Risk ${o.risk}`,
+    o.reason,
+    `Invalidation: ${o.invalidation}`,
+  ];
+
+  if (o.holdSeconds) lines.push(`Suggested hold: ${o.holdSeconds}s`);
+  lines.push(`Caution: ${o.caution}`);
+
+  return lines.filter(Boolean).join("\n\n");
+}
+
 export async function handler(event) {
   if (event.httpMethod === "OPTIONS") {
     return {
@@ -196,9 +209,14 @@ export async function handler(event) {
     });
   }
 
-  const candles = Array.isArray(input.recentCandles)
-    ? input.recentCandles.slice(-40)
+  // The HTML page sends `candles`; older callers send `recentCandles`.
+  const rawCandles = Array.isArray(input.recentCandles)
+    ? input.recentCandles
+    : Array.isArray(input.candles)
+    ? input.candles
     : [];
+
+  const candles = rawCandles.slice(-40);
 
   if (candles.length < 8) {
     return json(400, {
@@ -226,6 +244,18 @@ export async function handler(event) {
     });
   }
 
+  const num = (v) =>
+    v == null || v === ""
+      ? null
+      : Number.isFinite(Number(v))
+      ? Number(v)
+      : null;
+
+  const ind =
+    input.indicators && typeof input.indicators === "object"
+      ? input.indicators
+      : {};
+
   const payload = {
     pair: String(
       input.pair || input.symbol || "Unknown pair"
@@ -236,14 +266,31 @@ export async function handler(event) {
     market: String(input.market || "OTC").slice(0, 30),
 
     timeframe: String(
-      input.scanTimeframe || "30-second candles"
+      input.scanTimeframe ||
+        (num(input.timeframe) > 0
+          ? `${num(input.timeframe)}-second candles`
+          : "30-second candles")
     ).slice(0, 40),
+
+    requestedHoldSeconds: num(input.hold_seconds ?? input.holdSeconds),
+
+    indicators: {
+      macd: num(ind.macd),
+      macdSignal: num(ind.macdSignal),
+      stochasticK: num(ind.stochasticK),
+      stochasticD: num(ind.stochasticD),
+      ema9: num(ind.ema9),
+      ema21: num(ind.ema21),
+      bollinger: Array.isArray(ind.bollinger)
+        ? ind.bollinger.slice(0, 3).map(num)
+        : null,
+    },
 
     forecast: String(
       input.forecast || "next candle"
     ).slice(0, 60),
 
-    price: Number(input.price),
+    price: num(input.price) ?? safeCandles[safeCandles.length - 1].close,
 
     localDirection: ALLOWED_DIRECTIONS.has(
       input.localDirection
@@ -319,6 +366,11 @@ Analyze supplied OTC candles and indicators:
 - Indicator agreement and disagreement
 - Setup reliability
 
+Use only the indicators actually supplied (this page supplies MACD, Stochastic,
+Bollinger bands and EMA 9/21). Never invent RSI, CCI or other values that were
+not supplied. If requestedHoldSeconds is supplied, judge direction over that
+holding window.
+
 Do not blindly follow the local scanner.
 Independently analyze the supplied data.
 
@@ -340,7 +392,7 @@ Use exactly these keys:
 
 Rules:
 - strength must be an integer from 0 to 100.
-- holdSeconds must be 15, 30, 60, or null.
+- holdSeconds must be 15, 30, 60, 120, 300, or null.
 - Do not return markdown.
 - Do not add text outside the JSON.`;
 
@@ -412,7 +464,7 @@ strength (0-100 integer),
 reason,
 risk (Low/Moderate/High),
 invalidation,
-holdSeconds (15/30/60/null),
+holdSeconds (15/30/60/120/300/null),
 caution.
 
 Preserve the analysis meaning.
@@ -460,7 +512,7 @@ ${first.raw}`,
 
     const hold = Number(result.holdSeconds);
 
-    return json(200, {
+    const out = {
       direction,
       strength,
 
@@ -487,7 +539,10 @@ ${first.raw}`,
 
       model,
       repairAttempted,
-    });
+    };
+
+    // The HTML page shows `deepScan` as plain text.
+    return json(200, { ...out, deepScan: formatDeepScan(out) });
   } catch (error) {
     return json(502, {
       error:
