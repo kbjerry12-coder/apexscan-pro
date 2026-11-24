@@ -408,8 +408,8 @@ const A = {
   AUDCAD_R:{n:"AUD/CAD",symbol:"AUDCAD",venue:"real",d:5}, CHFJPY_R:{n:"CHF/JPY",symbol:"CHFJPY",venue:"real",d:3},
   GBPAUD_R:{n:"GBP/AUD",symbol:"GBPAUD",venue:"real",d:5}, GBPCAD_R:{n:"GBP/CAD",symbol:"GBPCAD",venue:"real",d:5}
 };
-// All Pocket Option time frames (seconds → label). Candles are UTC-aligned like Pocket Option's.
-const TF={5:"S5",10:"S10",15:"S15",30:"S30",60:"M1",120:"M2",180:"M3",300:"M5",600:"M10",900:"M15",1800:"M30",3600:"H1",14400:"H4",86400:"D1"};
+// Supported scan time frames only: 30 seconds, 1 minute, and 5 minutes. UTC-aligned.
+const TF={30:"S30",60:"M1",300:"M5"};
 const DURS=[5,10,15,30,60,120,180,300,600,900,1800,3600,14400];
 const durTxt=s=>s<60?`${s} sec`:s<3600?`${s/60} min`:`${s/3600} h`;
 const ENDPOINTS={candles:"/.netlify/functions/otc-candles",stream:"/.netlify/functions/otc-stream",claude:"/.netlify/functions/claude-deep-scan"};
