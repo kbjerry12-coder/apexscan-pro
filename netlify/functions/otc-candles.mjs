@@ -1,16 +1,10 @@
 // APEXSCAN PRO — historical candle endpoint
-// Netlify Function: /.netlify/functions/otc-candles
-//
-// tf=30            -> native OTCharts 30-second candles (unchanged behavior)
-// tf=60|300|900    -> built here by aggregating OTCharts 30-second candles
-//                     (the HTML page requests tf=60 and aggregates 5M/15M itself)
+// File: netlify/functions/otc-candles.mjs
 
 const UPSTREAM_TF = 30;
-const UPSTREAM_MAX = 500; // max 30s candles requested from OTCharts
+const UPSTREAM_MAX = 500;
 const SUPPORTED_TF = [30, 60, 300, 900];
 
-// Accepts time/timestamp/ts/t/date as seconds, milliseconds or ISO string,
-// and open/high/low/close or o/h/l/c.
 function toCandle(x) {
   if (!x || typeof x !== "object") return null;
 
@@ -38,7 +32,13 @@ function aggregate(src, seconds) {
     const last = out[out.length - 1];
 
     if (!last || last.time !== bucket) {
-      out.push({ time: bucket, open: c.open, high: c.high, low: c.low, close: c.close });
+      out.push({
+        time: bucket,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close
+      });
     } else {
       last.high = Math.max(last.high, c.high);
       last.low = Math.min(last.low, c.low);
@@ -46,7 +46,6 @@ function aggregate(src, seconds) {
     }
   }
 
-  // Drop a leading bucket that only has part of its candles.
   if (out.length > 1 && src[0].time % seconds !== 0) out.shift();
 
   return out;
@@ -66,12 +65,9 @@ export default async (request) => {
   const symbol = params.get("symbol") || "EURUSD_otc";
   const tf = Number(params.get("tf") || "30");
 
-  const limit = Math.min(
-    UPSTREAM_MAX,
-    Math.max(30, Number(params.get("limit") || UPSTREAM_MAX))
-  );
+  const requestedLimit = Number(params.get("limit") || UPSTREAM_MAX);
+  const limit = Math.min(UPSTREAM_MAX, Math.max(30, requestedLimit));
 
-  // Validate OTC symbol
   if (!/^[A-Z0-9#]+_otc$/.test(symbol)) {
     return Response.json({ error: "Invalid OTC symbol." }, { status: 400 });
   }
@@ -90,11 +86,9 @@ export default async (request) => {
     return Response.json({ error: "Invalid candle limit." }, { status: 400 });
   }
 
-  // Native 30s: honor `limit`. Aggregated timeframes: fetch the maximum
-  // history so the page has enough candles for its indicators.
   const upstreamLimit = tf === UPSTREAM_TF ? limit : UPSTREAM_MAX;
-
   const upstream = new URL("https://otcharts.com/v1/candles");
+
   upstream.searchParams.set("venue", "otc");
   upstream.searchParams.set("symbol", symbol);
   upstream.searchParams.set("tf", String(UPSTREAM_TF));
@@ -116,7 +110,10 @@ export default async (request) => {
       body = JSON.parse(raw);
     } catch {
       return Response.json(
-        { error: "Invalid JSON returned by OTCharts.", details: raw.slice(0, 300) },
+        {
+          error: "Invalid JSON returned by OTCharts.",
+          details: raw.slice(0, 300)
+        },
         { status: 502 }
       );
     }
@@ -157,10 +154,9 @@ export default async (request) => {
       );
     }
 
-    const candles =
-      tf === UPSTREAM_TF
-        ? normalized.slice(-limit)
-        : aggregate(normalized, tf);
+    const candles = tf === UPSTREAM_TF
+      ? normalized.slice(-limit)
+      : aggregate(normalized, tf);
 
     return Response.json(
       {
@@ -168,15 +164,12 @@ export default async (request) => {
         symbol,
         timeframe: tf,
         interval: `${tf}s`,
-
         scannerTimeframe: 30,
         scannerInterval: "30s",
-        candleSource:
-          tf === UPSTREAM_TF
-            ? "otcharts_historical_30s"
-            : `otcharts_30s_aggregated_${tf}s`,
+        candleSource: tf === UPSTREAM_TF
+          ? "otcharts_historical_30s"
+          : `otcharts_30s_aggregated_${tf}s`,
         historicalContextTimeframe: 30,
-
         count: candles.length,
         candles,
         serverTime: Date.now()
