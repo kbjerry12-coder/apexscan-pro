@@ -171,23 +171,24 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
 @media(max-width:420px){.trans-grid,.pred-details{grid-template-columns:1fr 1fr}.trans-item{padding:8px}.cw{height:400px}.rm{grid-template-columns:100px 1fr auto}.timer{font-size:16px;padding:7px 10px}.fdir{font-size:23px}.card{padding:11px}}
 @media(min-width:1100px){#transparencyCard,#formationCard{order:7}}
 
+#earlyBox[hidden]{display:none!important}
 </style>
 </head>
 <body>
 <header>
   <div class="brand">
     <svg width="44" height="44" viewBox="0 0 46 46" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><path d="M23 5 6 41h8l9-19 9 19h8z" fill="none" stroke="url(#g)" stroke-width="4" stroke-linejoin="round"/><path d="M16 33h14" stroke="url(#g)" stroke-width="4"/></svg>
-    <div><b>APEXSCAN <i>PRO</i></b><small>OTC CANDLE INTELLIGENCE</small></div>
+    <div><b>APEXSCAN <i>PRO</i></b><small>STOCK MARKET INTELLIGENCE</small></div>
   </div>
-  <div class="hr"><span class="pill" id="feedBadge"><span class="dot"></span>Feed: CONNECTING</span><span class="pill" id="clk">UTC --:--:--</span></div>
+  <div class="hr"><span class="pill" id="feedBadge"><span class="dot"></span>STOCK FEED: CONNECTING</span><span class="pill" id="clk">UTC --:--:--</span></div>
   <nav id="nav"><button class="on" data-go="top">⌂ Dashboard</button><button data-go="tlCard">Scan History</button><button data-go="pmCard">Pattern Memory</button><button data-go="slCard">Straight-Line</button><button data-go="radarCard">Momentum Radar</button><button data-go="dnaCard">Candle DNA</button><button data-go="plCard">Pattern Library</button><button data-go="fkCard">Fakeout Library</button><button data-go="perfCard">Paper Trade</button></nav>
 </header>
 
 <main class="app" id="top">
   <div class="col left">
     <section class="card" id="cCtl">
-      <div class="lbl">TRADING PAIR</div><select id="pairL"></select>
-      <div class="lbl">TIME FRAMES · MATCH POCKET OPTION</div>
+      <div class="lbl">STOCK / ETF</div><select id="pairL"></select>
+      <div class="lbl">STOCK TIME FRAMES · UTC</div>
       <div class="seg tfgrid" id="tfs"></div>
       <div class="lbl">TRADE DURATION</div>
       <select id="dur"></select>
@@ -224,15 +225,15 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
         <select id="tfT"></select>
         <select id="ctype" aria-label="Chart type"><option value="candles">Candles</option><option value="ha">Heikin Ashi (view)</option></select>
         <span class="timer" id="timer">Candle: 00:00</span>
-        <span class="pill" id="next"><span class="dot"></span>Next Scan: Auto (New Candle)</span>
+        <span class="pill" id="next"><span class="dot"></span>Confirmed Scan: New Completed Bar</span>
       </div>
       <div class="cw"><div id="chart"></div><canvas id="ov"></canvas><div id="fc">FORMING<br>CANDLE<br>(NEW)<br>↓</div></div>
       <div class="legend"><span><i style="background:rgba(34,211,238,.5)"></i>Scanned 4 candles</span><span><i style="background:var(--dn)"></i>Bearish trap (false breakout / sweep)</span><span><i style="background:var(--up)"></i>Bullish trap (wick trap / reclaim)</span><span><i style="background:#22e66b;height:3px"></i>Magnet path</span><span><i style="background:rgba(255,80,140,.5)"></i>Reaction zone</span><span><i style="background:#c084fc"></i>Candle pattern</span><span>Lower panes: DeMarker (14) · Stochastic · Williams %R (14)</span></div>
       <div class="btnrow">
-        <button class="scanbtn" id="scan4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><path d="M8 8l8 8M16 8l-8 8" opacity=".55"/></svg>SCAN 4 CANDLES</button>
+        <button class="scanbtn" id="scan4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><path d="M8 8l8 8M16 8l-8 8" opacity=".55"/></svg>SCAN CONFIRMED CANDLES</button>
         <button class="deep" id="deep">◎ OPTIONAL CLAUDE DEEP SCAN</button>
       </div>
-      <div class="earlybox" id="earlyBox">
+      <div class="earlybox" id="earlyBox" hidden>
         <div class="eleft"><div class="etitle">LIVE EARLY-SIGNAL ENGINE</div><div class="edir wait" id="earlyDir">WAIT · MONITORING</div><div class="emeta" id="earlyMeta">Watching the developing candle and short-term momentum.</div></div>
         <div class="badge" id="earlyConf">CONFLUENCE 0/5</div>
       </div>
@@ -291,7 +292,7 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
 
   <div class="col right">
     <section class="card sigc" id="sig">
-      <h3>NEXT CANDLE FORECAST</h3>
+      <h3>CONFIRMED NEXT-CANDLE SIGNAL</h3>
       <div class="fdir" id="dir">— No scan yet</div>
       <div class="fsub" id="fsub">Press SCAN 4 CANDLES or wait for the next candle.</div>
       <div class="kv">
@@ -326,14 +327,14 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
     <section class="card transparency" id="transparencyCard">
       <h3>DATA TRANSPARENCY <small>LIVE SOURCE AUDIT</small></h3>
       <div class="trans-grid">
-        <div class="trans-item"><small>Market data</small><b id="auditMarket">OTCharts · awaiting data</b></div>
-        <div class="trans-item"><small>Stream state</small><b id="auditStream">Not connected</b></div>
-        <div class="trans-item"><small>Last tick</small><b id="auditTick">—</b></div>
+        <div class="trans-item"><small>Market data</small><b id="auditMarket">Twelve Data · awaiting data</b></div>
+        <div class="trans-item"><small>Refresh state</small><b id="auditStream">Not connected</b></div>
+        <div class="trans-item"><small>Last update</small><b id="auditTick">—</b></div>
         <div class="trans-item"><small>This device</small><b id="auditDevice">Detecting…</b></div>
         <div class="trans-item"><small>Connection</small><b id="auditNetwork">Checking…</b></div>
-        <div class="trans-item"><small>Pocket Option page</small><b id="auditPO">Not connected</b></div>
+        <div class="trans-item"><small>Broker connection</small><b id="auditPO">Not connected · paper only</b></div>
       </div>
-      <div class="trans-note" id="auditNote">OTCharts history and live ticks are separate sources. This panel reports what APEXSCAN can actually verify; it does not pretend to read another browser tab.</div>
+      <div class="trans-note" id="auditNote">Twelve Data candles are polled; this app does not connect to a broker. This panel reports what APEXSCAN can actually verify; it does not pretend to read another browser tab.</div>
     </section>
     <section class="card prediction" id="formationCard">
       <div class="pred-head"><h3>NEXT-CANDLE FORMATION BRAIN</h3><span class="pill" id="formationStatus">Waiting for history</span></div>
@@ -391,28 +392,27 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
 </main>
 
 <script>
-// APEXSCAN PRO — live feed + deterministic 4-candle engine. No random candles, no random confidence.
+// APEXSCAN PRO Stock Market Edition — Twelve Data candles + deterministic confirmed 4-candle engine.
+// Preserved from the existing paper-trade model (directional win/loss accounting).
 const PAYOUT = 0.92;
-// venue "otc" = Pocket Option OTC instrument, "real" = regular market pair (no OTC suffix).
+// US-listed equities and ETF symbols supplied by Twelve Data.
 // d = price decimals; "auto" = derived from the live price (for very small quotes like LBP/USD).
 const A = {
-  EURUSD:{n:"EUR/USD OTC",symbol:"EURUSD_otc",venue:"otc",d:5}, GBPUSD:{n:"GBP/USD OTC",symbol:"GBPUSD_otc",venue:"otc",d:5},
-  EURJPY:{n:"EUR/JPY OTC",symbol:"EURJPY_otc",venue:"otc",d:3}, USDJPY:{n:"USD/JPY OTC",symbol:"USDJPY_otc",venue:"otc",d:3},
-  AUDCAD:{n:"AUD/CAD OTC",symbol:"AUDCAD_otc",venue:"otc",d:5}, XAUUSD:{n:"GOLD OTC",symbol:"XAUUSD_otc",venue:"otc",d:2},
-  AEDCNY:{n:"AED/CNY OTC",symbol:"AEDCNY_otc",venue:"otc",d:5}, CADJPY:{n:"CAD/JPY OTC",symbol:"CADJPY_otc",venue:"otc",d:3},
-  CHFJPY:{n:"CHF/JPY OTC",symbol:"CHFJPY_otc",venue:"otc",d:3}, CHFNOK:{n:"CHF/NOK OTC",symbol:"CHFNOK_otc",venue:"otc",d:4},
-  EURCHF:{n:"EUR/CHF OTC",symbol:"EURCHF_otc",venue:"otc",d:5}, EURNZD:{n:"EUR/NZD OTC",symbol:"EURNZD_otc",venue:"otc",d:5},
-  GBPJPY:{n:"GBP/JPY OTC",symbol:"GBPJPY_otc",venue:"otc",d:3}, LBPUSD:{n:"LBP/USD OTC",symbol:"LBPUSD_otc",venue:"otc",d:"auto"},
-  QARCNY:{n:"QAR/CNY OTC",symbol:"QARCNY_otc",venue:"otc",d:5}, TNDUSD:{n:"TND/USD OTC",symbol:"TNDUSD_otc",venue:"otc",d:5},
-  USDBRL:{n:"USD/BRL OTC",symbol:"USDBRL_otc",venue:"otc",d:4},
-  AUDCAD_R:{n:"AUD/CAD",symbol:"AUDCAD",venue:"real",d:5}, CHFJPY_R:{n:"CHF/JPY",symbol:"CHFJPY",venue:"real",d:3},
-  GBPAUD_R:{n:"GBP/AUD",symbol:"GBPAUD",venue:"real",d:5}, GBPCAD_R:{n:"GBP/CAD",symbol:"GBPCAD",venue:"real",d:5}
+  AAPL:{n:"Apple (AAPL)",symbol:"AAPL",venue:"stocks",d:2},
+  TSLA:{n:"Tesla (TSLA)",symbol:"TSLA",venue:"stocks",d:2},
+  NVDA:{n:"NVIDIA (NVDA)",symbol:"NVDA",venue:"stocks",d:2},
+  MSFT:{n:"Microsoft (MSFT)",symbol:"MSFT",venue:"stocks",d:2},
+  AMZN:{n:"Amazon (AMZN)",symbol:"AMZN",venue:"stocks",d:2},
+  META:{n:"Meta Platforms (META)",symbol:"META",venue:"stocks",d:2},
+  SPY:{n:"S&P 500 ETF (SPY)",symbol:"SPY",venue:"stocks",d:2},
+  GOOGL:{n:"Alphabet (GOOGL)",symbol:"GOOGL",venue:"stocks",d:2}
 };
-// Supported scan time frames only: 30 seconds, 1 minute, and 5 minutes. UTC-aligned.
-const TF={30:"S30",60:"M1",300:"M5"};
+// Stock-market scan time frames. Twelve Data supplies native 1-minute and 5-minute bars.
+const TF={60:"M1",300:"M5"};
 const DURS=[5,10,15,30,60,120,180,300,600,900,1800,3600,14400];
 const durTxt=s=>s<60?`${s} sec`:s<3600?`${s/60} min`:`${s/3600} h`;
-const ENDPOINTS={candles:"/.netlify/functions/otc-candles",stream:"/api/otc-stream",claude:"/.netlify/functions/claude-deep-scan"};
+const MARKET_MODE="stocks",DATA_PROVIDER="Twelve Data";
+const ENDPOINTS={candles:"/.netlify/functions/stock-candles",stream:"/api/otc-stream",claude:"/.netlify/functions/claude-deep-scan"};
 
 // ==ENGINE== (pure functions; no DOM)
 const LOOK=8;            // candles used to define the "prior range" a trap must break
@@ -787,9 +787,9 @@ function runEngine(rows,tf,nowSec,ext={}){
 }
 // ==/ENGINE==
 
-let pair="EURUSD",tf=60,needFit=true,hold=60,auto=true,candles=[],memRows=[],ind=null,trade=null,scanBusy=false,sig=null,FC=null,chartTraps=[],plines=[],timeline=[],W=0,L=0,pnl=0,log=[],lastFeedAt=0,deepBusy=false,feedBusy=false,liveSource=null,streamPair=null,streamRetryTimer=null,streamRetryAttempt=0,streamWantedPair=null,streamGeneration=0,lastFormingTime=0,formingMarkerUntil=0,lastAutoStamp=0,lastPaperEntryStamp=0,lastFormationKey=0,lastTickAt=0,historyLoaded=false,memBase={},lastMemSave=0,dnaSel=3,feedOk=false,earlyLockedStamp=0,earlyCandidate=null,earlyHistory=[],tickBuf=[],radarTrail=[],RADAR=null,straightMode=(()=>{try{return localStorage.getItem("apex_straight")!=="0";}catch(e){return true;}})(),
+let pair="AAPL",tf=60,needFit=true,hold=60,auto=true,candles=[],memRows=[],ind=null,trade=null,scanBusy=false,sig=null,FC=null,chartTraps=[],plines=[],timeline=[],W=0,L=0,pnl=0,log=[],lastFeedAt=0,deepBusy=false,feedBusy=false,liveSource=null,streamPair=null,streamRetryTimer=null,streamRetryAttempt=0,streamWantedPair=null,streamGeneration=0,lastFormingTime=0,formingMarkerUntil=0,lastAutoStamp=0,lastPaperEntryStamp=0,lastFormationKey=0,lastTickAt=0,historyLoaded=false,memBase={},lastMemSave=0,dnaSel=3,feedOk=false,earlyLockedStamp=0,earlyCandidate=null,earlyHistory=[],tickBuf=[],radarTrail=[],RADAR=null,straightMode=(()=>{try{return localStorage.getItem("apex_straight")!=="0";}catch(e){return true;}})(),
  baseRes=30,clockOffset=0,clockSamples=[],chartType="candles",feedNote="";
-// ---- Clock sync: Pocket Option candles close on server time. Estimate the feed's clock offset from tick timestamps. ----
+// Stock candle timestamps are UTC-normalized by the data endpoint.
 const nowMs=()=>Date.now()+clockOffset,nowS=()=>nowMs()/1000;
 function noteClock(tickMs){const off=tickMs-Date.now();if(!Number.isFinite(off)||Math.abs(off)>120000)return;clockSamples.push(off);if(clockSamples.length>60)clockSamples.shift();const so=[...clockSamples].sort((a,b)=>a-b);clockOffset=so[Math.floor(so.length/2)];}
 const holdSec=()=>hold==="auto"?tf:hold;
@@ -833,28 +833,36 @@ function memMerge(p,rows){const base=memBase[p]||loadMem(p),m=new Map(base.map(c
 function aggregateCandles(src,seconds,base=baseRes){if(seconds<=base)return src.slice();const out=[];for(const c of src){const bucket=Math.floor(c.time/seconds)*seconds,last=out[out.length-1];if(!last||last.time!==bucket)out.push({time:bucket,open:c.open,high:c.high,low:c.low,close:c.close});else{last.high=Math.max(last.high,c.high);last.low=Math.min(last.low,c.low);last.close=c.close;}}return out;}
 function contiguousTail(rows,step,max){let i=rows.length-1;while(i>0&&rows.length-i<max&&rows[i].time-rows[i-1].time<=step*3)i--;return rows.slice(i);}
 function renderCandles(){if(!candles.length)return;const dg=digits();cs.applyOptions({priceFormat:{type:"price",precision:dg,minMove:10**-dg}});const ts=chart.timeScale();let vr=null;try{vr=needFit?null:ts.getVisibleLogicalRange();}catch(e){}cs.setData(chartType==="ha"?heikinAshi(candles):candles);ind=paint(true);try{if(needFit){const n=candles.length,span=$("chart").clientWidth<600?20:55;ts.setVisibleLogicalRange({from:n-span,to:n+10});needFit=false;}else if(vr)ts.setVisibleLogicalRange(vr);}catch(e){}}
-// Heikin Ashi is a VIEW only (matches a Pocket Option chart set to Heikin Ashi). The engine always reads real OHLC candles.
+// Heikin Ashi is a VIEW only. The engine always reads real OHLC candles.
 function heikinAshi(rows){const out=[];let po=null,pc=null;for(const c of rows){const hc=(c.open+c.high+c.low+c.close)/4,ho=po==null?(c.open+c.close)/2:(po+pc)/2;out.push({time:c.time,open:ho,high:Math.max(c.high,ho,hc),low:Math.min(c.low,ho,hc),close:hc});po=ho;pc=hc;}return out;}
 function spacingOf(rows){if(rows.length<3)return 0;const d=[];for(let i=1;i<rows.length;i++)d.push(rows[i].time-rows[i-1].time);d.sort((a,b)=>a-b);return d[Math.floor(d.length/2)];}
-async function fetchLiveCandles(tfReq){const {symbol,venue}=A[pair];const url=`${ENDPOINTS.candles}?symbol=${encodeURIComponent(symbol)}&venue=${encodeURIComponent(venue||"otc")}&tf=${tfReq}&limit=500`;const res=await fetch(url,{cache:"no-store"});if(!res.ok)throw new Error(`Candle endpoint HTTP ${res.status}`);const json=await res.json();const parsed=normalizeCandleRows(json);if(parsed.length<8)throw new Error(`Feed returned only ${parsed.length} usable candles`);return{rows:parsed,spacing:spacingOf(parsed)};}
+async function fetchLiveCandles(tfReq){
+ const {symbol}=A[pair];
+ if(![60,300].includes(tfReq))throw new Error("Stock charts support 1-minute and 5-minute candles only.");
+ const url=`${ENDPOINTS.candles}?symbol=${encodeURIComponent(symbol)}&tf=${tfReq}&limit=500`;
+ const res=await fetch(url,{cache:"no-store"});
+ const json=await res.json().catch(()=>({}));
+ if(!res.ok||json.success===false)throw new Error(json.error||`Twelve Data candle endpoint HTTP ${res.status}`);
+ const parsed=normalizeCandleRows(json);
+ if(parsed.length<20)throw new Error(`Twelve Data returned only ${parsed.length} usable candles for ${symbol}`);
+ return{rows:parsed,spacing:spacingOf(parsed)};
+}
 function processFeedRows(base){
  if(!base?.length)return;
  const all=aggregateCandles(base,tf),view=contiguousTail(all,tf,300);
  const need=LOOK+12;
- if(view.length<need){candles=view;memRows=all;renderCandles();historyLoaded=true;updateDataAudit();
-  if(liveSource||lastTickAt){lastFeedAt=Date.now();setFeedState(true,"OTCHARTS · WARMING UP");}
-  setStatus(`Building ${TF[tf]} candles from live ticks · ${view.length}/${need} — scans start automatically`,"busy");return;}
- const last=view.at(-1),sourceAge=Math.max(0,nowS()-base.at(-1).time-baseRes);
+ if(view.length<need){candles=view;memRows=all;renderCandles();historyLoaded=true;updateDataAudit();setStatus(`Loading ${TF[tf]} stock history · ${view.length}/${need} candles needed before scanning`,"busy");return;}
+ const last=view.at(-1),sourceAge=Math.max(0,nowS()-base.at(-1).time-baseRes),maxAge=Math.max(120,tf*1.5);
  if(last.time!==lastFormingTime){if(lastFormingTime)formingMarkerUntil=Date.now()+5000;lastFormingTime=last.time;}
  memRows=all;candles=view;renderCandles();historyLoaded=true;updateDataAudit();updateFormationForecast();
- if(sourceAge>45){setFeedState(false,"OTCHARTS · STALE");setStatus(`Feed stale (${Math.round(sourceAge)}s)`,"bad");return;}
- lastFeedAt=Date.now();setFeedState(true,liveSource?"OTCHARTS · LIVE STREAM":"OTCHARTS · HISTORY");
+ if(sourceAge>maxAge){setFeedState(false,"STOCK DATA · STALE");setStatus(`Twelve Data is stale (${Math.round(sourceAge)}s since the latest ${TF[tf]} bar). Confirmed scans are blocked.`,"bad");return;}
+ lastFeedAt=Date.now();setFeedState(true,"TWELVE DATA · "+(sourceAge<tf?"CURRENT BAR":"HISTORY"));
  try{RADAR=computeRadar();}catch(e){RADAR=null;}
- evaluateEarlySignal();resolveTimeline();settleTrade();
+ resolveTimeline();settleTrade(); // Confirmed-only mode: no developing-candle/early callouts.
  if(auto&&!scanBusy&&last.time!==lastAutoStamp){lastAutoStamp=last.time;doScan("AUTO");}
 }
 // ---------- Live ticks → candles ----------
-// OTCharts tick payloads vary, so accept the common shapes: {price,time}, {p,t}, {bid,ask}, candle-like {close,time}, arrays, {ticks:[...]}, {data:{...}}.
+// Tick payload parsing retained for compatibility; stock edition uses candle polling: {price,time}, {p,t}, {bid,ask}, candle-like {close,time}, arrays, {ticks:[...]}, {data:{...}}.
 let tickRenderTimer=null;
 function tickList(d){if(Array.isArray(d))return d;if(Array.isArray(d?.ticks))return d.ticks;if(Array.isArray(d?.data))return d.data;if(d?.data&&typeof d.data==="object")return[{symbol:d.symbol,...d.data}];return[d];}
 function tickPrice(x){const num=v=>v==null||v===""?NaN:Number(v);const bid=num(x.bid),ask=num(x.ask);for(const v of [x.price,x.p,x.value,x.last,x.rate,x.quote,x.close,x.c]){const n=num(v);if(Number.isFinite(n)&&n>0)return n;}if(Number.isFinite(bid)&&Number.isFinite(ask))return(bid+ask)/2;if(Number.isFinite(bid))return bid;if(Number.isFinite(ask))return ask;return NaN;}
@@ -972,13 +980,13 @@ function openLiveStream(forPair){
 // ---------- Transparent data audit + local formation predictor ----------
 function updateDataAudit(){
  const set=(id,v)=>{const e=$(id);if(e)e.textContent=v;};
- set("auditMarket",historyLoaded?"OTCharts · history loaded":"OTCharts · waiting for history");
- set("auditStream",liveSource?(streamPair===pair?"Connected · "+A[pair].symbol:"Connected · other pair"):(streamPair?"Switching pair":"Disconnected"));
- set("auditTick",lastTickAt?`${Math.max(0,Math.round((Date.now()-lastTickAt)/1000))}s ago`:(historyLoaded?"No tick received yet":"—"));
+ set("auditMarket",historyLoaded?"Twelve Data · US stocks / ETF":"Twelve Data · waiting for history");
+ set("auditStream",historyLoaded?"Candle polling · every 15s":"Waiting for candle history");
+ set("auditTick",lastFeedAt?`${Math.max(0,Math.round((Date.now()-lastFeedAt)/1000))}s ago`:(historyLoaded?"No provider update yet":"—"));
  const ua=navigator.userAgent||"";set("auditDevice",/iphone|ipad|android|mobile/i.test(ua)?"Mobile browser":"Laptop / desktop browser");
  set("auditNetwork",navigator.onLine?"Online":"Offline");
- set("auditPO","Not connected · browser-isolated");
- const note=$("auditNote");if(note)note.textContent=(liveSource?"Verified: OTCharts EventSource is open for the selected pair. Tick age is shown separately; a connected socket alone does not prove fresh prices. ":"OTCharts history can load without a live stream. APEXSCAN will show a disconnected state until the stream confirms. ")+"Your Lite plan has one stream slot shared across devices, so opening APEXSCAN on another device may replace this connection. Pocket Option's separate tab is not readable by this web page.";
+ set("auditPO","Not connected · paper trading only");
+ const note=$("auditNote");if(note)note.textContent="Stock candles are requested from Twelve Data and refreshed by polling. The dashboard does not claim a direct broker connection or tick-level feed. A stale provider response blocks confirmed signals. US equity regular-session hours apply; after-hours and market-closed periods may have delayed or unchanged candles.";
 }
 function candleFeatures(c){const r=Math.max(c.high-c.low,1e-12),body=Math.abs(c.close-c.open)/r;return [c.close>c.open?1:c.close<c.open?-1:0,body,(c.high-Math.max(c.open,c.close))/r,(Math.min(c.open,c.close)-c.low)/r,(c.close-c.low)/r];}
 function formationClass(c){const f=candleFeatures(c),[dir,body,upper,lower,loc]=f;if(body<.16)return "Doji / indecision";if(lower>.48&&upper<.22)return "Lower-wick rejection";if(upper>.48&&lower<.22)return "Upper-wick rejection";if(body>.72)return dir>0?"Strong bullish body":"Strong bearish body";if(dir>0&&loc>.72)return "Bullish close near high";if(dir<0&&loc<.28)return "Bearish close near low";return "Mixed / spinning candle";}
@@ -1115,20 +1123,24 @@ function renderRadar(){
  else al.style.display="none";
 }
 
-async function refreshFeed(){if(feedBusy)return;feedBusy=true;if(!navigator.onLine){setFeedState(false,"Feed: OFFLINE");feedBusy=false;return;}
- const reqPair=pair;
+async function refreshFeed(){
+ if(feedBusy)return;
+ feedBusy=true;
+ if(!navigator.onLine){setFeedState(false,"STOCK FEED · OFFLINE");feedBusy=false;return;}
+ const reqPair=pair,reqTf=tf;
  try{
-  const reqTf=tf;let got=null,err=null;
-  // 1) ask the feed for the selected time frame directly; 2) for S30+ fall back to 30s history and build up.
-  try{const r=await fetchLiveCandles(reqTf);if(r.spacing&&r.spacing<=reqTf&&reqTf%r.spacing===0)got=r;}catch(e){err=e;}
-  if(!got&&reqTf>=30&&reqTf%30===0){try{const r=await fetchLiveCandles(30);if(r.spacing&&r.spacing<=30)got=r;}catch(e){err=e;}}
+  const got=await fetchLiveCandles(reqTf);
   if(reqPair!==pair||reqTf!==tf)return;
-  if(got){baseRes=got.spacing;feedNote=got.spacing===reqTf?`native ${TF[reqTf]} history`:`${TF[got.spacing]||got.spacing+"s"} history built up to ${TF[reqTf]}`;processFeedRows(memMerge(storeKey(),got.rows));}
-  else{baseRes=reqTf;feedNote=`no ${TF[reqTf]} history from the feed — building candles from live ticks`;const base=memBase[storeKey()]||loadMem(storeKey());memBase[storeKey()]=base;if(base.length)processFeedRows(base);else setStatus(`Waiting for live ticks to build ${TF[reqTf]} candles…`,"busy");}
-  if(streamWantedPair!==reqPair)openLiveStream(reqPair);
+  baseRes=got.spacing||reqTf;
+  feedNote=`${DATA_PROVIDER} · native ${TF[reqTf]} candles · polled`;
+  processFeedRows(memMerge(storeKey(),got.rows));
   updateSyncNote();
- }catch(e){setFeedState(false,"Feed: ERROR");setStatus("Historical candle load failed — "+e.message,"bad");
-  if(trade){const pending=log.find(x=>x.res==="Pending");if(pending)pending.res="Void";trade=null;drawStats();}
+ }catch(e){
+  if(reqPair===pair&&reqTf===tf){
+   setFeedState(false,"STOCK DATA · ERROR");
+   setStatus("Stock candle load failed — "+e.message,"bad");
+   if(trade){const pending=log.find(x=>x.res==="Pending");if(pending)pending.res="Void";trade=null;drawStats();}
+  }
  }finally{feedBusy=false;}
 }
 
@@ -1148,7 +1160,7 @@ async function doScan(kind){
  if(!feedOk||!memRows.length||Date.now()-lastFeedAt>45000){setStatus("Scan blocked — live feed is not fresh","bad");return;}
  let f;try{RADAR=computeRadar();f=runEngine(memRows,tf,nowS(),{radar:RADAR,straight:straightMode});}catch(e){setStatus(e.message,"bad");return;}
  scanBusy=true;$("scan4").disabled=true;f.pair=pair;f.kind=kind;f.at=Date.now();
- setStatus(`Scanning 4 candles with internal engine ${hm(f.scanTimes[0])} → ${hm(f.scanTimes[3])}…`,"busy");
+ setStatus(`Scanning 4 completed stock candles with internal engine ${hm(f.scanTimes[0])} → ${hm(f.scanTimes[3])}…`,"busy");
  FC=f;chartTraps=[];for(let i=LOOK+1;i<candles.length;i++){if(candles[i].time>=f.forecastTime)break;chartTraps.push(...trapsAt(candles,i));}
  await animateEngines();engineNotes(f);applyPriceLines();try{cs.applyOptions({});}catch(e){}
  sig={dir:f.dir,engineOnly:true};showForecast();renderPanels();
@@ -1161,7 +1173,7 @@ async function doScan(kind){
    const hs=holdSec();trade={call:f.dir>0,entry:candles.at(-1).close,left:hs,stake:+$("amt").value||5,pair,tf,hold:hs,entryTime,targetTime:entryTime+hs};
    log.unshift({call:trade.call,pair,tf,res:"Pending",entry:trade.entry,hold:hs,stake:trade.stake,stamp:f.forecastTime,kind});
   }
-  setStatus("Scan complete · 4 candles · Internal engine only","ok");drawStats();
+  setStatus("Confirmed scan complete · 4 completed stock candles · Internal engine","ok");drawStats();
  }
  scanBusy=false;$("scan4").disabled=false;
 }
@@ -1359,17 +1371,17 @@ function summarizeFC(f){return{direction:f.dir>0?"UP":f.dir<0?"DOWN":"WAIT",evid
  reversePsychology:f.sk?{candle:f.sk.q,why:f.sk.why,verdict:f.sk.verdict,read:f.sk.text}:null,
  patternMemory:{matches:f.pm.n,up:f.pm.up,down:f.pm.down},evidence:f.parts};}
 
-async function runDeepScan(){if(deepBusy||candles.length<8)return;deepBusy=true;$("deep").disabled=true;$("deep").textContent="CLAUDE ANALYZING…";try{const recent=candles.slice(-40),formationBrain={direction:$("formationDir").textContent,summary:$("formationSummary").textContent,pattern:$("formationType").textContent,samples:Number($("formationSamples").textContent)||0,wickPressure:$("formationWicks").textContent,priorMovement:$("formationMomentum").textContent,method:"Nearest historical analogs of the last 3 completed candles; informational estimate, not calibrated probability."},body={symbol:A[pair].symbol,pair,market:"OTC",scanTimeframe:TF[tf],forecast:"next candle",price:recent.at(-1).close,formationBrain,fourCandleScan:FC?summarizeFC(FC):null,recentCandles:recent.map(({time,open,high,low,close})=>({time,open,high,low,close}))};const res=await fetch(ENDPOINTS.claude,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await res.json().catch(()=>({error:"Claude returned invalid JSON"}));if(!res.ok)throw new Error(j.error||`Claude endpoint HTTP ${res.status}`);const result=j.deepScan||j.analysis||j;const textOut=typeof result==="string"?result:JSON.stringify(result,null,2);$("aiDet").hidden=false;$("aiDet").open=true;$("aiDet").querySelector("summary").textContent="Claude deep scan";$("aiBody").innerHTML=`<div style="white-space:pre-wrap">${escapeHtml(textOut)}</div>`;}catch(e){$("aiDet").hidden=false;$("aiDet").open=true;$("aiBody").innerHTML=`<div class="dn2">${escapeHtml(e.message)}. Check the Claude Netlify function and API key.</div>`;}finally{deepBusy=false;$("deep").disabled=false;$("deep").textContent="◎ OPTIONAL CLAUDE DEEP SCAN";}}
-function tick(){updateDataAudit();try{renderRadar();}catch(e){}if(feedOk&&lastFeedAt&&Date.now()-lastFeedAt>45000){feedOk=false;setFeedState(false,"STREAM STALE");setStatus("No live price tick received for 45 seconds","bad");}const now=Math.floor(nowS()),r=tf-now%tf,mmss=fmtLeft(r);$("timer").textContent=`${TF[tf]} · ${mmss}`;$("cnt").textContent=mmss;if(now%15===0)updateSyncNote();$("cbar").style.width=((tf-r)/tf*100)+"%";$("clk").textContent="UTC "+new Date().toISOString().slice(11,19);
+async function runDeepScan(){if(deepBusy||candles.length<8)return;deepBusy=true;$("deep").disabled=true;$("deep").textContent="CLAUDE ANALYZING…";try{const recent=candles.slice(-40),formationBrain={direction:$("formationDir").textContent,summary:$("formationSummary").textContent,pattern:$("formationType").textContent,samples:Number($("formationSamples").textContent)||0,wickPressure:$("formationWicks").textContent,priorMovement:$("formationMomentum").textContent,method:"Nearest historical analogs of the last 3 completed candles; informational estimate, not calibrated probability."},body={symbol:A[pair].symbol,pair,market:"US STOCK / ETF",scanTimeframe:TF[tf],forecast:"next candle",price:recent.at(-1).close,formationBrain,fourCandleScan:FC?summarizeFC(FC):null,recentCandles:recent.map(({time,open,high,low,close})=>({time,open,high,low,close}))};const res=await fetch(ENDPOINTS.claude,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await res.json().catch(()=>({error:"Claude returned invalid JSON"}));if(!res.ok)throw new Error(j.error||`Claude endpoint HTTP ${res.status}`);const result=j.deepScan||j.analysis||j;const textOut=typeof result==="string"?result:JSON.stringify(result,null,2);$("aiDet").hidden=false;$("aiDet").open=true;$("aiDet").querySelector("summary").textContent="Claude deep scan";$("aiBody").innerHTML=`<div style="white-space:pre-wrap">${escapeHtml(textOut)}</div>`;}catch(e){$("aiDet").hidden=false;$("aiDet").open=true;$("aiBody").innerHTML=`<div class="dn2">${escapeHtml(e.message)}. Check the Claude Netlify function and API key.</div>`;}finally{deepBusy=false;$("deep").disabled=false;$("deep").textContent="◎ OPTIONAL CLAUDE DEEP SCAN";}}
+function tick(){updateDataAudit();try{renderRadar();}catch(e){}if(feedOk&&lastFeedAt&&Date.now()-lastFeedAt>45000){feedOk=false;setFeedState(false,"STOCK DATA · STALE");setStatus("No fresh provider update received for 45 seconds; confirmed scans are blocked","bad");}const now=Math.floor(nowS()),r=tf-now%tf,mmss=fmtLeft(r);$("timer").textContent=`${TF[tf]} · ${mmss}`;$("cnt").textContent=mmss;if(now%15===0)updateSyncNote();$("cbar").style.width=((tf-r)/tf*100)+"%";$("clk").textContent="UTC "+new Date().toISOString().slice(11,19);
  if(trade){trade.left=Math.max(0,trade.entryTime+trade.hold-now);drawStats();settleTrade();}
  const lc=candles.at(-1),fc=$("fc"),wrap=$("chart").parentElement;if(lc&&wrap){const x=chart.timeScale().timeToCoordinate(lc.time),y=cs.priceToCoordinate(lc.close);if(x!=null&&y!=null&&Date.now()<formingMarkerUntil){fc.style.display="block";fc.style.left=Math.max(58,Math.min(wrap.clientWidth-58,x))+"px";fc.style.top=Math.max(8,y-66)+"px";}else fc.style.display="none";}else fc.style.display="none";}
 function buildTfUi(){$("tfs").innerHTML=Object.entries(TF).map(([v,n])=>`<button data-v="${v}"${+v===tf?' class="on"':""}>${n}</button>`).join("");$("tfT").innerHTML=Object.entries(TF).map(([v,n])=>`<option value="${v}">${n}</option>`).join("");$("tfT").value=String(tf);
  $("dur").innerHTML=`<option value="auto">Match time frame (1 candle)</option>`+DURS.map(v=>`<option value="${v}">${durTxt(v)}</option>`).join("");$("dur").value=String(hold);$("ctype").value=chartType;}
-function updateSyncNote(){const el=$("syncNote");if(!el)return;const off=clockOffset/1000,synced=clockSamples.length>=5;
- el.innerHTML=`<b>Pocket Option sync:</b> select <b>${TF[tf]}</b>${chartType==="ha"?" · Heikin Ashi":" · Candles"} on Pocket Option. Candles close on the same UTC boundaries${tf>=14400?" (H4/D1 use UTC; if your Pocket Option time zone isn't UTC its H4/D1 candles can start at different hours)":""}. `+
-  (synced?`Clock synced to the feed (${off>=0?"+":""}${off.toFixed(1)}s vs this device).`:`Clock sync starts with the first live ticks.`)+(feedNote?` Data: ${feedNote}.`:"")+` Expiry: ${durTxt(holdSec())}${hold==="auto"?" (1 candle)":""}.`;}
-function fill(sel){const opt=([k,v])=>`<option value="${k}">${v.n}</option>`,E=Object.entries(A);sel.innerHTML=`<optgroup label="OTC pairs">${E.filter(([,v])=>v.venue==="otc").map(opt).join("")}</optgroup><optgroup label="Market pairs (non-OTC)">${E.filter(([,v])=>v.venue!=="otc").map(opt).join("")}</optgroup>`;}fill($("pairL"));fill($("pairT"));
-function resetScan({reloadHistory=true,keepStream=false}={}){FC=null;sig=null;if(!keepStream){tickBuf=[];clockSamples=[];clockOffset=0;}radarTrail=[];RADAR=null;$("rTrail").setAttribute("points","");$("rAlert").style.display="none";$("dnaT").innerHTML='<tbody><tr><td class="note">No scan yet</td></tr></tbody>';$("dnaSvg").innerHTML="";$("dnaSub").textContent="";$("dnaMom").textContent="Momentum read appears after the first scan.";$("dnaPats").innerHTML='<span class="note">No scan yet</span>';$("plBody").innerHTML='<tr><td colspan="4" class="note">No scan yet</td></tr>';$("slState").textContent="WAITING FOR SCAN";$("slState").className="slstate wt";$("slGrade").textContent="—";$("slGrade").className="slgrade C";$("slSvg").innerHTML="";$("slChecks").innerHTML="";$("slQ").style.width=$("slC").style.width="0%";$("slQv").textContent=$("slCv").textContent="—";$("slRP").innerHTML='<span class="tag">REVERSE PSYCHOLOGY</span>No sketchy candles yet.';lastFormationKey=0;earlyReset();chartTraps=[];applyPriceLines();candles=[];memRows=[];trade=null;log=[];lastAutoStamp=0;lastFormingTime=0;formingMarkerUntil=0;needFit=true;engines("");
+function updateSyncNote(){const el=$("syncNote");if(!el)return;
+ el.innerHTML=`<b>Stock candle sync:</b> Twelve Data <b>${TF[tf]}</b>${chartType==="ha"?" · Heikin Ashi view":" · Candles"}. Signals are evaluated only from completed bars. `+
+  `Device UTC clock: ${new Date().toISOString().slice(11,19)}. Twelve Data timestamps are normalized to UTC; polling does not provide a broker tick clock.`+(feedNote?` Data: ${feedNote}.`:"")+` Paper hold: ${durTxt(holdSec())}${hold==="auto"?" (1 candle)":""}.`;}
+function fill(sel){const opt=([k,v])=>`<option value="${k}">${v.n}</option>`;sel.innerHTML=`<optgroup label="US STOCKS & ETF">${Object.entries(A).map(opt).join("")}</optgroup>`;}fill($("pairL"));fill($("pairT"));
+function resetScan({reloadHistory=true,keepStream=false}={}){FC=null;sig=null;feedOk=false;lastFeedAt=0;historyLoaded=false;if(!keepStream){tickBuf=[];clockSamples=[];clockOffset=0;}radarTrail=[];RADAR=null;$("rTrail").setAttribute("points","");$("rAlert").style.display="none";$("dnaT").innerHTML='<tbody><tr><td class="note">No scan yet</td></tr></tbody>';$("dnaSvg").innerHTML="";$("dnaSub").textContent="";$("dnaMom").textContent="Momentum read appears after the first scan.";$("dnaPats").innerHTML='<span class="note">No scan yet</span>';$("plBody").innerHTML='<tr><td colspan="4" class="note">No scan yet</td></tr>';$("slState").textContent="WAITING FOR SCAN";$("slState").className="slstate wt";$("slGrade").textContent="—";$("slGrade").className="slgrade C";$("slSvg").innerHTML="";$("slChecks").innerHTML="";$("slQ").style.width=$("slC").style.width="0%";$("slQv").textContent=$("slCv").textContent="—";$("slRP").innerHTML='<span class="tag">REVERSE PSYCHOLOGY</span>No sketchy candles yet.';lastFormationKey=0;earlyReset();chartTraps=[];applyPriceLines();candles=[];memRows=[];trade=null;log=[];lastAutoStamp=0;lastFormingTime=0;formingMarkerUntil=0;needFit=true;engines("");
  if(reloadHistory&&!keepStream)closeLiveStream();
  ENG.concat("en_ai").forEach(id=>{const sp=$(id).querySelector("span");if(sp){sp.querySelector("small")?.remove();$(id).innerHTML=sp.innerHTML;}});
  $("dir").className="fdir";$("dir").textContent="— No scan yet";$("sig").className="card sigc";["k_conf","k_score","k_mem","k_risk","k_mag","k_zone","k_ai"].forEach(id=>$(id).textContent="—");
@@ -1381,20 +1393,20 @@ function setTf(v){tf=+v;$("tfT").value=String(tf);[...$("tfs").children].forEach
 $("pairL").onchange=$("pairT").onchange=e=>setPair(e.target.value);$("tfs").onclick=e=>{const b=e.target.closest("button[data-v]");if(b)setTf(b.dataset.v);};$("tfT").onchange=e=>setTf(e.target.value);$("dur").onchange=e=>{hold=e.target.value==="auto"?"auto":+e.target.value;savePrefs();drawStats();updateSyncNote();};
 $("ctype").onchange=e=>{chartType=e.target.value;savePrefs();renderCandles();updateSyncNote();};
 $("mn").onclick=()=>$("amt").value=Math.max(1,(+$("amt").value||5)-1);$("pl").onclick=()=>$("amt").value=(+$("amt").value||5)+1;
-$("auto").onclick=e=>{auto=!auto;e.currentTarget.setAttribute("aria-pressed",auto);$("next").lastChild.textContent=auto?"Next Scan: Auto (New Candle)":"Auto scan off";};
+$("auto").onclick=e=>{auto=!auto;e.currentTarget.setAttribute("aria-pressed",auto);$("next").lastChild.textContent=auto?"Confirmed Scan: New Completed Bar":"Auto scan off";};
 $("slMode").setAttribute("aria-pressed",straightMode);
 $("slMode").onclick=e=>{straightMode=!straightMode;e.currentTarget.setAttribute("aria-pressed",straightMode);try{localStorage.setItem("apex_straight",straightMode?"1":"0");}catch(_){}
  if(feedOk&&!scanBusy){lastAutoStamp=candles.at(-1)?.time||0;doScan("MANUAL");}};
 $("scan4").onclick=()=>doScan("MANUAL");$("deep").onclick=runDeepScan;
 $("nav").onclick=e=>{const b=e.target.closest("button");if(!b)return;[...$("nav").children].forEach(x=>x.classList.toggle("on",x===b));const t=$(b.dataset.go);if(t)t.scrollIntoView({behavior:"smooth",block:"start"});};
-window.addEventListener("online",()=>{if(streamWantedPair&&(!liveSource||liveSource.readyState===EventSource.CLOSED)){const p=streamWantedPair,g=streamGeneration;clearStreamRetry();connectLiveStream(p,g);}});
-window.addEventListener("offline",()=>{if(streamWantedPair){clearStreamRetry();setFeedState(false,"NETWORK OFFLINE");setStatus("Network offline · live stream will reconnect when internet returns","bad");updateDataAudit();}});
+window.addEventListener("online",()=>{refreshFeed();});
+window.addEventListener("offline",()=>{setFeedState(false,"NETWORK OFFLINE");setStatus("Network offline · stock history refresh will resume when internet returns","bad");updateDataAudit();});
 window.addEventListener("pagehide",()=>{const k=storeKey();if(memBase[k])saveMem(k,memBase[k].slice(0,-1));});
-// Safety net: if live ticks stop (stream reconnecting, OTCharts slot busy), keep candles fresh from the history endpoint.
-setInterval(()=>{if(document.hidden||feedBusy||!navigator.onLine)return;if(lastTickAt&&Date.now()-lastTickAt<10000)return;refreshFeed();},5000);
-// iPhone Safari freezes EventSource in the background; reconnect immediately when the page is visible again.
-document.addEventListener("visibilitychange",()=>{if(document.hidden)return;if(streamWantedPair&&(!liveSource||liveSource.readyState===EventSource.CLOSED)){const p=streamWantedPair,g=streamGeneration;clearStreamRetry();streamRetryAttempt=0;connectLiveStream(p,g);}if(!lastTickAt||Date.now()-lastTickAt>10000)refreshFeed();});
-buildTfUi();setFeedState(false,"Feed: CONNECTING");renderPatternGuide();resetScan();updateDataAudit();setInterval(tick,1000);tick();
+// Stock-market data refresh: poll Twelve Data candle history every 15 seconds.
+setInterval(()=>{if(document.hidden||feedBusy||!navigator.onLine)return;refreshFeed();},15000);
+// Refresh stock candle history when the page becomes visible again.
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshFeed();});
+buildTfUi();setFeedState(false,"STOCK FEED: CONNECTING");renderPatternGuide();resetScan();updateDataAudit();setInterval(tick,1000);tick();
 </script>
 </body>
 </html>
