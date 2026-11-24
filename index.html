@@ -412,7 +412,7 @@ const A = {
 const TF={30:"S30",60:"M1",300:"M5"};
 const DURS=[5,10,15,30,60,120,180,300,600,900,1800,3600,14400];
 const durTxt=s=>s<60?`${s} sec`:s<3600?`${s/60} min`:`${s/3600} h`;
-const ENDPOINTS={candles:"/.netlify/functions/otc-candles",stream:"/.netlify/functions/otc-stream",claude:"/.netlify/functions/claude-deep-scan"};
+const ENDPOINTS={candles:"/.netlify/functions/otc-candles",stream:"/api/otc-stream",claude:"/.netlify/functions/claude-deep-scan"};
 
 // ==ENGINE== (pure functions; no DOM)
 const LOOK=8;            // candles used to define the "prior range" a trap must break
@@ -853,6 +853,34 @@ function processFeedRows(base){
  evaluateEarlySignal();resolveTimeline();settleTrade();
  if(auto&&!scanBusy&&last.time!==lastAutoStamp){lastAutoStamp=last.time;doScan("AUTO");}
 }
+// ---------- Live ticks → candles ----------
+// OTCharts tick payloads vary, so accept the common shapes: {price,time}, {p,t}, {bid,ask}, candle-like {close,time}, arrays, {ticks:[...]}, {data:{...}}.
+let tickRenderTimer=null;
+function tickList(d){if(Array.isArray(d))return d;if(Array.isArray(d?.ticks))return d.ticks;if(Array.isArray(d?.data))return d.data;if(d?.data&&typeof d.data==="object")return[{symbol:d.symbol,...d.data}];return[d];}
+function tickPrice(x){const num=v=>v==null||v===""?NaN:Number(v);const bid=num(x.bid),ask=num(x.ask);for(const v of [x.price,x.p,x.value,x.last,x.rate,x.quote,x.close,x.c]){const n=num(v);if(Number.isFinite(n)&&n>0)return n;}if(Number.isFinite(bid)&&Number.isFinite(ask))return(bid+ask)/2;if(Number.isFinite(bid))return bid;if(Number.isFinite(ask))return ask;return NaN;}
+function applyLiveTick(payload){
+ const want=String(A[pair].symbol).toLowerCase(),key=storeKey();
+ let base=memBase[key]||loadMem(key),changed=false;
+ for(const x of tickList(payload)){
+  if(!x||typeof x!=="object")continue;
+  const sym=String(x.symbol??x.s??x.asset??x.instrument??"").toLowerCase();if(sym&&sym!==want)continue; // tick for another pair
+  const p=tickPrice(x);if(!Number.isFinite(p))continue;
+  const rawT=Number(x.time??x.t??x.ts??x.timestamp??x.date),hasT=Number.isFinite(rawT)&&rawT>0,ms=hasT?(rawT>1e12?rawT:rawT*1000):nowMs();
+  if(hasT)noteClock(ms);
+  tickBuf.push({t:Date.now(),p});
+  const sec=ms/1000,bucket=Math.floor(sec/baseRes)*baseRes,last=base.at(-1);
+  if(last&&last.time===bucket){last.high=Math.max(last.high,p);last.low=Math.min(last.low,p);last.close=p;}
+  else if(!last||bucket>last.time)base.push({time:bucket,open:p,high:p,low:p,close:p});
+  else continue; // late tick for an older candle: ignore
+  changed=true;
+ }
+ const cut=Date.now()-120000;while(tickBuf.length&&tickBuf[0].t<cut)tickBuf.shift();if(tickBuf.length>2000)tickBuf.splice(0,tickBuf.length-2000);
+ if(!changed)return;
+ if(base.length>MEM_CAP)base=base.slice(-MEM_CAP);memBase[key]=base;lastTickAt=Date.now();
+ if(Date.now()-lastMemSave>30000){lastMemSave=Date.now();saveMem(key,base.slice(0,-1));}
+ // Ticks can arrive several times a second; redraw at most twice a second.
+ if(!tickRenderTimer)tickRenderTimer=setTimeout(()=>{tickRenderTimer=null;if(storeKey()===key&&!feedBusy)processFeedRows(memBase[key]);},500);
+}
 function clearStreamRetry(){if(streamRetryTimer){clearTimeout(streamRetryTimer);streamRetryTimer=null;}}
 function closeLiveStream(){
  clearStreamRetry();streamGeneration++;streamWantedPair=null;streamRetryAttempt=0;
@@ -911,6 +939,13 @@ function connectLiveStream(forPair,generation){
   let data={};try{data=JSON.parse(event.data);}catch{}
   try{source.close();}catch(e){}if(liveSource===source)liveSource=null;
   scheduleStreamReconnect(forPair,generation,data.error||"OTCharts ended the stream");
+ });
+ source.addEventListener("rotate",()=>{
+  // Server refreshes the stream on a schedule — reconnect quickly, not a failure.
+  if(liveSource!==source||generation!==streamGeneration)return;
+  try{source.close();}catch(e){}if(liveSource===source)liveSource=null;
+  clearStreamRetry();streamRetryAttempt=0;
+  streamRetryTimer=setTimeout(()=>{streamRetryTimer=null;if(generation===streamGeneration&&streamWantedPair===forPair)connectLiveStream(forPair,generation);},1200);
  });
  source.addEventListener("replaced",()=>{
   if(liveSource!==source||generation!==streamGeneration)return;
@@ -1090,7 +1125,7 @@ async function refreshFeed(){if(feedBusy)return;feedBusy=true;if(!navigator.onLi
   if(reqPair!==pair||reqTf!==tf)return;
   if(got){baseRes=got.spacing;feedNote=got.spacing===reqTf?`native ${TF[reqTf]} history`:`${TF[got.spacing]||got.spacing+"s"} history built up to ${TF[reqTf]}`;processFeedRows(memMerge(storeKey(),got.rows));}
   else{baseRes=reqTf;feedNote=`no ${TF[reqTf]} history from the feed — building candles from live ticks`;const base=memBase[storeKey()]||loadMem(storeKey());memBase[storeKey()]=base;if(base.length)processFeedRows(base);else setStatus(`Waiting for live ticks to build ${TF[reqTf]} candles…`,"busy");}
-  if(!liveSource||streamPair!==reqPair)openLiveStream(reqPair);
+  if(streamWantedPair!==reqPair)openLiveStream(reqPair);
   updateSyncNote();
  }catch(e){setFeedState(false,"Feed: ERROR");setStatus("Historical candle load failed — "+e.message,"bad");
   if(trade){const pending=log.find(x=>x.res==="Pending");if(pending)pending.res="Void";trade=null;drawStats();}
@@ -1355,6 +1390,10 @@ $("nav").onclick=e=>{const b=e.target.closest("button");if(!b)return;[...$("nav"
 window.addEventListener("online",()=>{if(streamWantedPair&&(!liveSource||liveSource.readyState===EventSource.CLOSED)){const p=streamWantedPair,g=streamGeneration;clearStreamRetry();connectLiveStream(p,g);}});
 window.addEventListener("offline",()=>{if(streamWantedPair){clearStreamRetry();setFeedState(false,"NETWORK OFFLINE");setStatus("Network offline · live stream will reconnect when internet returns","bad");updateDataAudit();}});
 window.addEventListener("pagehide",()=>{const k=storeKey();if(memBase[k])saveMem(k,memBase[k].slice(0,-1));});
+// Safety net: if live ticks stop (stream reconnecting, OTCharts slot busy), keep candles fresh from the history endpoint.
+setInterval(()=>{if(document.hidden||feedBusy||!navigator.onLine)return;if(lastTickAt&&Date.now()-lastTickAt<10000)return;refreshFeed();},5000);
+// iPhone Safari freezes EventSource in the background; reconnect immediately when the page is visible again.
+document.addEventListener("visibilitychange",()=>{if(document.hidden)return;if(streamWantedPair&&(!liveSource||liveSource.readyState===EventSource.CLOSED)){const p=streamWantedPair,g=streamGeneration;clearStreamRetry();streamRetryAttempt=0;connectLiveStream(p,g);}if(!lastTickAt||Date.now()-lastTickAt>10000)refreshFeed();});
 buildTfUi();setFeedState(false,"Feed: CONNECTING");renderPatternGuide();resetScan();updateDataAudit();setInterval(tick,1000);tick();
 </script>
 </body>
