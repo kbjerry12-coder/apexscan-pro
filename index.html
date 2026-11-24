@@ -108,6 +108,16 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
 .inds{display:flex;flex-wrap:wrap;gap:14px;font-weight:700}
 .inds i{font-style:normal;margin-left:4px;color:var(--mu)}.inds i.ok{color:var(--up)}.inds i.no{color:var(--dn)}
 .note{color:var(--mu);font-size:12px;margin-top:8px}
+
+.visual-card{border-color:rgba(34,211,238,.65);background:linear-gradient(180deg,#08172b,#050a16)}
+.visual-upload{display:flex;flex-direction:column;gap:9px}
+.visual-upload input[type=file]{padding:9px;background:#081225;border:1px dashed rgba(34,211,238,.5);border-radius:10px}
+.visual-preview{display:none;max-width:100%;max-height:360px;object-fit:contain;border:1px solid var(--ln);border-radius:10px;background:#050914;margin-top:6px}
+.visual-result{display:none;border:1px solid var(--ln);border-radius:12px;padding:12px;background:rgba(8,15,31,.75);margin-top:10px}
+.visual-result h4{margin:0 0 7px;color:var(--cy)}.visual-direction{font-size:24px;font-weight:900;margin:4px 0 8px}.visual-result pre{white-space:pre-wrap;word-break:break-word;font:600 13px/1.45 Inter,system-ui,sans-serif;color:#dce7ff;margin:0}
+.visual-btn{width:100%;margin-top:8px;padding:12px;border:1px solid #67e8f9;border-radius:12px;background:linear-gradient(180deg,#126a8c,#093b5b);font-weight:900;cursor:pointer}.visual-btn:disabled{opacity:.55;cursor:wait}
+.visual-note{font-size:11px;color:var(--mu);margin-top:7px}
+
 @media(prefers-reduced-motion:reduce){.sw::after,.bar i{transition:none}.ck.run::before{animation:none}}
 </style>
 </head>
@@ -168,6 +178,17 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
         <div class="eleft"><div class="etitle">LIVE EARLY-SIGNAL ENGINE</div><div class="edir wait" id="earlyDir">WAIT · MONITORING</div><div class="emeta" id="earlyMeta">Watching the developing candle and short-term momentum.</div></div>
         <div class="badge" id="earlyConf">CONFLUENCE 0/5</div>
       </div>
+    </section>
+    <section class="card visual-card" id="visualScanCard">
+      <h3>VISUAL SCAN <small>SCREENSHOT · EXPERIMENTAL</small></h3>
+      <div class="visual-upload">
+        <label class="lbl" for="visualFile">UPLOAD POCKET OPTION CHART SCREENSHOT</label>
+        <input id="visualFile" type="file" accept="image/png,image/jpeg,image/webp">
+        <img id="visualPreview" class="visual-preview" alt="Uploaded chart screenshot preview">
+        <button class="visual-btn" id="visualScanBtn" disabled>◎ ANALYZE SCREENSHOT</button>
+      </div>
+      <div class="visual-note">Separate from OTCharts. It reads the screenshot you upload and may miss details. Experimental analysis only—no live trading or automatic entries.</div>
+      <div class="visual-result" id="visualResult" aria-live="polite"><h4 id="visualResultTitle">VISUAL ANALYSIS</h4><div class="visual-direction" id="visualDirection"></div><pre id="visualText"></pre></div>
     </section>
     <section class="card vio why" id="cWhy">
       <h3>BOT ENGINE REASONING</h3>
@@ -248,7 +269,7 @@ const A = {
   AUDCAD:{n:"AUD/CAD OTC",symbol:"AUDCAD_otc",d:5}, XAUUSD:{n:"GOLD OTC",symbol:"XAUUSD_otc",d:2}
 };
 const TF={30:"30S",60:"1M",300:"5M",900:"15M"}, DUR={60:"1 Min",120:"2 Min",300:"5 Min"};
-const ENDPOINTS={candles:"/.netlify/functions/otc-candles",claude:"/.netlify/functions/claude-deep-scan"};
+const ENDPOINTS={candles:"/.netlify/functions/otc-candles",claude:"/.netlify/functions/claude-deep-scan",visual:"/.netlify/functions/visual-scan"};
 
 // ==ENGINE== (pure functions; no DOM)
 const LOOK=8;            // candles used to define the "prior range" a trap must break
@@ -595,6 +616,29 @@ requestAnimationFrame(drawOverlay);
 // ---------- Paper trades + stats ----------
 function drawStats(){const tot=W+L,wr=tot?(W/tot*100).toFixed(1)+"%":"—";$("wr").textContent=wr;$("pw").textContent=wr;$("w1").textContent=$("pwi").textContent=W;$("l1").textContent=$("pl2").textContent=L;$("pt").textContent=tot;$("pp").textContent=(pnl<0?"-$":"$")+Math.abs(pnl).toFixed(2);$("pp").className=pnl<0?"Lo":pnl>0?"W":"";$("hold").textContent="Hold: "+DUR[hold]+(trade?` · ${trade.left}s`:"");$("log").innerHTML=log.length?log.slice(0,4).map(x=>`<div class="rw"><i class="${x.call?"up2":"dn2"}">${x.call?"CALL":"PUT"}</i><span>${A[x.pair].n}</span><span>${TF[x.tf]}</span><b class="${x.res==="Win"?"W":x.res==="Loss"?"Lo":"P"}">${x.res}</b></div>`).join(""):'<div class="note">No paper entries yet.</div>';}
 function settleTrade(){if(!trade||!candles.length)return;const now=Date.now()/1000;if(now<trade.targetTime||Date.now()-lastFeedAt>5000)return;const resultCandle=candles.find(c=>c.time+tf>=trade.targetTime&&c.time+tf<=now);if(!resultCandle)return;const cur=resultCandle.close,win=trade.call?cur>trade.entry:cur<trade.entry;win?W++:L++;pnl+=win?trade.stake*PAYOUT:-trade.stake;const item=log.find(x=>x.res==="Pending");if(item)item.res=win?"Win":"Loss";trade=null;drawStats();}
+// ---------- Experimental screenshot-based Visual Scan (independent of OTC API feed) ----------
+let visualImageData=null,visualBusy=false;
+const visualFile=$("visualFile"),visualBtn=$("visualScanBtn"),visualPreview=$("visualPreview");
+visualFile.addEventListener("change",()=>{
+ const file=visualFile.files?.[0];visualImageData=null;visualBtn.disabled=true;$ ("visualResult").style.display="none";visualPreview.style.display="none";
+ if(!file)return;if(!/^image\/(png|jpeg|webp)$/.test(file.type)){setStatus("Visual Scan accepts PNG, JPG, or WebP images","bad");visualFile.value="";return;}
+ if(file.size>8*1024*1024){setStatus("Screenshot is too large (8 MB max)","bad");visualFile.value="";return;}
+ const reader=new FileReader();reader.onload=()=>{visualImageData=reader.result;visualPreview.src=reader.result;visualPreview.style.display="block";visualBtn.disabled=false;setStatus("Screenshot ready for Visual Scan","ok");};reader.onerror=()=>setStatus("Could not read screenshot","bad");reader.readAsDataURL(file);
+});
+visualBtn.addEventListener("click",async()=>{
+ if(!visualImageData||visualBusy)return;visualBusy=true;visualBtn.disabled=true;visualBtn.textContent="VISUAL AI ANALYZING…";setStatus("Analyzing uploaded screenshot only (experimental)","busy");
+ try{
+  const body={image:visualImageData,pair:A[pair].n,timeframe:TF[tf],duration:DUR[hold]||"1 Min",market:"Pocket Option OTC chart screenshot"};
+  const res=await fetch(ENDPOINTS.visual,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const j=await res.json().catch(()=>({error:"Visual Scan returned invalid JSON"}));if(!res.ok)throw new Error(j.error||`Visual Scan HTTP ${res.status}`);
+  const output=typeof j.analysis==="string"?j.analysis:JSON.stringify(j.analysis||j,null,2);let parsed=null;try{parsed=JSON.parse(output);}catch{}
+  const dir=parsed?.direction||parsed?.signal||"INDETERMINATE";const title=String(dir).toUpperCase();
+  $("visualDirection").textContent=title;$ ("visualDirection").className="visual-direction "+(/CALL|BUY|UP/.test(title)?"up2":/PUT|SELL|DOWN/.test(title)?"dn2":"wt");
+  $("visualText").textContent=parsed?JSON.stringify(parsed,null,2):output;$ ("visualResultTitle").textContent=`VISUAL ANALYSIS · ${A[pair].n} · ${TF[tf]}`;$ ("visualResult").style.display="block";setStatus("Visual Scan complete · Screenshot-based opinion only","ok");
+ }catch(e){$("visualResult").style.display="block";$ ("visualDirection").textContent="SCAN FAILED";$ ("visualText").textContent=e.message;$ ("visualResultTitle").textContent="VISUAL ANALYSIS ERROR";setStatus("Visual Scan failed — check its Netlify function and OpenAI key","bad");}
+ finally{visualBusy=false;visualBtn.disabled=!visualImageData;visualBtn.textContent="◎ ANALYZE SCREENSHOT";}
+});
+
 async function runDeepScan(){if(deepBusy||candles.length<8)return;deepBusy=true;$("deep").disabled=true;$("deep").textContent="CLAUDE ANALYZING…";try{const recent=candles.slice(-40),body={symbol:A[pair].symbol,pair,market:"OTC",scanTimeframe:TF[tf],forecast:"next candle",price:recent.at(-1).close,fourCandleScan:FC?summarizeFC(FC):null,recentCandles:recent.map(({time,open,high,low,close})=>({time,open,high,low,close}))};const res=await fetch(ENDPOINTS.claude,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await res.json().catch(()=>({error:"Claude returned invalid JSON"}));if(!res.ok)throw new Error(j.error||`Claude endpoint HTTP ${res.status}`);const result=j.deepScan||j.analysis||j;const textOut=typeof result==="string"?result:JSON.stringify(result,null,2);$("aiDet").hidden=false;$("aiDet").open=true;$("aiDet").querySelector("summary").textContent="Claude deep scan";$("aiBody").innerHTML=`<div style="white-space:pre-wrap">${escapeHtml(textOut)}</div>`;}catch(e){$("aiDet").hidden=false;$("aiDet").open=true;$("aiBody").innerHTML=`<div class="dn2">${escapeHtml(e.message)}. Check the Claude Netlify function and API key.</div>`;}finally{deepBusy=false;$("deep").disabled=false;$("deep").textContent="◎ OPTIONAL CLAUDE DEEP SCAN";}}
 function tick(){const now=Math.floor(Date.now()/1000),r=tf-now%tf,mmss=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0");$("timer").textContent="Candle: "+mmss;$("cnt").textContent="00:"+mmss;$("cbar").style.width=((tf-r)/tf*100)+"%";$("clk").textContent="UTC "+new Date().toISOString().slice(11,19);
  if(trade){trade.left=Math.max(0,trade.entryTime+trade.hold-now);drawStats();settleTrade();}
