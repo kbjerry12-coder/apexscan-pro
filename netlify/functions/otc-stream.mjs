@@ -1,5 +1,5 @@
 // APEXSCAN PRO — single-symbol OTC live stream relay
-// Netlify Function: /.netlify/functions/otc-stream?symbol=EURUSD_otc
+// File: netlify/functions/otc-stream.mjs
 
 export default async (request) => {
   const key = process.env.OTCHARTS_API_KEY;
@@ -38,10 +38,8 @@ export default async (request) => {
   upstream.searchParams.set("venue", "otc");
   upstream.searchParams.set("symbol", symbol);
 
-  let upstreamResponse;
-
   try {
-    upstreamResponse = await fetch(upstream, {
+    const upstreamResponse = await fetch(upstream, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${key}`,
@@ -88,7 +86,6 @@ export default async (request) => {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // Initial connection event
           controller.enqueue(
             encoder.encode(
               `event: connected\ndata: ${JSON.stringify({
@@ -99,7 +96,6 @@ export default async (request) => {
             )
           );
 
-          // Keep the client connection alive
           heartbeat = setInterval(() => {
             if (cancelled) return;
 
@@ -112,7 +108,6 @@ export default async (request) => {
             }
           }, 15000);
 
-          // Relay OTCharts events unchanged
           while (!cancelled) {
             const { done, value } = await reader.read();
 
@@ -145,9 +140,7 @@ export default async (request) => {
         } finally {
           cancelled = true;
 
-          if (heartbeat) {
-            clearInterval(heartbeat);
-          }
+          if (heartbeat) clearInterval(heartbeat);
 
           try {
             reader.releaseLock();
@@ -160,9 +153,7 @@ export default async (request) => {
       async cancel() {
         cancelled = true;
 
-        if (heartbeat) {
-          clearInterval(heartbeat);
-        }
+        if (heartbeat) clearInterval(heartbeat);
 
         try {
           await reader.cancel();
