@@ -1,177 +1,226 @@
-// APEXSCAN PRO — single-symbol OTC live stream relay
+// APEXSCAN PRO — resilient single-symbol OTC live stream relay
 // File: netlify/functions/otc-stream.mjs
+// Browser owns reconnection. Each invocation opens ONE upstream stream.
+
+const SSE_HEADERS = {
+  "Content-Type": "text/event-stream; charset=utf-8",
+  "Cache-Control": "no-cache, no-store, no-transform",
+  "X-Accel-Buffering": "no",
+  "X-Content-Type-Options": "nosniff",
+  "Access-Control-Allow-Origin": "*",
+};
+
+const encodeEvent = (name, payload) =>
+  `event: ${name}\ndata: ${JSON.stringify(payload)}\n\n`;
+
+const sseError = (payload, status = 200) =>
+  new Response(encodeEvent("stream_error", payload), {
+    status,
+    headers: SSE_HEADERS,
+  });
 
 export default async (request) => {
+  if (request.method !== "GET") {
+    return new Response("Method not allowed", {
+      status: 405,
+      headers: { Allow: "GET", "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
+
   const key = process.env.OTCHARTS_API_KEY;
 
-  const headers = {
-    "Content-Type": "text/event-stream; charset=utf-8",
-    "Cache-Control": "no-cache, no-store, no-transform",
-    "Connection": "keep-alive",
-    "X-Accel-Buffering": "no",
-    "Access-Control-Allow-Origin": "*"
-  };
-
-  const sendError = (payload) =>
-    new Response(
-      `event: stream_error\ndata: ${JSON.stringify(payload)}\n\n`,
-      { status: 200, headers }
-    );
-
   if (!key) {
-    return sendError({
-      error: "OTCHARTS_API_KEY is missing from Netlify environment variables."
+    return sseError({
+      error: "OTCHARTS_API_KEY is missing from Netlify environment variables.",
+      retryable: false,
     });
   }
 
-  const url = new URL(request.url);
-  const symbol = url.searchParams.get("symbol") || "EURUSD_otc";
+  const incoming = new URL(request.url);
+  const symbol = incoming.searchParams.get("symbol") || "EURUSD_otc";
+  const venue = incoming.searchParams.get("venue") || "otc";
 
-  if (!/^[A-Z0-9#]+_otc$/.test(symbol)) {
-    return sendError({
-      error: "Invalid OTC symbol",
-      symbol
+  if (venue !== "otc" || !/^[A-Z0-9#]+_otc$/i.test(symbol)) {
+    return sseError({
+      error: "Invalid OTC stream request.",
+      symbol,
+      venue,
+      retryable: false,
     });
   }
 
-  const upstream = new URL("https://otcharts.com/v1/stream");
-  upstream.searchParams.set("venue", "otc");
-  upstream.searchParams.set("symbol", symbol);
+  const upstreamUrl = new URL("https://otcharts.com/v1/stream");
+  upstreamUrl.searchParams.set("venue", "otc");
+  upstreamUrl.searchParams.set("symbol", symbol);
+
+  let upstream;
 
   try {
-    const upstreamResponse = await fetch(upstream, {
+    upstream = await fetch(upstreamUrl, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${key}`,
         Accept: "text/event-stream",
         "Cache-Control": "no-cache",
-        "User-Agent": "APEXSCAN-PRO"
+        "User-Agent": "APEXSCAN-PRO",
       },
-      signal: request.signal
+      signal: request.signal,
     });
+  } catch (error) {
+    return sseError({
+      error: "Could not reach OTCharts stream service.",
+      details: error?.message || "Network request failed",
+      symbol,
+      retryable: true,
+    });
+  }
 
-    if (!upstreamResponse.ok) {
-      const raw = await upstreamResponse.text();
+  if (!upstream.ok) {
+    const raw = await upstream.text().catch(() => "");
 
-      let details;
-      try {
-        details = JSON.parse(raw);
-      } catch {
-        details = raw;
-      }
+    let details;
 
-      return sendError({
-        error: "OTCharts stream connection rejected",
-        status: upstreamResponse.status,
-        statusText: upstreamResponse.statusText,
-        symbol,
-        details,
-        retryAfter: upstreamResponse.headers.get("retry-after")
-      });
+    try {
+      details = JSON.parse(raw);
+    } catch {
+      details = raw.slice(0, 1500);
     }
 
-    if (!upstreamResponse.body) {
-      return sendError({
-        error: "OTCharts returned HTTP 200 but no stream body.",
-        symbol
-      });
-    }
+    const status = upstream.status;
 
-    const reader = upstreamResponse.body.getReader();
-    const encoder = new TextEncoder();
+    return sseError({
+      error:
+        details?.error ||
+        details?.message ||
+        `OTCharts rejected the stream (HTTP ${status}).`,
+      status,
+      statusText: upstream.statusText,
+      details,
+      symbol,
+      retryAfter: upstream.headers.get("retry-after"),
+      retryable:
+        status === 408 ||
+        status === 425 ||
+        status === 429 ||
+        status >= 500,
+    });
+  }
 
-    let heartbeat = null;
-    let cancelled = false;
+  const contentType = upstream.headers.get("content-type") || "";
 
-    const stream = new ReadableStream({
-      async start(controller) {
+  if (!contentType.toLowerCase().includes("text/event-stream")) {
+    const body = await upstream.text().catch(() => "");
+
+    return sseError({
+      error: "OTCharts responded, but the response was not an event stream.",
+      contentType,
+      details: body.slice(0, 1500),
+      symbol,
+      retryable: false,
+    });
+  }
+
+  if (!upstream.body) {
+    return sseError({
+      error: "OTCharts returned an empty stream body.",
+      symbol,
+      retryable: true,
+    });
+  }
+
+  const reader = upstream.body.getReader();
+  const encoder = new TextEncoder();
+
+  let cancelled = false;
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (chunk) => {
+        if (cancelled) return false;
+
         try {
-          controller.enqueue(
-            encoder.encode(
-              `event: connected\ndata: ${JSON.stringify({
-                status: "connected",
-                symbol,
-                time: Date.now()
-              })}\n\n`
-            )
-          );
-
-          heartbeat = setInterval(() => {
-            if (cancelled) return;
-
-            try {
-              controller.enqueue(
-                encoder.encode(`: keep-alive ${Date.now()}\n\n`)
-              );
-            } catch {
-              // Client disconnected
-            }
-          }, 15000);
-
-          while (!cancelled) {
-            const { done, value } = await reader.read();
-
-            if (done) break;
-
-            controller.enqueue(value);
-          }
-
-          if (!cancelled) {
-            controller.close();
-          }
-        } catch (error) {
-          if (!cancelled) {
-            try {
-              controller.enqueue(
-                encoder.encode(
-                  `event: stream_error\ndata: ${JSON.stringify({
-                    error: "OTCharts upstream stream ended",
-                    details: error?.message || "Stream interrupted",
-                    symbol
-                  })}\n\n`
-                )
-              );
-
-              controller.close();
-            } catch {
-              // Client already disconnected
-            }
-          }
-        } finally {
+          controller.enqueue(encoder.encode(chunk));
+          return true;
+        } catch {
           cancelled = true;
-
-          if (heartbeat) clearInterval(heartbeat);
-
-          try {
-            reader.releaseLock();
-          } catch {
-            // Ignore cleanup errors
-          }
+          return false;
         }
-      },
+      };
 
-      async cancel() {
+      send(
+        encodeEvent("connected", {
+          status: "connected",
+          symbol,
+          venue: "otc",
+          time: Date.now(),
+        })
+      );
+
+      try {
+        while (!cancelled) {
+          const { done, value } = await reader.read();
+
+          if (done) {
+            send(
+              encodeEvent("upstream_end", {
+                error: "OTCharts ended the live stream.",
+                symbol,
+                time: Date.now(),
+                retryable: true,
+              })
+            );
+
+            break;
+          }
+
+          if (!send(value)) break;
+        }
+      } catch (error) {
+        send(
+          encodeEvent("stream_error", {
+            error: "OTCharts stream was interrupted while relaying data.",
+            details: error?.message || "Upstream read failed",
+            symbol,
+            time: Date.now(),
+            retryable: true,
+          })
+        );
+      } finally {
         cancelled = true;
-
-        if (heartbeat) clearInterval(heartbeat);
 
         try {
           await reader.cancel();
         } catch {
-          // Upstream already closed
+          // Upstream may already be closed.
+        }
+
+        try {
+          reader.releaseLock();
+        } catch {
+          // Ignore cleanup errors.
+        }
+
+        try {
+          controller.close();
+        } catch {
+          // Client already closed.
         }
       }
-    });
+    },
 
-    return new Response(stream, {
-      status: 200,
-      headers
-    });
-  } catch (error) {
-    return sendError({
-      error: "OTCharts connection failed",
-      details: error?.message || "Unknown network error",
-      symbol
-    });
-  }
+    async cancel() {
+      cancelled = true;
+
+      try {
+        await reader.cancel();
+      } catch {
+        // Upstream may already be closed.
+      }
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: SSE_HEADERS,
+  });
 };
