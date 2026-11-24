@@ -309,7 +309,7 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
     <section class="card sl" id="slCard">
       <h3>STRAIGHT-LINE CONTINUATION <button class="sw" id="slMode" aria-pressed="true" aria-label="Straight-line continuation mode"></button></h3>
       <div class="slhead"><div class="slstate wt" id="slState">WAITING FOR SCAN</div><div class="slgrade C" id="slGrade">—</div></div>
-      <div class="fsub" id="slSub">Moderate evidence can signal; only extreme instability is blocked. Clean straight-line trends get the highest grade.</div>
+      <div class="fsub" id="slSub">Jumpy candles are skipped. Clean straight-line trends get the highest grade.</div>
       <svg id="slSvg" viewBox="0 0 300 120" preserveAspectRatio="none" aria-label="Last 10 candles with their trend line"></svg>
       <div class="rm"><span>Trend quality</span><div class="rbar g"><i id="slQ"></i></div><b id="slQv">—</b></div>
       <div class="rm"><span>Signal confidence</span><div class="rbar c"><i id="slC"></i></div><b id="slCv">—</b></div>
@@ -409,14 +409,14 @@ const A = {
   GBPAUD_R:{n:"GBP/AUD",symbol:"GBPAUD",venue:"real",d:5}, GBPCAD_R:{n:"GBP/CAD",symbol:"GBPCAD",venue:"real",d:5}
 };
 // All Pocket Option time frames (seconds → label). Candles are UTC-aligned like Pocket Option's.
-const TF={5:"S5",10:"S10",15:"S15",30:"S30",60:"M1"};
+const TF={5:"S5",10:"S10",15:"S15",30:"S30",60:"M1",120:"M2",180:"M3",300:"M5",600:"M10",900:"M15",1800:"M30",3600:"H1",14400:"H4",86400:"D1"};
 const DURS=[5,10,15,30,60,120,180,300,600,900,1800,3600,14400];
 const durTxt=s=>s<60?`${s} sec`:s<3600?`${s/60} min`:`${s/3600} h`;
 const ENDPOINTS={candles:"/.netlify/functions/otc-candles",stream:"/.netlify/functions/otc-stream",claude:"/.netlify/functions/claude-deep-scan"};
 
 // ==ENGINE== (pure functions; no DOM)
 const LOOK=8;            // candles used to define the "prior range" a trap must break
-const NEUTRAL=.85;       // |evidence score| below this = WAIT
+const NEUTRAL=1.2;       // |evidence score| below this = WAIT
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const colorOf=c=>c.close>c.open?1:c.close<c.open?-1:0;
 function ema(a,n){if(!a.length)return[];const k=2/(n+1);let prev=a[0];return a.map((v,i)=>(prev=i?v*k+prev*(1-k):v));}
@@ -619,7 +619,7 @@ function zoneAround(level,dir,levels,a){
 // Only trade clean "staircase" trends: closes hug a straight line, most candles follow the trend with strong
 // bodies, pullbacks are shallow, ranges are steady (not jumpy), and the latest candle confirms.
 // Jumpiness limits loosened (v4): only genuinely jumpy candles block a signal.
-const SL={N:10,minR2:.55,minSlope:.08,minWith:.5,minBody:.35,maxCV:.95,maxSpike:3.5,maxFlips:7,maxWick:.72,minConf:60,minConfSmooth:52};
+const SL={N:10,minR2:.72,minSlope:.12,minWith:.6,minBody:.45,maxCV:.8,maxSpike:2.8,maxFlips:6,maxWick:.62,minConf:70,minConfSmooth:60};
 function linreg(ys){const n=ys.length,mx=(n-1)/2,my=ys.reduce((a,b)=>a+b,0)/n;let sxy=0,sxx=0,syy=0;ys.forEach((y,i)=>{sxy+=(i-mx)*(y-my);sxx+=(i-mx)**2;syy+=(y-my)**2;});const slope=sxx?sxy/sxx:0;return{slope,icpt:my-slope*mx,r2:syy>0&&sxx>0?sxy*sxy/(sxx*syy):0};}
 function trendQuality(rows,k,a){
  const N=SL.N,w=rows.slice(Math.max(0,k-N+1),k+1);
@@ -652,7 +652,7 @@ function trendQuality(rows,k,a){
  if(flips>SL.maxFlips)jumpyWhy.push(`colours flip ${flips} times in ${N} candles`);
  if(wickAvg>SL.maxWick)jumpyWhy.push(`wicks take ${Math.round(wickAvg*100)}% of candle ranges`);
  const jumpy=jumpyWhy.length>0,core=["straight","slope","with","body","smooth","last"];
- const ok=dir!==0&&!jumpy&&["slope","with","smooth"].every(k=>checks.find(c=>c.k===k).pass)&&quality>=60;
+ const ok=dir!==0&&!jumpy&&core.every(k=>checks.find(c=>c.k===k).pass)&&quality>=75;
  const state=ok?(dir>0?"CLEAN UPTREND":"CLEAN DOWNTREND"):jumpy?"JUMPY / VOLATILE":(lr.r2<.4||slopeA<SL.minSlope)?"CHOPPY / SIDEWAYS":"TREND NOT CLEAN";
  return{ok,dir,quality,checks,jumpy,jumpyWhy,state,lr,slopeA,start:w[0].time,end:last.time,N,bars:w.map(c=>({...c}))};
 }
@@ -739,10 +739,10 @@ function runEngine(rows,tf,nowSec,ext={}){
  // Decision
  let dir=score>=NEUTRAL?1:score<=-NEUTRAL?-1:0;const waitWhy=[];
  if(!dir)waitWhy.push(`the evidence score (${score>=0?"+":""}${score.toFixed(2)}) is inside the neutral band of ±${NEUTRAL}`);
- if(dir&&risk==="High"&&Math.abs(score)<2.0){waitWhy.push("fakeout risk is high and the evidence is not strong enough to override it");dir=0;}
- if(dir&&!pm.reliable&&Math.abs(score)<1.35){waitWhy.push(`pattern memory has only ${pm.n} genuinely close matches, too few to trust a moderate score`);dir=0;}
+ if(dir&&risk==="High"&&Math.abs(score)<2.5){waitWhy.push("fakeout risk is high and the evidence is not strong enough to override it");dir=0;}
+ if(dir&&!pm.reliable&&Math.abs(score)<2){waitWhy.push(`pattern memory has only ${pm.n} genuinely close matches, too few to trust a moderate score`);dir=0;}
  // Momentum Radar veto: don't chase a move the radar says is already running out of fuel.
- if(dir&&R&&R.ready&&R.exh>=75&&R.trend===dir&&Math.abs(score)<1.8){waitWhy.push(`the momentum radar shows ${R.exhWho} exhausted (${R.exh}%) — the ${dir>0?"bullish":"bearish"} move may be weakening before the chart turns`);dir=0;}
+ if(dir&&R&&R.ready&&R.exh>=60&&R.trend===dir&&Math.abs(score)<2.5){waitWhy.push(`the momentum radar shows ${R.exhWho} exhausted (${R.exh}%) — the ${dir>0?"bullish":"bearish"} move may be weakening before the chart turns`);dir=0;}
  // ---- Signal gate (v4): block jumpy candles, reward straight-line trends, never chase bait ----
  const riskPts={Low:100,Moderate:55,High:10}[risk],evid=clamp(Math.abs(score)/3.5,0,1)*100;
  let mode="standard",conf=Math.round(.5*tq.quality+.3*evid+.2*riskPts);
@@ -754,19 +754,19 @@ function runEngine(rows,tf,nowSec,ext={}){
    else if(dir===sk.crowd){waitWhy.push(`candle ${sk.q} looks like bait for ${dir>0?"buyers":"sellers"} — the bot won't chase it`);dir=0;}
   }
   if(mode!=="reverse"){
-   if(tq.jumpy&&(tq.slopeA<.035||tq.jumpyWhy.some(x=>x.includes("× bigger")&&parseFloat(x)>4.5))){if(dir)waitWhy.push(`market instability is extreme — ${tq.jumpyWhy.join("; ")}`);dir=0;}
+   if(tq.jumpy){if(dir)waitWhy.push(`candles are jumpy — ${tq.jumpyWhy.join("; ")}`);dir=0;}
    else if(tq.ok&&dir&&dir!==tq.dir){waitWhy.push(`the evidence points against a clean ${tq.dir>0?"up":"down"}trend — the bot never fights a straight-line trend`);dir=0;}
    else if(bait&&dir&&dir===sk.crowd){waitWhy.push(`candle ${sk.q} is sketchy (${sk.why.join(", ")}) and a ${dir>0?"BUY":"SELL"} here would be chasing the bait`);dir=0;}
    else if(tq.ok){
     if(sk&&sk.verdict==="continuation")conf=Math.min(100,conf+5);
-    if(!dir&&score*tq.dir>=NEUTRAL*.7&&!waitWhy.some(t=>/extreme instability|fakeout risk/.test(t))){dir=tq.dir;waitWhy.length=0;}
+    if(!dir&&score*tq.dir>=NEUTRAL*.7&&!waitWhy.some(t=>/exhausted|fakeout risk/.test(t))){dir=tq.dir;waitWhy.length=0;}
     if(dir)mode="straight";
    }else if(dir){
     // Smooth candles but not a perfect straight line: allowed, scored more on evidence than on trend shape.
     conf=Math.round(.25*tq.quality+.5*evid+.25*riskPts);mode="smooth";
    }
   }
-  const bar=(mode==="smooth"||mode==="standard")?SL.minConfSmooth:SL.minConf;
+  const bar=mode==="smooth"?SL.minConfSmooth:SL.minConf;
   if(dir&&conf<bar){waitWhy.push(`signal confidence ${conf}% is below the ${bar}% bar`);dir=0;mode="standard";}
  }
  const grade=conf>=85?"A":conf>=SL.minConf?"B":"C";
@@ -787,13 +787,13 @@ function runEngine(rows,tf,nowSec,ext={}){
 }
 // ==/ENGINE==
 
-let pair="EURUSD",tf=60,needFit=true,hold=60,auto=true,candles=[],memRows=[],ind=null,trade=null,scanBusy=false,sig=null,FC=null,chartTraps=[],plines=[],timeline=[],W=0,L=0,pnl=0,log=[],lastFeedAt=0,deepBusy=false,feedBusy=false,liveSource=null,streamPair=null,lastFormingTime=0,formingMarkerUntil=0,lastAutoStamp=0,lastPaperEntryStamp=0,lastFormationKey=0,lastTickAt=0,historyLoaded=false,memBase={},lastMemSave=0,dnaSel=3,feedOk=false,earlyLockedStamp=0,earlyCandidate=null,earlyHistory=[],tickBuf=[],radarTrail=[],RADAR=null,straightMode=(()=>{try{return localStorage.getItem("apex_straight")!=="0";}catch(e){return true;}})(),
+let pair="EURUSD",tf=60,needFit=true,hold=60,auto=true,candles=[],memRows=[],ind=null,trade=null,scanBusy=false,sig=null,FC=null,chartTraps=[],plines=[],timeline=[],W=0,L=0,pnl=0,log=[],lastFeedAt=0,deepBusy=false,feedBusy=false,liveSource=null,streamPair=null,streamRetryTimer=null,streamRetryAttempt=0,streamWantedPair=null,streamGeneration=0,lastFormingTime=0,formingMarkerUntil=0,lastAutoStamp=0,lastPaperEntryStamp=0,lastFormationKey=0,lastTickAt=0,historyLoaded=false,memBase={},lastMemSave=0,dnaSel=3,feedOk=false,earlyLockedStamp=0,earlyCandidate=null,earlyHistory=[],tickBuf=[],radarTrail=[],RADAR=null,straightMode=(()=>{try{return localStorage.getItem("apex_straight")!=="0";}catch(e){return true;}})(),
  baseRes=30,clockOffset=0,clockSamples=[],chartType="candles",feedNote="";
 // ---- Clock sync: Pocket Option candles close on server time. Estimate the feed's clock offset from tick timestamps. ----
 const nowMs=()=>Date.now()+clockOffset,nowS=()=>nowMs()/1000;
 function noteClock(tickMs){const off=tickMs-Date.now();if(!Number.isFinite(off)||Math.abs(off)>120000)return;clockSamples.push(off);if(clockSamples.length>60)clockSamples.shift();const so=[...clockSamples].sort((a,b)=>a-b);clockOffset=so[Math.floor(so.length/2)];}
 const holdSec=()=>hold==="auto"?tf:hold;
-try{const st=JSON.parse(localStorage.getItem("apex_prefs")||"{}");if(TF[st.tf])tf=+st.tf;else tf=60;if(st.chartType)chartType=st.chartType;if(st.hold)hold=st.hold==="auto"?"auto":+st.hold;else hold="auto";}catch(e){hold="auto";}
+try{const st=JSON.parse(localStorage.getItem("apex_prefs")||"{}");if(TF[st.tf])tf=+st.tf;if(st.chartType)chartType=st.chartType;if(st.hold)hold=st.hold==="auto"?"auto":+st.hold;else hold="auto";}catch(e){hold="auto";}
 function savePrefs(){try{localStorage.setItem("apex_prefs",JSON.stringify({tf,chartType,hold}));}catch(e){}}
 const $=id=>document.getElementById(id);
 const LW=LightweightCharts;
@@ -837,70 +837,86 @@ function renderCandles(){if(!candles.length)return;const dg=digits();cs.applyOpt
 function heikinAshi(rows){const out=[];let po=null,pc=null;for(const c of rows){const hc=(c.open+c.high+c.low+c.close)/4,ho=po==null?(c.open+c.close)/2:(po+pc)/2;out.push({time:c.time,open:ho,high:Math.max(c.high,ho,hc),low:Math.min(c.low,ho,hc),close:hc});po=ho;pc=hc;}return out;}
 function spacingOf(rows){if(rows.length<3)return 0;const d=[];for(let i=1;i<rows.length;i++)d.push(rows[i].time-rows[i-1].time);d.sort((a,b)=>a-b);return d[Math.floor(d.length/2)];}
 async function fetchLiveCandles(tfReq){const {symbol,venue}=A[pair];const url=`${ENDPOINTS.candles}?symbol=${encodeURIComponent(symbol)}&venue=${encodeURIComponent(venue||"otc")}&tf=${tfReq}&limit=500`;const res=await fetch(url,{cache:"no-store"});if(!res.ok)throw new Error(`Candle endpoint HTTP ${res.status}`);const json=await res.json();const parsed=normalizeCandleRows(json);if(parsed.length<8)throw new Error(`Feed returned only ${parsed.length} usable candles`);return{rows:parsed,spacing:spacingOf(parsed)};}
-function closeLiveStream(){if(liveSource){liveSource.close();liveSource=null;}streamPair=null;}
-function processFeedRows(base){
- if(!base?.length)return;
- const all=aggregateCandles(base,tf),view=contiguousTail(all,tf,300);
- const need=LOOK+12;
- if(view.length<need){candles=view;memRows=all;renderCandles();historyLoaded=true;updateDataAudit();
-  if(liveSource||lastTickAt){lastFeedAt=Date.now();setFeedState(true,"OTCHARTS · WARMING UP");}
-  setStatus(`Building ${TF[tf]} candles from live ticks · ${view.length}/${need} — scans start automatically`,"busy");return;}
- const last=view.at(-1),sourceAge=Math.max(0,nowS()-base.at(-1).time-baseRes);
- if(last.time!==lastFormingTime){if(lastFormingTime)formingMarkerUntil=Date.now()+5000;lastFormingTime=last.time;}
- memRows=all;candles=view;renderCandles();historyLoaded=true;updateDataAudit();updateFormationForecast();
- if(sourceAge>45){setFeedState(false,"OTCHARTS · STALE");setStatus(`Feed stale (${Math.round(sourceAge)}s)`,"bad");return;}
- lastFeedAt=Date.now();setFeedState(true,liveSource?"OTCHARTS · LIVE STREAM":"OTCHARTS · HISTORY");
- try{RADAR=computeRadar();}catch(e){RADAR=null;}
- evaluateEarlySignal();resolveTimeline();settleTrade();
- if(auto&&!scanBusy&&last.time!==lastAutoStamp){lastAutoStamp=last.time;doScan("AUTO");}
+function clearStreamRetry(){if(streamRetryTimer){clearTimeout(streamRetryTimer);streamRetryTimer=null;}}
+function closeLiveStream(){
+ clearStreamRetry();streamGeneration++;streamWantedPair=null;streamRetryAttempt=0;
+ if(liveSource){try{liveSource.close();}catch(e){}liveSource=null;}
+ streamPair=null;updateDataAudit();
 }
-function applyLiveTick(tick){
- if(!tick||tick.symbol!==A[pair].symbol)return;
- const price=Number(tick.price),time=Number(tick.time);
- if(!Number.isFinite(price)||!Number.isFinite(time))return;
- const ms=time>1e12?time:time*1000;noteClock(ms);
- const sec=Math.floor(ms/1000),bucket=Math.floor(sec/baseRes)*baseRes;lastTickAt=Date.now();
- tickBuf.push({t:Date.now(),p:price});if(tickBuf.length>900)tickBuf.splice(0,tickBuf.length-900);
- const key=storeKey(),base=memBase[key]||loadMem(key),last=base[base.length-1];
- if(last&&bucket<last.time)return;
- const bar=last&&bucket===last.time
-  ?{...last,high:Math.max(last.high,price),low:Math.min(last.low,price),close:price}
-  :{time:bucket,open:last&&bucket-last.time===baseRes?last.close:price,high:Math.max(price,last&&bucket-last.time===baseRes?last.close:price),low:Math.min(price,last&&bucket-last.time===baseRes?last.close:price),close:price};
- const merged=memMerge(key,[bar]);lastFeedAt=Date.now();
- try{processFeedRows(merged);}catch(e){setFeedState(false,"Feed: ERROR");setStatus(e.message,"bad");}
+function scheduleStreamReconnect(forPair,generation,reason,minimumDelay=0){
+ if(generation!==streamGeneration||streamWantedPair!==forPair)return;
+ clearStreamRetry();
+ const attempt=++streamRetryAttempt;
+ const backoff=Math.min(30000,1500*Math.pow(2,Math.min(attempt-1,5)));
+ const delay=Math.max(minimumDelay,backoff)+Math.floor(Math.random()*500);
+ setFeedState(false,"STREAM RECONNECTING");
+ setStatus(`${reason||"Live stream interrupted"} · retrying in ${Math.ceil(delay/1000)}s (attempt ${attempt})`,"busy");
+ updateDataAudit();
+ streamRetryTimer=setTimeout(()=>{
+  streamRetryTimer=null;
+  if(generation===streamGeneration&&streamWantedPair===forPair)connectLiveStream(forPair,generation);
+ },delay);
 }
-function openLiveStream(forPair){
- closeLiveStream();
- const symbol=A[forPair].symbol,source=new EventSource(`${ENDPOINTS.stream}?symbol=${encodeURIComponent(symbol)}&venue=${encodeURIComponent(A[forPair].venue||"otc")}`);
+function connectLiveStream(forPair,generation){
+ if(generation!==streamGeneration||streamWantedPair!==forPair||!navigator.onLine)return;
+ if(liveSource){try{liveSource.close();}catch(e){}liveSource=null;}
+ const symbol=A[forPair].symbol;
+ let source;
+ try{source=new EventSource(`${ENDPOINTS.stream}?symbol=${encodeURIComponent(symbol)}&venue=${encodeURIComponent(A[forPair].venue||"otc")}`);}
+ catch(error){scheduleStreamReconnect(forPair,generation,`Could not create stream: ${error.message}`);return;}
  liveSource=source;streamPair=forPair;
+ setFeedState(false,"OTCHARTS · CONNECTING");updateDataAudit();
  source.addEventListener("connected",event=>{
-  if(liveSource!==source)return;
-  try{const data=JSON.parse(event.data);setFeedState(true,"OTCHARTS · STREAM CONNECTED");setStatus(`Live stream connected · ${data.symbol||data.symbols?.join(", ")||symbol}`,"ok");updateDataAudit();}
-  catch{setFeedState(true,"OTCHARTS · STREAM CONNECTED");}
+  if(liveSource!==source||generation!==streamGeneration)return;
+  let data={};try{data=JSON.parse(event.data);}catch{}
+  setFeedState(true,"OTCHARTS · STREAM CONNECTED");
+  setStatus(`Live stream connected · ${data.symbol||symbol}`,"ok");updateDataAudit();
  });
  source.addEventListener("tick",event=>{
-  if(liveSource!==source)return;
+  if(liveSource!==source||generation!==streamGeneration)return;
+  streamRetryAttempt=0;
   try{applyLiveTick(JSON.parse(event.data));}catch(e){setStatus("Could not read live tick: "+e.message,"bad");}
  });
  ["closed","dropped"].forEach(type=>source.addEventListener(type,event=>{
-  if(liveSource!==source)return;
+  if(liveSource!==source||generation!==streamGeneration)return;
   try{const data=JSON.parse(event.data);setStatus(`OTCharts ${type}: ${(data.closed||data.dropped||[]).join(", ")||"instrument status update"}`,"bad");}
   catch{setStatus(`OTCharts ${type} event received`,"bad");}
  }));
  source.addEventListener("stream_error",event=>{
-  if(liveSource!==source)return;
-  let message="OTCharts stream error";try{const data=JSON.parse(event.data);message=data.error||message;}catch{}
-  setFeedState(false,"STREAM ERROR");setStatus(message,"bad");updateDataAudit();
+  if(liveSource!==source||generation!==streamGeneration)return;
+  let data={};try{data=JSON.parse(event.data);}catch{}
+  const message=data.error||"OTCharts stream error";
+  try{source.close();}catch(e){}if(liveSource===source)liveSource=null;
+  const wait=data.status===401||data.status===403?60000:data.status===429?30000:0;
+  scheduleStreamReconnect(forPair,generation,`${message}${data.status?` (HTTP ${data.status})`:""}`,wait);
+ });
+ source.addEventListener("upstream_end",event=>{
+  if(liveSource!==source||generation!==streamGeneration)return;
+  let data={};try{data=JSON.parse(event.data);}catch{}
+  try{source.close();}catch(e){}if(liveSource===source)liveSource=null;
+  scheduleStreamReconnect(forPair,generation,data.error||"OTCharts ended the stream");
  });
  source.addEventListener("replaced",()=>{
-  if(liveSource!==source)return;
-  source.close();liveSource=null;streamPair=null;setFeedState(false,"STREAM REPLACED");updateDataAudit();setStatus("Another connection replaced this stream. Check that APEXSCAN is not open in another tab or device.","bad");
+  if(liveSource!==source||generation!==streamGeneration)return;
+  try{source.close();}catch(e){}if(liveSource===source)liveSource=null;
+  scheduleStreamReconnect(forPair,generation,"OTCharts replaced this connection; checking stream availability",20000);
  });
  source.onerror=()=>{
-  if(liveSource!==source)return;
-  if(source.readyState===EventSource.CLOSED){setFeedState(false,"STREAM CLOSED");setStatus("Live stream closed. Reload to reconnect.","bad");}
-  else{setFeedState(false,"STREAM RECONNECTING");setStatus("Live stream interrupted · browser is attempting to reconnect","busy");}updateDataAudit();
+  if(liveSource!==source||generation!==streamGeneration)return;
+  if(source.readyState===EventSource.CLOSED){
+   try{source.close();}catch(e){}if(liveSource===source)liveSource=null;
+   scheduleStreamReconnect(forPair,generation,"Live stream connection closed");
+  }else{
+   setFeedState(false,"STREAM RECONNECTING");
+   setStatus("Live stream interrupted · browser is attempting to reconnect","busy");updateDataAudit();
+  }
  };
+}
+function openLiveStream(forPair){
+ closeLiveStream();
+ const generation=streamGeneration;
+ streamWantedPair=forPair;streamPair=forPair;
+ connectLiveStream(forPair,generation);
 }
 // ---------- Transparent data audit + local formation predictor ----------
 function updateDataAudit(){
@@ -1106,7 +1122,7 @@ function buildReasons(f,s){
  const t=f.tq,fail=t.checks.filter(c=>!c.pass);
  out.push(`Straight-line check (last ${t.N} candles): <b class="${t.ok?(t.dir>0?"up2":"dn2"):"wt"}">${t.state}</b> — quality ${t.quality}/100, ${t.checks.length-fail.length}/${t.checks.length} checks passed${fail.length?` (failed: ${fail.map(c=>`${c.n.toLowerCase()} ${c.v}`).join(", ")})`:""}.${t.jumpy?` Jumpy because ${escapeHtml(t.jumpyWhy.join("; "))}.`:""}`);
  if(f.sk)out.push(`<b>Reverse psychology</b> · candle ${f.sk.q} is sketchy (${escapeHtml(f.sk.why.join(", "))}). ${escapeHtml(f.sk.text)}`);
- out.push(`Signal confidence <b>${f.conf}%</b> (grade ${f.grade}) = 50% trend quality + 30% evidence strength + 20% fakeout risk (smooth, non-straight setups weigh evidence more)${f.straightMode?` · clean continuation ${SL.minConf}%+, moderate setups ${SL.minConfSmooth}%+ · only extreme instability blocks signals`:" · filter is off"}.`);
+ out.push(`Signal confidence <b>${f.conf}%</b> (grade ${f.grade}) = 50% trend quality + 30% evidence strength + 20% fakeout risk (smooth, non-straight setups weigh evidence more)${f.straightMode?` · straight-line signals need ${SL.minConf}%+, smooth-candle signals ${SL.minConfSmooth}%+ · jumpy candles never signal`:" · filter is off"}.`);
  out.push(`Candle DNA · candle 4 is a <b>${escapeHtml(d4.type.toLowerCase())}</b>: body strength ${pct(d4.body)}, closed in the ${d4.closeAt.toLowerCase()} (${pct(d4.closeLoc)} up its range), upper wick ${pct(d4.upper)}, lower wick ${pct(d4.lower)} → <b>${d4.press.toLowerCase()}</b> in control.`);
  f.dnas.forEach((d,q)=>{if(d.rej)out.push(`Candle ${q+1} <b>rejected ${d.rej.kind.toLowerCase()}</b> at ${fx(d.rej.level)} — wick pierced the level and the close was pushed back ${d.rej.dir>0?"up (buyers defended it)":"down (sellers defended it)"}.`);});
  if(f.ml.side)out.push(`<b>${f.ml.side[0].toUpperCase()+f.ml.side.slice(1)} are losing momentum</b>: ${escapeHtml(f.ml.reasons.join("; "))}.`);
@@ -1189,7 +1205,7 @@ function renderPatternLib(){const f=FC;if(!f)return;
 function renderSL(){const f=FC;if(!f)return;const t=f.tq,on=f.straightMode;
  const st=$("slState");st.textContent=on?t.state:"MODE OFF · STANDARD ENGINE";st.className="slstate "+(!on?"wt":t.ok?(t.dir>0?"up":"dn"):"wt");
  const g=$("slGrade");g.textContent=f.dir?f.grade:"—";g.className="slgrade "+(f.dir?f.grade:"C");
- $("slSub").textContent=f.dir&&f.mode==="straight"?`Confident ${f.dir>0?"BUY":"SELL"}: clean ${t.dir>0?"up":"down"}trend, strong candles, latest candle confirms.`:f.dir&&f.mode==="smooth"?`${f.dir>0?"BUY":"SELL"} allowed: candles are smooth (not jumpy). Not a perfect straight line, so the bar is ${SL.minConfSmooth}%.`:f.dir&&f.mode==="reverse"?`Contrarian ${f.dir>0?"BUY":"SELL"}: the obvious trade on a sketchy candle has a proven record of failing here.`:on?(f.waitWhy[0]?`No signal — ${f.waitWhy.at(-1)}.`:"No signal."):"Straight-line mode is off — the evidence engine can issue moderate-confidence signals.";
+ $("slSub").textContent=f.dir&&f.mode==="straight"?`Confident ${f.dir>0?"BUY":"SELL"}: clean ${t.dir>0?"up":"down"}trend, strong candles, latest candle confirms.`:f.dir&&f.mode==="smooth"?`${f.dir>0?"BUY":"SELL"} allowed: candles are smooth (not jumpy). Not a perfect straight line, so the bar is ${SL.minConfSmooth}%.`:f.dir&&f.mode==="reverse"?`Contrarian ${f.dir>0?"BUY":"SELL"}: the obvious trade on a sketchy candle has a proven record of failing here.`:on?(f.waitWhy[0]?`No signal — ${f.waitWhy.at(-1)}.`:"No signal."):"Straight-line mode is off — the standard evidence engine decides alone.";
  $("slQ").style.width=t.quality+"%";$("slQv").textContent=`${t.quality}/100`;$("slC").style.width=f.conf+"%";$("slCv").textContent=`${f.conf}%${f.dir&&f.conf>=SL.minConf?" ✓":""}`;
  $("slChecks").innerHTML=t.checks.map(c=>`<div class="ck ${c.pass?"ok":"no"}"><span>${escapeHtml(c.n)}<small>${escapeHtml(c.v)}</small></span></div>`).join("");
  // mini chart: last 10 candles + straight trend line (projected 2 candles)
@@ -1320,6 +1336,8 @@ $("slMode").onclick=e=>{straightMode=!straightMode;e.currentTarget.setAttribute(
  if(feedOk&&!scanBusy){lastAutoStamp=candles.at(-1)?.time||0;doScan("MANUAL");}};
 $("scan4").onclick=()=>doScan("MANUAL");$("deep").onclick=runDeepScan;
 $("nav").onclick=e=>{const b=e.target.closest("button");if(!b)return;[...$("nav").children].forEach(x=>x.classList.toggle("on",x===b));const t=$(b.dataset.go);if(t)t.scrollIntoView({behavior:"smooth",block:"start"});};
+window.addEventListener("online",()=>{if(streamWantedPair&&(!liveSource||liveSource.readyState===EventSource.CLOSED)){const p=streamWantedPair,g=streamGeneration;clearStreamRetry();connectLiveStream(p,g);}});
+window.addEventListener("offline",()=>{if(streamWantedPair){clearStreamRetry();setFeedState(false,"NETWORK OFFLINE");setStatus("Network offline · live stream will reconnect when internet returns","bad");updateDataAudit();}});
 window.addEventListener("pagehide",()=>{const k=storeKey();if(memBase[k])saveMem(k,memBase[k].slice(0,-1));});
 buildTfUi();setFeedState(false,"Feed: CONNECTING");renderPatternGuide();resetScan();updateDataAudit();setInterval(tick,1000);tick();
 </script>
