@@ -393,7 +393,7 @@ function runEngine(rows,tf,nowSec){
 }
 // ==/ENGINE==
 
-let pair="EURUSD",tf=60,needFit=true,hold=60,auto=true,candles=[],memRows=[],ind=null,trade=null,scanBusy=false,sig=null,FC=null,chartTraps=[],plines=[],timeline=[],W=0,L=0,pnl=0,log=[],lastFeedAt=0,deepBusy=false,feedBusy=false,lastFormingTime=0,formingMarkerUntil=0,lastAutoStamp=0,lastPaperEntryStamp=0,memBase={},lastMemSave=0,dnaSel=3,feedOk=false,earlyLockedStamp=0,earlyCandidate=null,earlyHistory=[];
+let pair="EURUSD",tf=60,needFit=true,hold=60,auto=true,candles=[],memRows=[],ind=null,trade=null,scanBusy=false,sig=null,FC=null,chartTraps=[],plines=[],timeline=[],W=0,L=0,pnl=0,log=[],lastFeedAt=0,deepBusy=false,feedBusy=false,liveSource=null,streamPair=null,lastFormingTime=0,formingMarkerUntil=0,lastAutoStamp=0,lastPaperEntryStamp=0,memBase={},lastMemSave=0,dnaSel=3,feedOk=false,earlyLockedStamp=0,earlyCandidate=null,earlyHistory=[];
 const $=id=>document.getElementById(id);
 const LW=LightweightCharts;
 const chart=LW.createChart($("chart"),{autoSize:true,layout:{background:{type:"solid",color:"#050a17"},textColor:"#9fb0d8",fontSize:11},grid:{vertLines:{color:"rgba(70,90,160,.12)"},horzLines:{color:"rgba(70,90,160,.12)"}},rightPriceScale:{borderColor:"#1b2a4a"},timeScale:{borderColor:"#1b2a4a",timeVisible:true,secondsVisible:true,rightOffset:12}});
@@ -427,10 +427,69 @@ function aggregateCandles(src,seconds){if(seconds<=30)return src.slice();const o
 function contiguousTail(rows,step,max){let i=rows.length-1;while(i>0&&rows.length-i<max&&rows[i].time-rows[i-1].time<=step*3)i--;return rows.slice(i);}
 function renderCandles(){if(!candles.length)return;const a=A[pair];cs.applyOptions({priceFormat:{type:"price",precision:a.d,minMove:10**-a.d}});const ts=chart.timeScale();let vr=null;try{vr=needFit?null:ts.getVisibleLogicalRange();}catch(e){}cs.setData(candles);ind=paint(true);try{if(needFit){const n=candles.length,span=$("chart").clientWidth<600?20:55;ts.setVisibleLogicalRange({from:n-span,to:n+10});needFit=false;}else if(vr)ts.setVisibleLogicalRange(vr);}catch(e){}}
 async function fetchLiveCandles(){const symbol=A[pair].symbol;const url=`${ENDPOINTS.candles}?symbol=${encodeURIComponent(symbol)}&venue=otc&tf=30&limit=500`;const res=await fetch(url,{cache:"no-store"});if(!res.ok)throw new Error(`Candle endpoint HTTP ${res.status}`);const json=await res.json();const parsed=normalizeCandleRows(json);if(parsed.length<8)throw new Error(`Feed returned only ${parsed.length} usable candles`);return parsed;}
+function closeLiveStream(){if(liveSource){liveSource.close();liveSource=null;}streamPair=null;}
+function processFeedRows(base){
+ if(!base?.length)return;
+ const all=aggregateCandles(base,tf),view=contiguousTail(all,tf,300);
+ if(view.length<8)throw new Error(`Not enough candles for this timeframe (${view.length}/8)`);
+ const last=view.at(-1),sourceAge=Math.max(0,Date.now()/1000-base.at(-1).time);
+ if(last.time!==lastFormingTime){if(lastFormingTime)formingMarkerUntil=Date.now()+5000;lastFormingTime=last.time;}
+ memRows=all;candles=view;renderCandles();
+ if(sourceAge>45){setFeedState(false,"OTCHARTS · STALE");setStatus(`Feed stale (${Math.round(sourceAge)}s)`,"bad");return;}
+ lastFeedAt=Date.now();setFeedState(true,liveSource?"OTCHARTS · LIVE STREAM":"OTCHARTS · HISTORY");
+ evaluateEarlySignal();resolveTimeline();settleTrade();
+ if(auto&&!scanBusy&&last.time!==lastAutoStamp){lastAutoStamp=last.time;doScan("AUTO");}
+}
+function applyLiveTick(tick){
+ if(!tick||tick.symbol!==A[pair].symbol)return;
+ const price=Number(tick.price),time=Number(tick.time);
+ if(!Number.isFinite(price)||!Number.isFinite(time))return;
+ const sec=Math.floor(time>1e12?time/1000:time),bucket=Math.floor(sec/30)*30;
+ const base=memBase[pair]||loadMem(pair);if(!base.length)return;
+ const last=base[base.length-1];if(bucket<last.time)return;
+ const bar=bucket===last.time
+  ?{...last,high:Math.max(last.high,price),low:Math.min(last.low,price),close:price}
+  :{time:bucket,open:price,high:price,low:price,close:price};
+ const merged=memMerge(pair,[bar]);lastFeedAt=Date.now();
+ try{processFeedRows(merged);}catch(e){setFeedState(false,"Feed: ERROR");setStatus(e.message,"bad");}
+}
+function openLiveStream(forPair){
+ closeLiveStream();
+ const symbol=A[forPair].symbol,source=new EventSource(`/.netlify/functions/otc-stream?symbol=${encodeURIComponent(symbol)}`);
+ liveSource=source;streamPair=forPair;
+ source.addEventListener("connected",event=>{
+  if(liveSource!==source)return;
+  try{const data=JSON.parse(event.data);setFeedState(true,"OTCHARTS · STREAM CONNECTED");setStatus(`Live stream connected · ${data.symbol||symbol}`,"ok");}
+  catch{setFeedState(true,"OTCHARTS · STREAM CONNECTED");}
+ });
+ source.addEventListener("tick",event=>{
+  if(liveSource!==source)return;
+  try{applyLiveTick(JSON.parse(event.data));}catch(e){setStatus("Could not read live tick: "+e.message,"bad");}
+ });
+ ["closed","dropped"].forEach(type=>source.addEventListener(type,event=>{
+  if(liveSource!==source)return;
+  try{const data=JSON.parse(event.data);setStatus(`OTCharts ${type}: ${(data.closed||data.dropped||[]).join(", ")||"instrument status update"}`,"bad");}
+  catch{setStatus(`OTCharts ${type} event received`,"bad");}
+ }));
+ source.addEventListener("stream_error",event=>{
+  if(liveSource!==source)return;
+  let message="OTCharts stream error";try{const data=JSON.parse(event.data);message=data.error||message;}catch{}
+  setFeedState(false,"STREAM ERROR");setStatus(message,"bad");
+ });
+ source.addEventListener("replaced",()=>{
+  if(liveSource!==source)return;
+  source.close();liveSource=null;streamPair=null;setFeedState(false,"STREAM REPLACED");setStatus("Another connection replaced this stream. Check that APEXSCAN is not open in another tab or device.","bad");
+ });
+ source.onerror=()=>{
+  if(liveSource!==source)return;
+  if(source.readyState===EventSource.CLOSED){setFeedState(false,"STREAM CLOSED");setStatus("Live stream closed. Reload to reconnect.","bad");}
+  else{setFeedState(false,"STREAM RECONNECTING");setStatus("Live stream interrupted · browser is attempting to reconnect","busy");}
+ };
+}
 // ---------- Live developing-candle EARLY signal engine ----------
 function earlyReset(){earlyLockedStamp=0;earlyCandidate=null;earlyHistory=[];$('earlyDir').textContent='WAIT · MONITORING';$('earlyDir').className='edir wait';$('earlyMeta').textContent='Watching the developing candle and short-term momentum.';$('earlyConf').textContent='CONFLUENCE 0/5';}
 function evaluateEarlySignal(){
- if(!feedOk||!candles.length||Date.now()-lastFeedAt>5000)return;
+ if(!feedOk||!candles.length||Date.now()-lastFeedAt>45000)return;
  const rows=candles.slice(-5);if(rows.length<4)return;
  const cur=rows.at(-1),prev=rows.at(-2),p2=rows.at(-3),p3=rows.at(-4);
  const stamp=cur.time;if(earlyLockedStamp===stamp)return;
@@ -454,16 +513,11 @@ function evaluateEarlySignal(){
 }
 
 async function refreshFeed(){if(feedBusy)return;feedBusy=true;if(!navigator.onLine){setFeedState(false,"Feed: OFFLINE");feedBusy=false;return;}
- const reqPair=pair,reqTf=tf;
- try{const incoming=await fetchLiveCandles();if(reqPair!==pair||reqTf!==tf)return;const base=memMerge(pair,incoming);lastFeedAt=Date.now();
-  const all=aggregateCandles(base,tf),view=contiguousTail(all,tf,300);if(view.length<8)throw new Error(`Not enough candles for this timeframe (${view.length}/8)`);
-  const last=view.at(-1),sourceAge=Math.max(0,Date.now()/1000-incoming.at(-1).time);
-  if(last.time!==lastFormingTime){if(lastFormingTime)formingMarkerUntil=Date.now()+5000;lastFormingTime=last.time;}
-  if(sourceAge>45)throw new Error(`Feed stale (${Math.round(sourceAge)}s)`);
-  memRows=all;candles=view;renderCandles();setFeedState(true,"OTCHARTS · 1S REFRESH");evaluateEarlySignal();
-  resolveTimeline();settleTrade();
-  if(auto&&!scanBusy&&last.time!==lastAutoStamp){lastAutoStamp=last.time;doScan("AUTO");}
- }catch(e){setFeedState(false,"Feed: ERROR");setStatus("Live feed unavailable — "+e.message,"bad");
+ const reqPair=pair;
+ try{
+  const incoming=await fetchLiveCandles();if(reqPair!==pair)return;
+  const base=memMerge(pair,incoming);processFeedRows(base);openLiveStream(reqPair);
+ }catch(e){setFeedState(false,"Feed: ERROR");setStatus("Historical candle load failed — "+e.message,"bad");
   if(trade){const pending=log.find(x=>x.res==="Pending");if(pending)pending.res="Void";trade=null;drawStats();}
  }finally{feedBusy=false;}
 }
@@ -477,7 +531,7 @@ function engineNotes(f){const n=(id,t)=>{const el=$(id);if(!el.querySelector("sp
  n("en_mem",`${f.pm.n} matches`);n("en_mom",`${f.net>=0?"+":""}${f.net.toFixed(2)} ATR`);n("en_mag",f.magnet?fx(f.magnet.target):"two-sided");}
 async function doScan(kind){
  if(scanBusy)return;
- if(!feedOk||!memRows.length||Date.now()-lastFeedAt>5000){setStatus("Scan blocked — live feed is not fresh","bad");return;}
+ if(!feedOk||!memRows.length||Date.now()-lastFeedAt>45000){setStatus("Scan blocked — live feed is not fresh","bad");return;}
  let f;try{f=runEngine(memRows,tf,Date.now()/1000);}catch(e){setStatus(e.message,"bad");return;}
  scanBusy=true;$("scan4").disabled=true;f.pair=pair;f.kind=kind;f.at=Date.now();
  setStatus(`Scanning 4 candles with internal engine ${hm(f.scanTimes[0])} → ${hm(f.scanTimes[3])}…`,"busy");
@@ -615,7 +669,7 @@ requestAnimationFrame(drawOverlay);
 
 // ---------- Paper trades + stats ----------
 function drawStats(){const tot=W+L,wr=tot?(W/tot*100).toFixed(1)+"%":"—";$("wr").textContent=wr;$("pw").textContent=wr;$("w1").textContent=$("pwi").textContent=W;$("l1").textContent=$("pl2").textContent=L;$("pt").textContent=tot;$("pp").textContent=(pnl<0?"-$":"$")+Math.abs(pnl).toFixed(2);$("pp").className=pnl<0?"Lo":pnl>0?"W":"";$("hold").textContent="Hold: "+DUR[hold]+(trade?` · ${trade.left}s`:"");$("log").innerHTML=log.length?log.slice(0,4).map(x=>`<div class="rw"><i class="${x.call?"up2":"dn2"}">${x.call?"CALL":"PUT"}</i><span>${A[x.pair].n}</span><span>${TF[x.tf]}</span><b class="${x.res==="Win"?"W":x.res==="Loss"?"Lo":"P"}">${x.res}</b></div>`).join(""):'<div class="note">No paper entries yet.</div>';}
-function settleTrade(){if(!trade||!candles.length)return;const now=Date.now()/1000;if(now<trade.targetTime||Date.now()-lastFeedAt>5000)return;const resultCandle=candles.find(c=>c.time+tf>=trade.targetTime&&c.time+tf<=now);if(!resultCandle)return;const cur=resultCandle.close,win=trade.call?cur>trade.entry:cur<trade.entry;win?W++:L++;pnl+=win?trade.stake*PAYOUT:-trade.stake;const item=log.find(x=>x.res==="Pending");if(item)item.res=win?"Win":"Loss";trade=null;drawStats();}
+function settleTrade(){if(!trade||!candles.length)return;const now=Date.now()/1000;if(now<trade.targetTime||Date.now()-lastFeedAt>45000)return;const resultCandle=candles.find(c=>c.time+tf>=trade.targetTime&&c.time+tf<=now);if(!resultCandle)return;const cur=resultCandle.close,win=trade.call?cur>trade.entry:cur<trade.entry;win?W++:L++;pnl+=win?trade.stake*PAYOUT:-trade.stake;const item=log.find(x=>x.res==="Pending");if(item)item.res=win?"Win":"Loss";trade=null;drawStats();}
 // ---------- Experimental screenshot-based Visual Scan (independent of OTC API feed) ----------
 let visualImageData=null,visualBusy=false;
 const visualFile=$("visualFile"),visualBtn=$("visualScanBtn"),visualPreview=$("visualPreview");
@@ -640,22 +694,26 @@ visualBtn.addEventListener("click",async()=>{
 });
 
 async function runDeepScan(){if(deepBusy||candles.length<8)return;deepBusy=true;$("deep").disabled=true;$("deep").textContent="CLAUDE ANALYZING…";try{const recent=candles.slice(-40),body={symbol:A[pair].symbol,pair,market:"OTC",scanTimeframe:TF[tf],forecast:"next candle",price:recent.at(-1).close,fourCandleScan:FC?summarizeFC(FC):null,recentCandles:recent.map(({time,open,high,low,close})=>({time,open,high,low,close}))};const res=await fetch(ENDPOINTS.claude,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await res.json().catch(()=>({error:"Claude returned invalid JSON"}));if(!res.ok)throw new Error(j.error||`Claude endpoint HTTP ${res.status}`);const result=j.deepScan||j.analysis||j;const textOut=typeof result==="string"?result:JSON.stringify(result,null,2);$("aiDet").hidden=false;$("aiDet").open=true;$("aiDet").querySelector("summary").textContent="Claude deep scan";$("aiBody").innerHTML=`<div style="white-space:pre-wrap">${escapeHtml(textOut)}</div>`;}catch(e){$("aiDet").hidden=false;$("aiDet").open=true;$("aiBody").innerHTML=`<div class="dn2">${escapeHtml(e.message)}. Check the Claude Netlify function and API key.</div>`;}finally{deepBusy=false;$("deep").disabled=false;$("deep").textContent="◎ OPTIONAL CLAUDE DEEP SCAN";}}
-function tick(){const now=Math.floor(Date.now()/1000),r=tf-now%tf,mmss=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0");$("timer").textContent="Candle: "+mmss;$("cnt").textContent="00:"+mmss;$("cbar").style.width=((tf-r)/tf*100)+"%";$("clk").textContent="UTC "+new Date().toISOString().slice(11,19);
+function tick(){if(feedOk&&lastFeedAt&&Date.now()-lastFeedAt>45000){feedOk=false;setFeedState(false,"STREAM STALE");setStatus("No live price tick received for 45 seconds","bad");}const now=Math.floor(Date.now()/1000),r=tf-now%tf,mmss=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0");$("timer").textContent="Candle: "+mmss;$("cnt").textContent="00:"+mmss;$("cbar").style.width=((tf-r)/tf*100)+"%";$("clk").textContent="UTC "+new Date().toISOString().slice(11,19);
  if(trade){trade.left=Math.max(0,trade.entryTime+trade.hold-now);drawStats();settleTrade();}
  const lc=candles.at(-1),fc=$("fc"),wrap=$("chart").parentElement;if(lc&&wrap){const x=chart.timeScale().timeToCoordinate(lc.time),y=cs.priceToCoordinate(lc.close);if(x!=null&&y!=null&&Date.now()<formingMarkerUntil){fc.style.display="block";fc.style.left=Math.max(58,Math.min(wrap.clientWidth-58,x))+"px";fc.style.top=Math.max(8,y-66)+"px";}else fc.style.display="none";}else fc.style.display="none";}
 function fill(sel){sel.innerHTML=Object.entries(A).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join("");}fill($("pairL"));fill($("pairT"));
-function resetScan(){FC=null;sig=null;earlyReset();chartTraps=[];applyPriceLines();candles=[];memRows=[];trade=null;log=[];lastAutoStamp=0;lastFormingTime=0;formingMarkerUntil=0;needFit=true;engines("");
- ENG.concat("en_ai").forEach(id=>{const sp=$(id).querySelector("span");if(sp){sp.querySelector("small")?.remove();$(id).innerHTML=sp.innerHTML;}});$("dir").className="fdir";$("dir").textContent="— No scan yet";$("sig").className="card sigc";["k_score","k_mem","k_risk","k_mag","k_zone","k_ai"].forEach(id=>$(id).textContent="—");
- $("why").innerHTML="<li>Run a scan to see why the engine picks UP, DOWN or WAIT.</li>";$("rec").textContent="Recommendation: —";$("tfLbl").textContent=TF[tf];loadTimeline();renderTimeline();renderTrack();setStatus("Loading candles…","busy");refreshFeed();drawStats();}
+function resetScan({reloadHistory=true}={}){FC=null;sig=null;earlyReset();chartTraps=[];applyPriceLines();candles=[];memRows=[];trade=null;log=[];lastAutoStamp=0;lastFormingTime=0;formingMarkerUntil=0;needFit=true;engines("");
+ if(reloadHistory)closeLiveStream();
+ ENG.concat("en_ai").forEach(id=>{const sp=$(id).querySelector("span");if(sp){sp.querySelector("small")?.remove();$(id).innerHTML=sp.innerHTML;}});
+ $("dir").className="fdir";$("dir").textContent="— No scan yet";$("sig").className="card sigc";["k_score","k_mem","k_risk","k_mag","k_zone","k_ai"].forEach(id=>$(id).textContent="—");
+ $("why").innerHTML="<li>Run a scan to see why the engine picks UP, DOWN or WAIT.</li>";$("rec").textContent="Recommendation: —";$("tfLbl").textContent=TF[tf];loadTimeline();renderTimeline();renderTrack();setStatus("Loading candles…","busy");
+ if(reloadHistory)refreshFeed();else{const base=memBase[pair]||loadMem(pair);memBase[pair]=base;if(base.length){try{processFeedRows(base);}catch(e){setStatus(e.message,"bad");}}else refreshFeed();}
+ drawStats();}
 function setPair(k){pair=k;$("pairL").value=$("pairT").value=k;resetScan();}
-function setTf(v){tf=+v;$("tfT").value=v;[...$("tfs").children].forEach(b=>b.classList.toggle("on",b.dataset.v==v));resetScan();}
+function setTf(v){tf=+v;$("tfT").value=v;[...$("tfs").children].forEach(b=>b.classList.toggle("on",b.dataset.v==v));resetScan({reloadHistory:false});}
 $("pairL").onchange=$("pairT").onchange=e=>setPair(e.target.value);$("tfs").onclick=e=>e.target.dataset.v&&setTf(e.target.dataset.v);$("tfT").onchange=e=>setTf(e.target.value);$("dur").onchange=e=>{hold=+e.target.value;drawStats();};
 $("mn").onclick=()=>$("amt").value=Math.max(1,(+$("amt").value||5)-1);$("pl").onclick=()=>$("amt").value=(+$("amt").value||5)+1;
 $("auto").onclick=e=>{auto=!auto;e.currentTarget.setAttribute("aria-pressed",auto);$("next").lastChild.textContent=auto?"Next Scan: Auto (New Candle)":"Auto scan off";};
 $("scan4").onclick=()=>doScan("MANUAL");$("deep").onclick=runDeepScan;
 $("nav").onclick=e=>{const b=e.target.closest("button");if(!b)return;[...$("nav").children].forEach(x=>x.classList.toggle("on",x===b));const t=$(b.dataset.go);if(t)t.scrollIntoView({behavior:"smooth",block:"start"});};
 window.addEventListener("pagehide",()=>{if(memBase[pair])saveMem(pair,memBase[pair].slice(0,-1));});
-$("tfT").value=String(tf);[...$("tfs").children].forEach(b=>b.classList.toggle("on",b.dataset.v==tf));setFeedState(false,"Feed: CONNECTING");resetScan();setInterval(refreshFeed,1000);setInterval(tick,1000);tick();
+$("tfT").value=String(tf);[...$("tfs").children].forEach(b=>b.classList.toggle("on",b.dataset.v==tf));setFeedState(false,"Feed: CONNECTING");resetScan();setInterval(tick,1000);tick();
 </script>
 </body>
 </html>
