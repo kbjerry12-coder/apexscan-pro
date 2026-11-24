@@ -837,6 +837,22 @@ function renderCandles(){if(!candles.length)return;const dg=digits();cs.applyOpt
 function heikinAshi(rows){const out=[];let po=null,pc=null;for(const c of rows){const hc=(c.open+c.high+c.low+c.close)/4,ho=po==null?(c.open+c.close)/2:(po+pc)/2;out.push({time:c.time,open:ho,high:Math.max(c.high,ho,hc),low:Math.min(c.low,ho,hc),close:hc});po=ho;pc=hc;}return out;}
 function spacingOf(rows){if(rows.length<3)return 0;const d=[];for(let i=1;i<rows.length;i++)d.push(rows[i].time-rows[i-1].time);d.sort((a,b)=>a-b);return d[Math.floor(d.length/2)];}
 async function fetchLiveCandles(tfReq){const {symbol,venue}=A[pair];const url=`${ENDPOINTS.candles}?symbol=${encodeURIComponent(symbol)}&venue=${encodeURIComponent(venue||"otc")}&tf=${tfReq}&limit=500`;const res=await fetch(url,{cache:"no-store"});if(!res.ok)throw new Error(`Candle endpoint HTTP ${res.status}`);const json=await res.json();const parsed=normalizeCandleRows(json);if(parsed.length<8)throw new Error(`Feed returned only ${parsed.length} usable candles`);return{rows:parsed,spacing:spacingOf(parsed)};}
+function processFeedRows(base){
+ if(!base?.length)return;
+ const all=aggregateCandles(base,tf),view=contiguousTail(all,tf,300);
+ const need=LOOK+12;
+ if(view.length<need){candles=view;memRows=all;renderCandles();historyLoaded=true;updateDataAudit();
+  if(liveSource||lastTickAt){lastFeedAt=Date.now();setFeedState(true,"OTCHARTS · WARMING UP");}
+  setStatus(`Building ${TF[tf]} candles from live ticks · ${view.length}/${need} — scans start automatically`,"busy");return;}
+ const last=view.at(-1),sourceAge=Math.max(0,nowS()-base.at(-1).time-baseRes);
+ if(last.time!==lastFormingTime){if(lastFormingTime)formingMarkerUntil=Date.now()+5000;lastFormingTime=last.time;}
+ memRows=all;candles=view;renderCandles();historyLoaded=true;updateDataAudit();updateFormationForecast();
+ if(sourceAge>45){setFeedState(false,"OTCHARTS · STALE");setStatus(`Feed stale (${Math.round(sourceAge)}s)`,"bad");return;}
+ lastFeedAt=Date.now();setFeedState(true,liveSource?"OTCHARTS · LIVE STREAM":"OTCHARTS · HISTORY");
+ try{RADAR=computeRadar();}catch(e){RADAR=null;}
+ evaluateEarlySignal();resolveTimeline();settleTrade();
+ if(auto&&!scanBusy&&last.time!==lastAutoStamp){lastAutoStamp=last.time;doScan("AUTO");}
+}
 function clearStreamRetry(){if(streamRetryTimer){clearTimeout(streamRetryTimer);streamRetryTimer=null;}}
 function closeLiveStream(){
  clearStreamRetry();streamGeneration++;streamWantedPair=null;streamRetryAttempt=0;
