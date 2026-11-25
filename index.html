@@ -178,17 +178,17 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
 <header>
   <div class="brand">
     <svg width="44" height="44" viewBox="0 0 46 46" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><path d="M23 5 6 41h8l9-19 9 19h8z" fill="none" stroke="url(#g)" stroke-width="4" stroke-linejoin="round"/><path d="M16 33h14" stroke="url(#g)" stroke-width="4"/></svg>
-    <div><b>APEXSCAN <i>PRO</i></b><small>STOCK MARKET INTELLIGENCE</small></div>
+    <div><b>APEXSCAN <i>PRO</i></b><small>OTC INTELLIGENCE TERMINAL</small></div>
   </div>
-  <div class="hr"><span class="pill" id="feedBadge"><span class="dot"></span>STOCK FEED: CONNECTING</span><span class="pill" id="clk">UTC --:--:--</span></div>
+  <div class="hr"><span class="pill" id="feedBadge"><span class="dot"></span>OTC FEED: CONNECTING</span><span class="pill" id="clk">UTC --:--:--</span></div>
   <nav id="nav"><button class="on" data-go="top">⌂ Dashboard</button><button data-go="tlCard">Scan History</button><button data-go="pmCard">Pattern Memory</button><button data-go="slCard">Straight-Line</button><button data-go="radarCard">Momentum Radar</button><button data-go="dnaCard">Candle DNA</button><button data-go="plCard">Pattern Library</button><button data-go="fkCard">Fakeout Library</button><button data-go="perfCard">Paper Trade</button></nav>
 </header>
 
 <main class="app" id="top">
   <div class="col left">
     <section class="card" id="cCtl">
-      <div class="lbl">STOCK / ETF</div><select id="pairL"></select>
-      <div class="lbl">STOCK TIME FRAMES · UTC</div>
+      <div class="lbl">OTC CURRENCY PAIR</div><select id="pairL"></select>
+      <div class="lbl">OTC CANDLE TIMEFRAMES</div>
       <div class="seg tfgrid" id="tfs"></div>
       <div class="lbl">TRADE DURATION</div>
       <select id="dur"></select>
@@ -327,14 +327,14 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
     <section class="card transparency" id="transparencyCard">
       <h3>DATA TRANSPARENCY <small>LIVE SOURCE AUDIT</small></h3>
       <div class="trans-grid">
-        <div class="trans-item"><small>Market data</small><b id="auditMarket">Twelve Data · awaiting data</b></div>
+        <div class="trans-item"><small>Market data</small><b id="auditMarket">OTCharts · awaiting data</b></div>
         <div class="trans-item"><small>Refresh state</small><b id="auditStream">Not connected</b></div>
         <div class="trans-item"><small>Last update</small><b id="auditTick">—</b></div>
         <div class="trans-item"><small>This device</small><b id="auditDevice">Detecting…</b></div>
         <div class="trans-item"><small>Connection</small><b id="auditNetwork">Checking…</b></div>
         <div class="trans-item"><small>Broker connection</small><b id="auditPO">Not connected · paper only</b></div>
       </div>
-      <div class="trans-note" id="auditNote">Twelve Data candles are polled; this app does not connect to a broker. This panel reports what APEXSCAN can actually verify; it does not pretend to read another browser tab.</div>
+      <div class="trans-note" id="auditNote">OTCharts OTC candles and ticks power this dashboard. Signals and paper tracking only; this app does not submit Pocket Option orders.</div>
     </section>
     <section class="card prediction" id="formationCard">
       <div class="pred-head"><h3>NEXT-CANDLE FORMATION BRAIN</h3><span class="pill" id="formationStatus">Waiting for history</span></div>
@@ -392,31 +392,41 @@ table.t{width:100%;border-collapse:collapse;font-size:12.5px}
 </main>
 
 <script>
-// APEXSCAN PRO Stock Market Edition — Twelve Data candles + deterministic confirmed 4-candle engine.
+// APEXSCAN PRO OTC Edition — OTCharts candles + live ticks + deterministic confirmed 4-candle engine.
 // Preserved from the existing paper-trade model (directional win/loss accounting).
 const PAYOUT = 0.92;
-// US-listed equities and ETF symbols supplied by Twelve Data.
+// Pocket Option OTC pairs supplied by OTCharts.
 // d = price decimals; "auto" = derived from the live price (for very small quotes like LBP/USD).
 const A = {
-  AAPL:{n:"Apple (AAPL)",symbol:"AAPL",venue:"stocks",d:2},
-  TSLA:{n:"Tesla (TSLA)",symbol:"TSLA",venue:"stocks",d:2},
-  NVDA:{n:"NVIDIA (NVDA)",symbol:"NVDA",venue:"stocks",d:2},
-  MSFT:{n:"Microsoft (MSFT)",symbol:"MSFT",venue:"stocks",d:2},
-  AMZN:{n:"Amazon (AMZN)",symbol:"AMZN",venue:"stocks",d:2},
-  META:{n:"Meta Platforms (META)",symbol:"META",venue:"stocks",d:2},
-  SPY:{n:"S&P 500 ETF (SPY)",symbol:"SPY",venue:"stocks",d:2},
-  GOOGL:{n:"Alphabet (GOOGL)",symbol:"GOOGL",venue:"stocks",d:2}
+  EURUSD_otc:{n:"EUR/USD OTC",symbol:"EURUSD_otc",venue:"otc",d:5},
+  GBPUSD_otc:{n:"GBP/USD OTC",symbol:"GBPUSD_otc",venue:"otc",d:5},
+  USDJPY_otc:{n:"USD/JPY OTC",symbol:"USDJPY_otc",venue:"otc",d:3},
+  AUDCAD_otc:{n:"AUD/CAD OTC",symbol:"AUDCAD_otc",venue:"otc",d:5},
+  AUDCHF_otc:{n:"AUD/CHF OTC",symbol:"AUDCHF_otc",venue:"otc",d:5},
+  CHFJPY_otc:{n:"CHF/JPY OTC",symbol:"CHFJPY_otc",venue:"otc",d:3},
+  EURCHF_otc:{n:"EUR/CHF OTC",symbol:"EURCHF_otc",venue:"otc",d:5},
+  EURNZD_otc:{n:"EUR/NZD OTC",symbol:"EURNZD_otc",venue:"otc",d:5},
+  GBPAUD_otc:{n:"GBP/AUD OTC",symbol:"GBPAUD_otc",venue:"otc",d:5},
+  UAHUSD_otc:{n:"UAH/USD OTC",symbol:"UAHUSD_otc",venue:"otc",d:5},
+  USDARS_otc:{n:"USD/ARS OTC",symbol:"USDARS_otc",venue:"otc",d:5},
+  USDBDT_otc:{n:"USD/BDT OTC",symbol:"USDBDT_otc",venue:"otc",d:5},
+  USDCLP_otc:{n:"USD/CLP OTC",symbol:"USDCLP_otc",venue:"otc",d:5},
+  USDPKR_otc:{n:"USD/PKR OTC",symbol:"USDPKR_otc",venue:"otc",d:5},
+  USDTHB_otc:{n:"USD/THB OTC",symbol:"USDTHB_otc",venue:"otc",d:5},
+  KESUSD_otc:{n:"KES/USD OTC",symbol:"KESUSD_otc",venue:"otc",d:5},
+  USDMYR_otc:{n:"USD/MYR OTC",symbol:"USDMYR_otc",venue:"otc",d:5},
+  SARCNY_otc:{n:"SAR/CNY OTC",symbol:"SARCNY_otc",venue:"otc",d:5}
 };
-// Stock-market scan time frames. Twelve Data supplies native 1-minute and 5-minute bars.
-const TF={60:"M1",300:"M5"};
+// OTCharts candle intervals, in seconds.
+const TF={5:"5s",10:"10s",15:"15s",30:"30s",60:"1m"};
 const DURS=[5,10,15,30,60,120,180,300,600,900,1800,3600,14400];
 const durTxt=s=>s<60?`${s} sec`:s<3600?`${s/60} min`:`${s/3600} h`;
-const MARKET_MODE="stocks",DATA_PROVIDER="Twelve Data";
-const ENDPOINTS={candles:"/.netlify/functions/stock-candles",stream:"/api/otc-stream",claude:"/.netlify/functions/claude-deep-scan"};
+const MARKET_MODE="otc",DATA_PROVIDER="OTCharts";
+const ENDPOINTS={candles:"/.netlify/functions/otc-candles",stream:"/.netlify/functions/otc-stream",claude:"/.netlify/functions/claude-deep-scan"};
 
 // ==ENGINE== (pure functions; no DOM)
 const LOOK=8;            // candles used to define the "prior range" a trap must break
-const NEUTRAL=1.2;       // |evidence score| below this = WAIT
+const NEUTRAL=0.9; // Slightly more responsive signal threshold; evidence and risk checks remain active.       // |evidence score| below this = WAIT
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const colorOf=c=>c.close>c.open?1:c.close<c.open?-1:0;
 function ema(a,n){if(!a.length)return[];const k=2/(n+1);let prev=a[0];return a.map((v,i)=>(prev=i?v*k+prev*(1-k):v));}
@@ -619,7 +629,7 @@ function zoneAround(level,dir,levels,a){
 // Only trade clean "staircase" trends: closes hug a straight line, most candles follow the trend with strong
 // bodies, pullbacks are shallow, ranges are steady (not jumpy), and the latest candle confirms.
 // Jumpiness limits loosened (v4): only genuinely jumpy candles block a signal.
-const SL={N:10,minR2:.72,minSlope:.12,minWith:.6,minBody:.45,maxCV:.8,maxSpike:2.8,maxFlips:6,maxWick:.62,minConf:70,minConfSmooth:60};
+const SL={N:10,minR2:.72,minSlope:.12,minWith:.6,minBody:.45,maxCV:.8,maxSpike:2.8,maxFlips:6,maxWick:.62,minConf:65,minConfSmooth:55};
 function linreg(ys){const n=ys.length,mx=(n-1)/2,my=ys.reduce((a,b)=>a+b,0)/n;let sxy=0,sxx=0,syy=0;ys.forEach((y,i)=>{sxy+=(i-mx)*(y-my);sxx+=(i-mx)**2;syy+=(y-my)**2;});const slope=sxx?sxy/sxx:0;return{slope,icpt:my-slope*mx,r2:syy>0&&sxx>0?sxy*sxy/(sxx*syy):0};}
 function trendQuality(rows,k,a){
  const N=SL.N,w=rows.slice(Math.max(0,k-N+1),k+1);
@@ -740,7 +750,7 @@ function runEngine(rows,tf,nowSec,ext={}){
  let dir=score>=NEUTRAL?1:score<=-NEUTRAL?-1:0;const waitWhy=[];
  if(!dir)waitWhy.push(`the evidence score (${score>=0?"+":""}${score.toFixed(2)}) is inside the neutral band of ±${NEUTRAL}`);
  if(dir&&risk==="High"&&Math.abs(score)<2.5){waitWhy.push("fakeout risk is high and the evidence is not strong enough to override it");dir=0;}
- if(dir&&!pm.reliable&&Math.abs(score)<2){waitWhy.push(`pattern memory has only ${pm.n} genuinely close matches, too few to trust a moderate score`);dir=0;}
+ if(dir&&!pm.reliable&&Math.abs(score)<1.5){waitWhy.push(`pattern memory has only ${pm.n} genuinely close matches, too few to trust a moderate score`);dir=0;}
  // Momentum Radar veto: don't chase a move the radar says is already running out of fuel.
  if(dir&&R&&R.ready&&R.exh>=60&&R.trend===dir&&Math.abs(score)<2.5){waitWhy.push(`the momentum radar shows ${R.exhWho} exhausted (${R.exh}%) — the ${dir>0?"bullish":"bearish"} move may be weakening before the chart turns`);dir=0;}
  // ---- Signal gate (v4): block jumpy candles, reward straight-line trends, never chase bait ----
@@ -787,9 +797,9 @@ function runEngine(rows,tf,nowSec,ext={}){
 }
 // ==/ENGINE==
 
-let pair="AAPL",tf=60,needFit=true,hold=60,auto=true,candles=[],memRows=[],ind=null,trade=null,scanBusy=false,sig=null,FC=null,chartTraps=[],plines=[],timeline=[],W=0,L=0,pnl=0,log=[],lastFeedAt=0,deepBusy=false,feedBusy=false,liveSource=null,streamPair=null,streamRetryTimer=null,streamRetryAttempt=0,streamWantedPair=null,streamGeneration=0,lastFormingTime=0,formingMarkerUntil=0,lastAutoStamp=0,lastPaperEntryStamp=0,lastFormationKey=0,lastTickAt=0,historyLoaded=false,memBase={},lastMemSave=0,dnaSel=3,feedOk=false,earlyLockedStamp=0,earlyCandidate=null,earlyHistory=[],tickBuf=[],radarTrail=[],RADAR=null,straightMode=(()=>{try{return localStorage.getItem("apex_straight")!=="0";}catch(e){return true;}})(),
- baseRes=30,clockOffset=0,clockSamples=[],chartType="candles",feedNote="";
-// Stock candle timestamps are UTC-normalized by the data endpoint.
+let pair="EURUSD_otc",tf=60,needFit=true,hold=60,auto=true,candles=[],memRows=[],ind=null,trade=null,scanBusy=false,sig=null,FC=null,chartTraps=[],plines=[],timeline=[],W=0,L=0,pnl=0,log=[],lastFeedAt=0,deepBusy=false,feedBusy=false,liveSource=null,streamPair=null,streamRetryTimer=null,streamRetryAttempt=0,streamWantedPair=null,streamGeneration=0,lastFormingTime=0,formingMarkerUntil=0,lastAutoStamp=0,lastPaperEntryStamp=0,lastFormationKey=0,lastTickAt=0,historyLoaded=false,memBase={},lastMemSave=0,dnaSel=3,feedOk=false,earlyLockedStamp=0,earlyCandidate=null,earlyHistory=[],tickBuf=[],radarTrail=[],RADAR=null,straightMode=(()=>{try{return localStorage.getItem("apex_straight")!=="0";}catch(e){return true;}})(),
+ baseRes=60,clockOffset=0,clockSamples=[],chartType="candles",feedNote="";
+// OTC candle timestamps are UTC-normalized by the data endpoint.
 const nowMs=()=>Date.now()+clockOffset,nowS=()=>nowMs()/1000;
 function noteClock(tickMs){const off=tickMs-Date.now();if(!Number.isFinite(off)||Math.abs(off)>120000)return;clockSamples.push(off);if(clockSamples.length>60)clockSamples.shift();const so=[...clockSamples].sort((a,b)=>a-b);clockOffset=so[Math.floor(so.length/2)];}
 const holdSec=()=>hold==="auto"?tf:hold;
@@ -838,31 +848,31 @@ function heikinAshi(rows){const out=[];let po=null,pc=null;for(const c of rows){
 function spacingOf(rows){if(rows.length<3)return 0;const d=[];for(let i=1;i<rows.length;i++)d.push(rows[i].time-rows[i-1].time);d.sort((a,b)=>a-b);return d[Math.floor(d.length/2)];}
 async function fetchLiveCandles(tfReq){
  const {symbol}=A[pair];
- if(![60,300].includes(tfReq))throw new Error("Stock charts support 1-minute and 5-minute candles only.");
- const url=`${ENDPOINTS.candles}?symbol=${encodeURIComponent(symbol)}&tf=${tfReq}&limit=500`;
+ if(!Object.prototype.hasOwnProperty.call(TF,tfReq))throw new Error("Unsupported OTC candle timeframe.");
+ const url=`${ENDPOINTS.candles}?symbol=${encodeURIComponent(symbol)}&tf=${tfReq}&limit=80`;
  const res=await fetch(url,{cache:"no-store"});
  const json=await res.json().catch(()=>({}));
- if(!res.ok||json.success===false)throw new Error(json.error||`Twelve Data candle endpoint HTTP ${res.status}`);
+ if(!res.ok||json.success===false)throw new Error(json.error||`OTCharts candle endpoint HTTP ${res.status}`);
  const parsed=normalizeCandleRows(json);
- if(parsed.length<20)throw new Error(`Twelve Data returned only ${parsed.length} usable candles for ${symbol}`);
- return{rows:parsed,spacing:spacingOf(parsed)};
+ if(parsed.length<LOOK+12)throw new Error(`OTCharts returned only ${parsed.length} usable candles for ${symbol} at ${TF[tfReq]}`);
+ return{rows:parsed,spacing:spacingOf(parsed)||tfReq};
 }
 function processFeedRows(base){
  if(!base?.length)return;
  const all=aggregateCandles(base,tf),view=contiguousTail(all,tf,300);
  const need=LOOK+12;
- if(view.length<need){candles=view;memRows=all;renderCandles();historyLoaded=true;updateDataAudit();setStatus(`Loading ${TF[tf]} stock history · ${view.length}/${need} candles needed before scanning`,"busy");return;}
+ if(view.length<need){candles=view;memRows=all;renderCandles();historyLoaded=true;updateDataAudit();setStatus(`Loading ${TF[tf]} OTC history · ${view.length}/${need} candles needed before scanning`,"busy");return;}
  const last=view.at(-1),sourceAge=Math.max(0,nowS()-base.at(-1).time-baseRes),maxAge=Math.max(120,tf*1.5);
  if(last.time!==lastFormingTime){if(lastFormingTime)formingMarkerUntil=Date.now()+5000;lastFormingTime=last.time;}
  memRows=all;candles=view;renderCandles();historyLoaded=true;updateDataAudit();updateFormationForecast();
- if(sourceAge>maxAge){setFeedState(false,"STOCK DATA · STALE");setStatus(`Twelve Data is stale (${Math.round(sourceAge)}s since the latest ${TF[tf]} bar). Confirmed scans are blocked.`,"bad");return;}
- lastFeedAt=Date.now();setFeedState(true,"TWELVE DATA · "+(sourceAge<tf?"CURRENT BAR":"HISTORY"));
+ if(sourceAge>maxAge){setFeedState(false,"OTC DATA · STALE");setStatus(`OTCharts data is stale (${Math.round(sourceAge)}s since the latest ${TF[tf]} bar). Confirmed scans are blocked.`,"bad");return;}
+ lastFeedAt=Date.now();setFeedState(true,"OTCHARTS · "+(sourceAge<tf?"CURRENT BAR":"HISTORY"));
  try{RADAR=computeRadar();}catch(e){RADAR=null;}
  resolveTimeline();settleTrade(); // Confirmed-only mode: no developing-candle/early callouts.
  if(auto&&!scanBusy&&last.time!==lastAutoStamp){lastAutoStamp=last.time;doScan("AUTO");}
 }
 // ---------- Live ticks → candles ----------
-// Tick payload parsing retained for compatibility; stock edition uses candle polling: {price,time}, {p,t}, {bid,ask}, candle-like {close,time}, arrays, {ticks:[...]}, {data:{...}}.
+// Tick payload parsing retained for compatibility; OTC edition uses candle polling: {price,time}, {p,t}, {bid,ask}, candle-like {close,time}, arrays, {ticks:[...]}, {data:{...}}.
 let tickRenderTimer=null;
 function tickList(d){if(Array.isArray(d))return d;if(Array.isArray(d?.ticks))return d.ticks;if(Array.isArray(d?.data))return d.data;if(d?.data&&typeof d.data==="object")return[{symbol:d.symbol,...d.data}];return[d];}
 function tickPrice(x){const num=v=>v==null||v===""?NaN:Number(v);const bid=num(x.bid),ask=num(x.ask);for(const v of [x.price,x.p,x.value,x.last,x.rate,x.quote,x.close,x.c]){const n=num(v);if(Number.isFinite(n)&&n>0)return n;}if(Number.isFinite(bid)&&Number.isFinite(ask))return(bid+ask)/2;if(Number.isFinite(bid))return bid;if(Number.isFinite(ask))return ask;return NaN;}
@@ -980,13 +990,13 @@ function openLiveStream(forPair){
 // ---------- Transparent data audit + local formation predictor ----------
 function updateDataAudit(){
  const set=(id,v)=>{const e=$(id);if(e)e.textContent=v;};
- set("auditMarket",historyLoaded?"Twelve Data · US stocks / ETF":"Twelve Data · waiting for history");
- set("auditStream",historyLoaded?"Candle polling · every 15s":"Waiting for candle history");
+ set("auditMarket",historyLoaded?"OTCharts · Pocket Option OTC":"OTCharts · waiting for history");
+ set("auditStream",historyLoaded?"Live OTCharts stream + candle refresh":"Waiting for candle history");
  set("auditTick",lastFeedAt?`${Math.max(0,Math.round((Date.now()-lastFeedAt)/1000))}s ago`:(historyLoaded?"No provider update yet":"—"));
  const ua=navigator.userAgent||"";set("auditDevice",/iphone|ipad|android|mobile/i.test(ua)?"Mobile browser":"Laptop / desktop browser");
  set("auditNetwork",navigator.onLine?"Online":"Offline");
- set("auditPO","Not connected · paper trading only");
- const note=$("auditNote");if(note)note.textContent="Stock candles are requested from Twelve Data and refreshed by polling. The dashboard does not claim a direct broker connection or tick-level feed. A stale provider response blocks confirmed signals. US equity regular-session hours apply; after-hours and market-closed periods may have delayed or unchanged candles.";
+ set("auditPO","Pocket Option orders · not connected · paper only");
+ const note=$("auditNote");if(note)note.textContent="OTCharts supplies Pocket Option OTC candles and live ticks. APEXSCAN generates signals and paper-trade results only; it does not connect to Pocket Option order execution. A stale feed blocks confirmed signals.";
 }
 function candleFeatures(c){const r=Math.max(c.high-c.low,1e-12),body=Math.abs(c.close-c.open)/r;return [c.close>c.open?1:c.close<c.open?-1:0,body,(c.high-Math.max(c.open,c.close))/r,(Math.min(c.open,c.close)-c.low)/r,(c.close-c.low)/r];}
 function formationClass(c){const f=candleFeatures(c),[dir,body,upper,lower,loc]=f;if(body<.16)return "Doji / indecision";if(lower>.48&&upper<.22)return "Lower-wick rejection";if(upper>.48&&lower<.22)return "Upper-wick rejection";if(body>.72)return dir>0?"Strong bullish body":"Strong bearish body";if(dir>0&&loc>.72)return "Bullish close near high";if(dir<0&&loc<.28)return "Bearish close near low";return "Mixed / spinning candle";}
@@ -1126,19 +1136,19 @@ function renderRadar(){
 async function refreshFeed(){
  if(feedBusy)return;
  feedBusy=true;
- if(!navigator.onLine){setFeedState(false,"STOCK FEED · OFFLINE");feedBusy=false;return;}
- const reqPair=pair,reqTf=tf;
+ if(!navigator.onLine){setFeedState(false,"OTC FEED · OFFLINE");feedBusy=false;return;}
+ const reqPair=pair,reqTf=tf;baseRes=reqTf;
  try{
   const got=await fetchLiveCandles(reqTf);
   if(reqPair!==pair||reqTf!==tf)return;
-  baseRes=got.spacing||reqTf;
+  baseRes=reqTf;
   feedNote=`${DATA_PROVIDER} · native ${TF[reqTf]} candles · polled`;
   processFeedRows(memMerge(storeKey(),got.rows));
   updateSyncNote();
  }catch(e){
   if(reqPair===pair&&reqTf===tf){
-   setFeedState(false,"STOCK DATA · ERROR");
-   setStatus("Stock candle load failed — "+e.message,"bad");
+   setFeedState(false,"OTC DATA · ERROR");
+   setStatus("OTC candle load failed — "+e.message,"bad");
    if(trade){const pending=log.find(x=>x.res==="Pending");if(pending)pending.res="Void";trade=null;drawStats();}
   }
  }finally{feedBusy=false;}
@@ -1160,7 +1170,7 @@ async function doScan(kind){
  if(!feedOk||!memRows.length||Date.now()-lastFeedAt>45000){setStatus("Scan blocked — live feed is not fresh","bad");return;}
  let f;try{RADAR=computeRadar();f=runEngine(memRows,tf,nowS(),{radar:RADAR,straight:straightMode});}catch(e){setStatus(e.message,"bad");return;}
  scanBusy=true;$("scan4").disabled=true;f.pair=pair;f.kind=kind;f.at=Date.now();
- setStatus(`Scanning 4 completed stock candles with internal engine ${hm(f.scanTimes[0])} → ${hm(f.scanTimes[3])}…`,"busy");
+ setStatus(`Scanning 4 completed OTC candles with internal engine ${hm(f.scanTimes[0])} → ${hm(f.scanTimes[3])}…`,"busy");
  FC=f;chartTraps=[];for(let i=LOOK+1;i<candles.length;i++){if(candles[i].time>=f.forecastTime)break;chartTraps.push(...trapsAt(candles,i));}
  await animateEngines();engineNotes(f);applyPriceLines();try{cs.applyOptions({});}catch(e){}
  sig={dir:f.dir,engineOnly:true};showForecast();renderPanels();
@@ -1173,7 +1183,7 @@ async function doScan(kind){
    const hs=holdSec();trade={call:f.dir>0,entry:candles.at(-1).close,left:hs,stake:+$("amt").value||5,pair,tf,hold:hs,entryTime,targetTime:entryTime+hs};
    log.unshift({call:trade.call,pair,tf,res:"Pending",entry:trade.entry,hold:hs,stake:trade.stake,stamp:f.forecastTime,kind});
   }
-  setStatus("Confirmed scan complete · 4 completed stock candles · Internal engine","ok");drawStats();
+  setStatus("Confirmed scan complete · 4 completed OTC candles · Internal engine","ok");drawStats();
  }
  scanBusy=false;$("scan4").disabled=false;
 }
@@ -1371,25 +1381,25 @@ function summarizeFC(f){return{direction:f.dir>0?"UP":f.dir<0?"DOWN":"WAIT",evid
  reversePsychology:f.sk?{candle:f.sk.q,why:f.sk.why,verdict:f.sk.verdict,read:f.sk.text}:null,
  patternMemory:{matches:f.pm.n,up:f.pm.up,down:f.pm.down},evidence:f.parts};}
 
-async function runDeepScan(){if(deepBusy||candles.length<8)return;deepBusy=true;$("deep").disabled=true;$("deep").textContent="CLAUDE ANALYZING…";try{const recent=candles.slice(-40),formationBrain={direction:$("formationDir").textContent,summary:$("formationSummary").textContent,pattern:$("formationType").textContent,samples:Number($("formationSamples").textContent)||0,wickPressure:$("formationWicks").textContent,priorMovement:$("formationMomentum").textContent,method:"Nearest historical analogs of the last 3 completed candles; informational estimate, not calibrated probability."},body={symbol:A[pair].symbol,pair,market:"US STOCK / ETF",scanTimeframe:TF[tf],forecast:"next candle",price:recent.at(-1).close,formationBrain,fourCandleScan:FC?summarizeFC(FC):null,recentCandles:recent.map(({time,open,high,low,close})=>({time,open,high,low,close}))};const res=await fetch(ENDPOINTS.claude,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await res.json().catch(()=>({error:"Claude returned invalid JSON"}));if(!res.ok)throw new Error(j.error||`Claude endpoint HTTP ${res.status}`);const result=j.deepScan||j.analysis||j;const textOut=typeof result==="string"?result:JSON.stringify(result,null,2);$("aiDet").hidden=false;$("aiDet").open=true;$("aiDet").querySelector("summary").textContent="Claude deep scan";$("aiBody").innerHTML=`<div style="white-space:pre-wrap">${escapeHtml(textOut)}</div>`;}catch(e){$("aiDet").hidden=false;$("aiDet").open=true;$("aiBody").innerHTML=`<div class="dn2">${escapeHtml(e.message)}. Check the Claude Netlify function and API key.</div>`;}finally{deepBusy=false;$("deep").disabled=false;$("deep").textContent="◎ OPTIONAL CLAUDE DEEP SCAN";}}
-function tick(){updateDataAudit();try{renderRadar();}catch(e){}if(feedOk&&lastFeedAt&&Date.now()-lastFeedAt>45000){feedOk=false;setFeedState(false,"STOCK DATA · STALE");setStatus("No fresh provider update received for 45 seconds; confirmed scans are blocked","bad");}const now=Math.floor(nowS()),r=tf-now%tf,mmss=fmtLeft(r);$("timer").textContent=`${TF[tf]} · ${mmss}`;$("cnt").textContent=mmss;if(now%15===0)updateSyncNote();$("cbar").style.width=((tf-r)/tf*100)+"%";$("clk").textContent="UTC "+new Date().toISOString().slice(11,19);
+async function runDeepScan(){if(deepBusy||candles.length<8)return;deepBusy=true;$("deep").disabled=true;$("deep").textContent="CLAUDE ANALYZING…";try{const recent=candles.slice(-40),formationBrain={direction:$("formationDir").textContent,summary:$("formationSummary").textContent,pattern:$("formationType").textContent,samples:Number($("formationSamples").textContent)||0,wickPressure:$("formationWicks").textContent,priorMovement:$("formationMomentum").textContent,method:"Nearest historical analogs of the last 3 completed candles; informational estimate, not calibrated probability."},body={symbol:A[pair].symbol,pair,market:"POCKET OPTION OTC",scanTimeframe:TF[tf],forecast:"next candle",price:recent.at(-1).close,formationBrain,fourCandleScan:FC?summarizeFC(FC):null,recentCandles:recent.map(({time,open,high,low,close})=>({time,open,high,low,close}))};const res=await fetch(ENDPOINTS.claude,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await res.json().catch(()=>({error:"Claude returned invalid JSON"}));if(!res.ok)throw new Error(j.error||`Claude endpoint HTTP ${res.status}`);const result=j.deepScan||j.analysis||j;const textOut=typeof result==="string"?result:JSON.stringify(result,null,2);$("aiDet").hidden=false;$("aiDet").open=true;$("aiDet").querySelector("summary").textContent="Claude deep scan";$("aiBody").innerHTML=`<div style="white-space:pre-wrap">${escapeHtml(textOut)}</div>`;}catch(e){$("aiDet").hidden=false;$("aiDet").open=true;$("aiBody").innerHTML=`<div class="dn2">${escapeHtml(e.message)}. Check the Claude Netlify function and API key.</div>`;}finally{deepBusy=false;$("deep").disabled=false;$("deep").textContent="◎ OPTIONAL CLAUDE DEEP SCAN";}}
+function tick(){updateDataAudit();try{renderRadar();}catch(e){}if(feedOk&&lastFeedAt&&Date.now()-lastFeedAt>45000){feedOk=false;setFeedState(false,"OTC DATA · STALE");setStatus("No fresh provider update received for 45 seconds; confirmed scans are blocked","bad");}const now=Math.floor(nowS()),r=tf-now%tf,mmss=fmtLeft(r);$("timer").textContent=`${TF[tf]} · ${mmss}`;$("cnt").textContent=mmss;if(now%15===0)updateSyncNote();$("cbar").style.width=((tf-r)/tf*100)+"%";$("clk").textContent="UTC "+new Date().toISOString().slice(11,19);
  if(trade){trade.left=Math.max(0,trade.entryTime+trade.hold-now);drawStats();settleTrade();}
  const lc=candles.at(-1),fc=$("fc"),wrap=$("chart").parentElement;if(lc&&wrap){const x=chart.timeScale().timeToCoordinate(lc.time),y=cs.priceToCoordinate(lc.close);if(x!=null&&y!=null&&Date.now()<formingMarkerUntil){fc.style.display="block";fc.style.left=Math.max(58,Math.min(wrap.clientWidth-58,x))+"px";fc.style.top=Math.max(8,y-66)+"px";}else fc.style.display="none";}else fc.style.display="none";}
 function buildTfUi(){$("tfs").innerHTML=Object.entries(TF).map(([v,n])=>`<button data-v="${v}"${+v===tf?' class="on"':""}>${n}</button>`).join("");$("tfT").innerHTML=Object.entries(TF).map(([v,n])=>`<option value="${v}">${n}</option>`).join("");$("tfT").value=String(tf);
  $("dur").innerHTML=`<option value="auto">Match time frame (1 candle)</option>`+DURS.map(v=>`<option value="${v}">${durTxt(v)}</option>`).join("");$("dur").value=String(hold);$("ctype").value=chartType;}
 function updateSyncNote(){const el=$("syncNote");if(!el)return;
- el.innerHTML=`<b>Stock candle sync:</b> Twelve Data <b>${TF[tf]}</b>${chartType==="ha"?" · Heikin Ashi view":" · Candles"}. Signals are evaluated only from completed bars. `+
-  `Device UTC clock: ${new Date().toISOString().slice(11,19)}. Twelve Data timestamps are normalized to UTC; polling does not provide a broker tick clock.`+(feedNote?` Data: ${feedNote}.`:"")+` Paper hold: ${durTxt(holdSec())}${hold==="auto"?" (1 candle)":""}.`;}
-function fill(sel){const opt=([k,v])=>`<option value="${k}">${v.n}</option>`;sel.innerHTML=`<optgroup label="US STOCKS & ETF">${Object.entries(A).map(opt).join("")}</optgroup>`;}fill($("pairL"));fill($("pairT"));
+ el.innerHTML=`<b>OTC candle sync:</b> OTCharts <b>${TF[tf]}</b>${chartType==="ha"?" · Heikin Ashi view":" · Candles"}. Signals are evaluated only from completed bars. `+
+  `Device UTC clock: ${new Date().toISOString().slice(11,19)}. OTCharts timestamps are normalized to UTC; live ticks synchronize the local candle clock.`+(feedNote?` Data: ${feedNote}.`:"")+` Paper hold: ${durTxt(holdSec())}${hold==="auto"?" (1 candle)":""}.`;}
+function fill(sel){const opt=([k,v])=>`<option value="${k}">${v.n}</option>`;sel.innerHTML=`<optgroup label="POCKET OPTION OTC PAIRS">${Object.entries(A).map(opt).join("")}</optgroup>`;}fill($("pairL"));fill($("pairT"));
 function resetScan({reloadHistory=true,keepStream=false}={}){FC=null;sig=null;feedOk=false;lastFeedAt=0;historyLoaded=false;if(!keepStream){tickBuf=[];clockSamples=[];clockOffset=0;}radarTrail=[];RADAR=null;$("rTrail").setAttribute("points","");$("rAlert").style.display="none";$("dnaT").innerHTML='<tbody><tr><td class="note">No scan yet</td></tr></tbody>';$("dnaSvg").innerHTML="";$("dnaSub").textContent="";$("dnaMom").textContent="Momentum read appears after the first scan.";$("dnaPats").innerHTML='<span class="note">No scan yet</span>';$("plBody").innerHTML='<tr><td colspan="4" class="note">No scan yet</td></tr>';$("slState").textContent="WAITING FOR SCAN";$("slState").className="slstate wt";$("slGrade").textContent="—";$("slGrade").className="slgrade C";$("slSvg").innerHTML="";$("slChecks").innerHTML="";$("slQ").style.width=$("slC").style.width="0%";$("slQv").textContent=$("slCv").textContent="—";$("slRP").innerHTML='<span class="tag">REVERSE PSYCHOLOGY</span>No sketchy candles yet.';lastFormationKey=0;earlyReset();chartTraps=[];applyPriceLines();candles=[];memRows=[];trade=null;log=[];lastAutoStamp=0;lastFormingTime=0;formingMarkerUntil=0;needFit=true;engines("");
  if(reloadHistory&&!keepStream)closeLiveStream();
  ENG.concat("en_ai").forEach(id=>{const sp=$(id).querySelector("span");if(sp){sp.querySelector("small")?.remove();$(id).innerHTML=sp.innerHTML;}});
  $("dir").className="fdir";$("dir").textContent="— No scan yet";$("sig").className="card sigc";["k_conf","k_score","k_mem","k_risk","k_mag","k_zone","k_ai"].forEach(id=>$(id).textContent="—");
  $("why").innerHTML="<li>Run a scan to see why the engine picks UP, DOWN or WAIT.</li>";$("rec").textContent="Recommendation: —";$("tfLbl").textContent=TF[tf];loadTimeline();renderTimeline();renderTrack();setStatus("Loading candles…","busy");
- refreshFeed();updateSyncNote();
+ refreshFeed();if(!keepStream)openLiveStream(pair);updateSyncNote();
  drawStats();}
 function setPair(k){pair=k;$("pairL").value=$("pairT").value=k;resetScan();}
-function setTf(v){tf=+v;$("tfT").value=String(tf);[...$("tfs").children].forEach(b=>b.classList.toggle("on",b.dataset.v==v));savePrefs();resetScan({keepStream:true});}
+function setTf(v){tf=+v;baseRes=tf;$("tfT").value=String(tf);[...$("tfs").children].forEach(b=>b.classList.toggle("on",b.dataset.v==v));savePrefs();resetScan({keepStream:true});}
 $("pairL").onchange=$("pairT").onchange=e=>setPair(e.target.value);$("tfs").onclick=e=>{const b=e.target.closest("button[data-v]");if(b)setTf(b.dataset.v);};$("tfT").onchange=e=>setTf(e.target.value);$("dur").onchange=e=>{hold=e.target.value==="auto"?"auto":+e.target.value;savePrefs();drawStats();updateSyncNote();};
 $("ctype").onchange=e=>{chartType=e.target.value;savePrefs();renderCandles();updateSyncNote();};
 $("mn").onclick=()=>$("amt").value=Math.max(1,(+$("amt").value||5)-1);$("pl").onclick=()=>$("amt").value=(+$("amt").value||5)+1;
@@ -1400,13 +1410,13 @@ $("slMode").onclick=e=>{straightMode=!straightMode;e.currentTarget.setAttribute(
 $("scan4").onclick=()=>doScan("MANUAL");$("deep").onclick=runDeepScan;
 $("nav").onclick=e=>{const b=e.target.closest("button");if(!b)return;[...$("nav").children].forEach(x=>x.classList.toggle("on",x===b));const t=$(b.dataset.go);if(t)t.scrollIntoView({behavior:"smooth",block:"start"});};
 window.addEventListener("online",()=>{refreshFeed();});
-window.addEventListener("offline",()=>{setFeedState(false,"NETWORK OFFLINE");setStatus("Network offline · stock history refresh will resume when internet returns","bad");updateDataAudit();});
+window.addEventListener("offline",()=>{setFeedState(false,"NETWORK OFFLINE");setStatus("Network offline · OTC history refresh will resume when internet returns","bad");updateDataAudit();});
 window.addEventListener("pagehide",()=>{const k=storeKey();if(memBase[k])saveMem(k,memBase[k].slice(0,-1));});
-// Stock-market data refresh: poll Twelve Data candle history every 15 seconds.
+// OTC candle history fallback: refresh OTCharts candles every 15 seconds while the live stream is connected.
 setInterval(()=>{if(document.hidden||feedBusy||!navigator.onLine)return;refreshFeed();},15000);
-// Refresh stock candle history when the page becomes visible again.
+// Refresh OTC candle history when the page becomes visible again.
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshFeed();});
-buildTfUi();setFeedState(false,"STOCK FEED: CONNECTING");renderPatternGuide();resetScan();updateDataAudit();setInterval(tick,1000);tick();
+buildTfUi();setFeedState(false,"OTC FEED: CONNECTING");renderPatternGuide();resetScan();updateDataAudit();setInterval(tick,1000);tick();
 </script>
 </body>
 </html>
