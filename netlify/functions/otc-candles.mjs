@@ -1,19 +1,22 @@
-// APEXSCAN PRO — historical candle endpoint
+// APEXSCAN PRO — OTC historical candle endpoint
 // File: netlify/functions/otc-candles.mjs
 
 const UPSTREAM_TF = 30;
 const UPSTREAM_MAX = 500;
-const SUPPORTED_TF = [30, 60, 300, 900];
+const SUPPORTED_TF = [30, 60];
 
 function toCandle(x) {
   if (!x || typeof x !== "object") return null;
 
   let t = x.time ?? x.timestamp ?? x.ts ?? x.t ?? x.date;
-  if (typeof t === "string" && Number.isNaN(Number(t))) t = Date.parse(t);
+  if (typeof t === "string" && Number.isNaN(Number(t))) {
+    t = Date.parse(t);
+  }
+
   t = Number(t);
   if (t > 1e12) t /= 1000;
 
-  const c = {
+  const candle = {
     time: Math.floor(t),
     open: Number(x.open ?? x.o),
     high: Number(x.high ?? x.h),
@@ -21,7 +24,9 @@ function toCandle(x) {
     close: Number(x.close ?? x.c)
   };
 
-  return Object.values(c).every(Number.isFinite) ? c : null;
+  return Object.values(candle).every(Number.isFinite)
+    ? candle
+    : null;
 }
 
 function aggregate(src, seconds) {
@@ -46,7 +51,9 @@ function aggregate(src, seconds) {
     }
   }
 
-  if (out.length > 1 && src[0].time % seconds !== 0) out.shift();
+  if (out.length > 1 && src[0].time % seconds !== 0) {
+    out.shift();
+  }
 
   return out;
 }
@@ -62,20 +69,30 @@ export default async (request) => {
   }
 
   const params = new URL(request.url).searchParams;
+
   const symbol = params.get("symbol") || "EURUSD_otc";
   const tf = Number(params.get("tf") || "30");
 
-  const requestedLimit = Number(params.get("limit") || UPSTREAM_MAX);
-  const limit = Math.min(UPSTREAM_MAX, Math.max(30, requestedLimit));
+  const requestedLimit = Number(
+    params.get("limit") || UPSTREAM_MAX
+  );
+
+  const limit = Math.min(
+    UPSTREAM_MAX,
+    Math.max(30, requestedLimit)
+  );
 
   if (!/^[A-Z0-9#]+_otc$/.test(symbol)) {
-    return Response.json({ error: "Invalid OTC symbol." }, { status: 400 });
+    return Response.json(
+      { error: "Invalid OTC symbol." },
+      { status: 400 }
+    );
   }
 
   if (!SUPPORTED_TF.includes(tf)) {
     return Response.json(
       {
-        error: "Unsupported timeframe. Use tf=30, 60, 300 or 900 (seconds).",
+        error: "Unsupported timeframe. Use tf=30 or 60.",
         supportedTimeframes: SUPPORTED_TF
       },
       { status: 400 }
@@ -83,11 +100,18 @@ export default async (request) => {
   }
 
   if (!Number.isFinite(limit)) {
-    return Response.json({ error: "Invalid candle limit." }, { status: 400 });
+    return Response.json(
+      { error: "Invalid candle limit." },
+      { status: 400 }
+    );
   }
 
-  const upstreamLimit = tf === UPSTREAM_TF ? limit : UPSTREAM_MAX;
-  const upstream = new URL("https://otcharts.com/v1/candles");
+  const upstreamLimit =
+    tf === UPSTREAM_TF ? limit : UPSTREAM_MAX;
+
+  const upstream = new URL(
+    "https://otcharts.com/v1/candles"
+  );
 
   upstream.searchParams.set("venue", "otc");
   upstream.searchParams.set("symbol", symbol);
@@ -121,7 +145,10 @@ export default async (request) => {
     if (!response.ok) {
       return Response.json(
         {
-          error: body?.error || body?.message || `OTCharts HTTP ${response.status}`,
+          error:
+            body?.error ||
+            body?.message ||
+            `OTCharts HTTP ${response.status}`,
           upstreamStatus: response.status
         },
         { status: 502 }
@@ -141,7 +168,10 @@ export default async (request) => {
       .map(toCandle)
       .filter(Boolean)
       .sort((a, b) => a.time - b.time)
-      .filter((c, i, a) => i === 0 || c.time !== a[i - 1].time);
+      .filter(
+        (c, i, a) =>
+          i === 0 || c.time !== a[i - 1].time
+      );
 
     if (!normalized.length) {
       return Response.json(
@@ -154,9 +184,10 @@ export default async (request) => {
       );
     }
 
-    const candles = tf === UPSTREAM_TF
-      ? normalized.slice(-limit)
-      : aggregate(normalized, tf);
+    const candles =
+      tf === UPSTREAM_TF
+        ? normalized.slice(-limit)
+        : aggregate(normalized, tf).slice(-limit);
 
     return Response.json(
       {
@@ -166,9 +197,10 @@ export default async (request) => {
         interval: `${tf}s`,
         scannerTimeframe: 30,
         scannerInterval: "30s",
-        candleSource: tf === UPSTREAM_TF
-          ? "otcharts_historical_30s"
-          : `otcharts_30s_aggregated_${tf}s`,
+        candleSource:
+          tf === UPSTREAM_TF
+            ? "otcharts_historical_30s"
+            : `otcharts_30s_aggregated_${tf}s`,
         historicalContextTimeframe: 30,
         count: candles.length,
         candles,
@@ -176,7 +208,8 @@ export default async (request) => {
       },
       {
         headers: {
-          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Cache-Control":
+            "no-store, no-cache, must-revalidate",
           Pragma: "no-cache",
           Expires: "0"
         }
@@ -185,7 +218,9 @@ export default async (request) => {
   } catch (error) {
     return Response.json(
       {
-        error: error?.message || "OTCharts connection failed.",
+        error:
+          error?.message ||
+          "OTCharts connection failed.",
         type: error?.name || "NetworkError"
       },
       { status: 502 }
