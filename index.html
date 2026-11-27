@@ -806,8 +806,12 @@ function runEngine(rows,tf,nowSec,ext={}){
   const bar=mode==="smooth"?SL.minConfSmooth:SL.minConf;
   if(dir&&conf<bar){waitWhy.push(`signal confidence ${conf}% is below the ${bar}% bar`);dir=0;mode="standard";}
  }
- // Final safety gate: no later continuation/reverse-psychology branch may override Supertrend.
- if(dir&&dir!==stDir){waitWhy.push(`final Supertrend alignment check: ${dir>0?"BUY":"SELL"} is against the completed ${stDir>0?"BULLISH":"BEARISH"} trend`);dir=0;mode="standard";}
+ // Supertrend is the authoritative direction source. Other engines remain diagnostic only.
+ // The signal follows the latest completed Supertrend state; it is not a probability or guarantee.
+ dir=stDir;
+ mode="supertrend";
+ if(!dir)waitWhy.push("Supertrend has not established a direction yet");
+ else waitWhy.length=0;
  const grade=conf>=85?"A":conf>=SL.minConf?"B":"C";
  // Magnet + reaction zone
  let magnet=null,zone=null,zones=null;
@@ -1067,35 +1071,29 @@ window.addEventListener("online",updateDataAudit);window.addEventListener("offli
 function earlyReset(){earlyLockedStamp=0;earlyCandidate=null;earlyHistory=[];$('earlyDir').textContent='WAIT · MONITORING';$('earlyDir').className='edir wait';$('earlyMeta').textContent='Watching the developing candle and short-term momentum.';$('earlyConf').textContent='CONFLUENCE 0/5';}
 function evaluateEarlySignal(){
  if(!feedOk||!candles.length||Date.now()-lastFeedAt>45000)return;
- const rows=candles.slice(-5);if(rows.length<4)return;
- const cur=rows.at(-1),prev=rows.at(-2),p2=rows.at(-3),p3=rows.at(-4);
- const stamp=cur.time;if(earlyLockedStamp===stamp)return;
- const completedForTrend=candles.slice(0,-1),stEarly=calcSupertrend(completedForTrend),stEarlyDir=stEarly.direction.at(-1)||0;
- const range=Math.max(cur.high-cur.low,1e-9),body=cur.close-cur.open,closePos=(cur.close-cur.low)/range;
- const upWick=(cur.high-Math.max(cur.open,cur.close))/range,loWick=(Math.min(cur.open,cur.close)-cur.low)/range;
- const shortMove=cur.close-p3.close,vol=Math.max(rows.slice(1).reduce((a,c)=>a+c.high-c.low,0)/4,1e-9);
- let up=0,dn=0;
- if(cur.close>prev.close)up++;else if(cur.close<prev.close)dn++;
- if(prev.close>p2.close)up++;else if(prev.close<p2.close)dn++;
- if(shortMove>0)up++;else if(shortMove<0)dn++;
- if(body>0&&closePos>.62)up++;if(body<0&&closePos<.38)dn++;
- if(cur.close>Math.max(prev.high,p2.high))up++;if(cur.close<Math.min(prev.low,p2.low))dn++;
- if(loWick>.42&&closePos>.55)up++;if(upWick>.42&&closePos<.45)dn++;
- if(Math.abs(shortMove)/vol<.22){up=Math.max(0,up-1);dn=Math.max(0,dn-1);}
- let dir=up>=4&&up>dn?'BUY':dn>=4&&dn>up?'SELL':'WAIT';const confidence=Math.min(100,Math.round(Math.max(up,dn)/5*100));
- if(dir!=="WAIT"&&stEarlyDir&&((dir==="BUY"?1:-1)!==stEarlyDir)){
-  $('earlyDir').textContent='WAIT · TREND FILTER';$('earlyDir').className='edir wait';
-  $('earlyMeta').textContent=`Early ${dir} held back — the last completed Supertrend remains ${stEarlyDir>0?'BULLISH':'BEARISH'}. Waiting for a confirmed trend flip.`;
-  $('earlyConf').textContent=`CONFLUENCE ${Math.min(5,Math.max(up,dn))}/5`;return;
+ const rows=candles.slice(-5);if(rows.length<2)return;
+ const cur=rows.at(-1),stamp=cur.time;
+ // Use the current developing candle so the early panel follows the live Supertrend state.
+ const st=calcSupertrend(candles),liveDir=st.direction.at(-1)||0;
+ if(!liveDir){
+  $("earlyDir").textContent="WAIT · INITIALIZING";
+  $("earlyDir").className="edir wait";
+  $("earlyMeta").textContent="Waiting for enough live candles to establish Supertrend direction.";
+  $("earlyConf").textContent="SUPERTREND · ATR 1 × 1.01";
+  return;
  }
- const R=RADAR;if(dir!=='WAIT'&&R&&R.ready&&R.exh>=60&&R.trend===(dir==='BUY'?1:-1)){$('earlyDir').textContent='WAIT · EXHAUSTION';$('earlyDir').className='edir wait';$('earlyMeta').textContent=`Early ${dir} blocked — momentum radar shows ${R.exhWho} exhausted (${R.exh}%)`;$('earlyConf').textContent=`CONFLUENCE ${Math.min(5,Math.max(up,dn))}/5`;return;}
- if(dir!=='WAIT'&&straightMode&&candles.length>=SL.N+16){const k=candles.length-2,a=atrAt(candles,k),t=trendQuality(candles,k,a),want=dir==='BUY'?1:-1,cd=dna(cur),jumpyNow=(cur.high-cur.low)/a>2.2||(want>0?cd.upper:cd.lower)>.55;
-  if(t.jumpy||jumpyNow||(t.ok&&t.dir!==want)){$('earlyDir').textContent='WAIT · JUMPY';$('earlyDir').className='edir wait';$('earlyMeta').textContent=`Early ${dir} blocked — ${t.jumpy?"recent candles are jumpy":jumpyNow?"the developing candle is jumpy":"against a clean straight-line trend"}`;$('earlyConf').textContent=`CONFLUENCE ${Math.min(5,Math.max(up,dn))}/5`;return;}}
- if(dir==='WAIT'){$('earlyDir').textContent='WAIT · MONITORING';$('earlyDir').className='edir wait';$('earlyMeta').textContent=`Developing candle ${hm(stamp)} UTC · momentum ${shortMove>=0?'+':''}${fx(shortMove)} · no early confluence yet`;$('earlyConf').textContent=`CONFLUENCE ${Math.min(5,Math.max(up,dn))}/5`;return;}
- earlyLockedStamp=stamp;earlyCandidate={dir,confidence,stamp,pair,price:cur.close,up,dn,bodyRatio:Math.abs(body)/range,closePos,upWick,loWick};earlyHistory.unshift(earlyCandidate);earlyHistory=earlyHistory.slice(0,10);
- $('earlyDir').textContent=`${dir} · EARLY`;$('earlyDir').className='edir '+(dir==='BUY'?'buy':'sell');
- $('earlyMeta').textContent=`${A[pair].n} · developing candle ${hm(stamp)} UTC · ${confidence}% confluence · price ${fx(cur.close)}`;
- $('earlyConf').textContent=`CONFLUENCE ${Math.min(5,Math.max(up,dn))}/5`;
+ const dir=liveDir>0?"BUY":"SELL";
+ // Update if Supertrend flips during the same developing candle; suppress repeats otherwise.
+ const calloutKey=`${stamp}:${liveDir}`;
+ if(earlyLockedStamp===calloutKey)return;
+ earlyLockedStamp=calloutKey;
+ const prior=st.direction.at(-2)||liveDir;
+ earlyCandidate={dir,confidence:100,stamp,pair,price:cur.close,source:"supertrend",priorDirection:prior};
+ earlyHistory.unshift(earlyCandidate);earlyHistory=earlyHistory.slice(0,10);
+ $("earlyDir").textContent=`${dir} · SUPERTREND`;
+ $("earlyDir").className="edir "+(dir==="BUY"?"buy":"sell");
+ $("earlyMeta").textContent=`${A[pair].n} · ${TF[tf]} candle ${hm(stamp)} UTC · live Supertrend ${dir} · ATR 1 × 1.01`;
+ $("earlyConf").textContent="PO-MATCH ENGINE · "+(prior!==liveDir?"FLIP DETECTED":"DIRECTION ACTIVE");
 }
 
 // ---------- MOMENTUM RADAR (live: candles + ticks) ----------
@@ -1263,7 +1261,7 @@ function buildReasons(f,s){
 function showForecast(){const f=FC;if(!f)return;const s=sig||{dir:f.dir},d=s.dir,card=$("sig"),el=$("dir");
  card.className="card sigc "+(d>0?"up":d<0?"dn":"wait");el.className="fdir "+(d>0?"up":d<0?"dn":"wait");
  el.textContent=d>0?"↗ UP / BULLISH BIAS":d<0?"↘ DOWN / BEARISH BIAS":"⏸ WAIT / NO CLEAR EDGE";
- const MODE_TXT={reverse:["REVERSE-PSYCHOLOGY FADE","#d8b4fe"],straight:["STRAIGHT-LINE CONTINUATION","#9cffc4"],smooth:["SMOOTH-CANDLE SIGNAL","#a5f3fc"]};
+ const MODE_TXT={supertrend:["SUPERTREND PRIMARY · ATR 1 × 1.01","#9cffc4"],reverse:["REVERSE-PSYCHOLOGY FADE","#d8b4fe"],straight:["STRAIGHT-LINE CONTINUATION","#9cffc4"],smooth:["SMOOTH-CANDLE SIGNAL","#a5f3fc"]};
  if(d&&MODE_TXT[f.mode])el.innerHTML+=`<small style="display:block;font-size:12px;letter-spacing:.06em;color:${MODE_TXT[f.mode][1]}">${MODE_TXT[f.mode][0]} · GRADE ${f.grade} · ${TF[tf]}</small>`;
  $("k_conf").innerHTML=`<span class="${f.conf>=SL.minConf?"up2":f.conf>=SL.minConfSmooth?"wt":"dn2"}">${f.conf}%</span> · grade ${f.grade}${f.straightMode?"":" (mode off)"}`;
  $("fsub").textContent=`Forecast for the candle closing ${hm(f.forecastTime+tf)} UTC · ${f.kind==="AUTO"?"auto":"manual"} scan`;
