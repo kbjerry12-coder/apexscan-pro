@@ -1,4 +1,4 @@
-// APEXSCAN PRO — resilient single-symbol OTC live stream relay
+// APEXSCAN PRO — FIXED RESILIENT OTC LIVE STREAM RELAY
 // File: netlify/functions/otc-stream.mjs
 
 const SSE_HEADERS = {
@@ -7,6 +7,7 @@ const SSE_HEADERS = {
   "X-Accel-Buffering": "no",
   "X-Content-Type-Options": "nosniff",
   "Access-Control-Allow-Origin": "*",
+  "Connection": "keep-alive"
 };
 
 const encodeEvent = (name, payload) =>
@@ -15,7 +16,7 @@ const encodeEvent = (name, payload) =>
 const sseError = (payload, status = 200) =>
   new Response(encodeEvent("stream_error", payload), {
     status,
-    headers: SSE_HEADERS,
+    headers: SSE_HEADERS
   });
 
 export default async (request) => {
@@ -24,8 +25,8 @@ export default async (request) => {
       status: 405,
       headers: {
         Allow: "GET",
-        "Content-Type": "text/plain; charset=utf-8",
-      },
+        "Content-Type": "text/plain; charset=utf-8"
+      }
     });
   }
 
@@ -33,9 +34,8 @@ export default async (request) => {
 
   if (!key) {
     return sseError({
-      error:
-        "OTCHARTS_API_KEY is missing from Netlify environment variables.",
-      retryable: false,
+      error: "OTCHARTS_API_KEY is missing from Netlify environment variables.",
+      retryable: false
     });
   }
 
@@ -52,11 +52,10 @@ export default async (request) => {
     !/^[A-Z0-9#]+_otc$/i.test(symbol)
   ) {
     return sseError({
-      error:
-        "Invalid OTC stream request. Expected one OTC symbol ending in _otc.",
+      error: "Invalid OTC stream request.",
       symbol,
       venue,
-      retryable: false,
+      retryable: false
     });
   }
 
@@ -76,16 +75,16 @@ export default async (request) => {
         Authorization: `Bearer ${key}`,
         Accept: "text/event-stream",
         "Cache-Control": "no-cache",
-        "User-Agent": "APEXSCAN-PRO",
+        "User-Agent": "APEXSCAN-PRO"
       },
-      signal: request.signal,
+      signal: request.signal
     });
   } catch (error) {
     return sseError({
       error: "Could not reach OTCharts stream service.",
       details: error?.message || "Network request failed",
       symbol,
-      retryable: true,
+      retryable: true
     });
   }
 
@@ -116,7 +115,7 @@ export default async (request) => {
         status === 408 ||
         status === 425 ||
         status === 429 ||
-        status >= 500,
+        status >= 500
     });
   }
 
@@ -129,12 +128,11 @@ export default async (request) => {
     const body = await upstream.text().catch(() => "");
 
     return sseError({
-      error:
-        "OTCharts responded, but the response was not an event stream.",
+      error: "OTCharts response was not an event stream.",
       contentType,
       details: body.slice(0, 1500),
       symbol,
-      retryable: false,
+      retryable: false
     });
   }
 
@@ -142,7 +140,7 @@ export default async (request) => {
     return sseError({
       error: "OTCharts returned an empty stream body.",
       symbol,
-      retryable: true,
+      retryable: true
     });
   }
 
@@ -154,11 +152,23 @@ export default async (request) => {
 
   const stream = new ReadableStream({
     async start(controller) {
+
+      // IMPORTANT:
+      // Strings are encoded as UTF-8.
+      // Existing Uint8Array data is forwarded unchanged.
+      // This prevents market events becoming comma-separated numbers.
+
       const send = (chunk) => {
         if (cancelled) return false;
 
         try {
-          controller.enqueue(encoder.encode(chunk));
+          const output =
+            typeof chunk === "string"
+              ? encoder.encode(chunk)
+              : chunk;
+
+          controller.enqueue(output);
+
           return true;
         } catch {
           cancelled = true;
@@ -171,12 +181,13 @@ export default async (request) => {
           status: "connected",
           symbol,
           venue: "otc",
-          time: Date.now(),
+          time: Date.now()
         })
       );
 
       // Keep downstream SSE alive during quiet periods.
-      // SSE comments do not create market ticks.
+      // Heartbeats do not create fake market ticks.
+
       heartbeatTimer = setInterval(() => {
         if (!cancelled) {
           send(": keep-alive\n\n");
@@ -193,27 +204,29 @@ export default async (request) => {
                 error: "OTCharts ended the live stream.",
                 symbol,
                 time: Date.now(),
-                retryable: true,
+                retryable: true
               })
             );
 
             break;
           }
 
+          // Forward ORIGINAL upstream bytes without re-encoding.
           if (!send(value)) break;
         }
+
       } catch (error) {
         send(
           encodeEvent("stream_error", {
-            error:
-              "OTCharts stream was interrupted while relaying data.",
+            error: "OTCharts stream was interrupted.",
             details:
               error?.message || "Upstream read failed",
             symbol,
             time: Date.now(),
-            retryable: true,
+            retryable: true
           })
         );
+
       } finally {
         cancelled = true;
 
@@ -249,11 +262,11 @@ export default async (request) => {
       try {
         await reader.cancel();
       } catch {}
-    },
+    }
   });
 
   return new Response(stream, {
     status: 200,
-    headers: SSE_HEADERS,
+    headers: SSE_HEADERS
   });
 };
